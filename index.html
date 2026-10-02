@@ -2476,3 +2476,21 @@ input,select,textarea{background:#042117!important;color:#d9eee7!important;borde
   setInterval(activate,2500);
 })();
 </script>
+
+<!-- RIZVI V34 LIVE CANDLES + INDICATOR VALUES -->
+<style id="rizvi-v34-live-candles">
+.chartarea .candle,.chartarea .wick{display:block!important;visibility:visible!important;opacity:1!important}
+.chartarea .candle{z-index:4!important}.chartarea .wick{z-index:3!important}
+#chartSetupBox{z-index:20!important}.priceLine,.priceTag{z-index:8!important}
+</style>
+<script id="rizvi-v34-live-candles-script">
+(function(){
+  function start(){
+    if(!window.state||!window.state.ohlc||!window.state.ohlc.length)return;
+    const chart=document.querySelector('.chartarea');
+    if(!chart)return;
+    chart.querySelectorAll('.candle,.wick').forEach(e=>{e.style.display='block';e.style.visibility='visible';e.style.opacity='1';});
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(start,1200);setInterval(start,2000)});
+})();
+</script>
