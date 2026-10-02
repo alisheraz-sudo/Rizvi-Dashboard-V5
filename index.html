@@ -939,6 +939,57 @@ document.addEventListener('DOMContentLoaded',()=>{
   .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
   .levelBtn{height:34px!important;font-size:9.5px!important}
 }
+</style><!-- RIZVI MAIN ACTION BOX CONFIG V1 -->
+<style id="rizvi-main-action-box-config">
+/* === RIZVI MAIN ACTION BOX — ADJUSTABLE CONFIG === */
+:root{
+  --rza-height:218px;
+  --rza-mobile-height:228px;
+  --rza-gap:6px;
+  --rza-font:10.5px;
+  --rza-title-font:13px;
+  --rza-level-font:10.5px;
+  --rza-title-height:40px;
+  --rza-button-height:31px;
+  --rza-level-height:34px;
+}
+.chartSetupBox{
+  left:8px!important;right:8px!important;bottom:7px!important;
+  height:var(--rza-height)!important;padding:10px 11px!important;
+  box-sizing:border-box!important;overflow:hidden!important;
+  background:linear-gradient(180deg,#071723,#050f18)!important;
+  border:2px solid #294d68!important;border-radius:10px!important;
+}
+.setupHighRow{gap:var(--rza-gap)!important;margin-bottom:8px!important}
+.setupHighBox{
+  height:var(--rza-title-height)!important;
+  font-size:var(--rza-title-font)!important;font-weight:1000!important;
+}
+.setupSignals{gap:var(--rza-gap)!important}
+.setupBtn{
+  height:var(--rza-button-height)!important;font-size:var(--rza-font)!important;
+  padding:0 5px!important;font-weight:950!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.setupLevels{gap:var(--rza-gap)!important;margin-top:9px!important}
+.levelBtn{
+  height:var(--rza-level-height)!important;font-size:var(--rza-level-font)!important;
+  padding:0 4px!important;font-weight:950!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+@media(max-width:700px){
+  .chartSetupBox{height:var(--rza-mobile-height)!important;left:6px!important;right:6px!important}
+  .setupHighBox{font-size:11.5px!important}
+  .setupBtn{font-size:9px!important}
+  .levelBtn{font-size:9px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:232px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .setupBtn{height:32px!important;font-size:9.5px!important}
+  .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .levelBtn{height:34px!important;font-size:9.5px!important}
+}
 </style></body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
