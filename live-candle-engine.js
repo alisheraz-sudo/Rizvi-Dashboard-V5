@@ -108,9 +108,9 @@
     }
   }
 
-  function boot(){ingest();engineHook();draw();candleCloseGate()}
+  function boot(){ingest();engineHook();candleCloseGate()}
   setInterval(ingest,1000);
-  setInterval(()=>{engineHook();draw();candleCloseGate()},1200);
+  setInterval(()=>{engineHook();candleCloseGate()},1200);
   setTimeout(boot,1200);
   window.RIZVI_LIVE_CANDLE_ENGINE={ingest,draw,seedFromPoints,getBars:()=>window.RIZVI_LIVE_BARS||[],getState:()=>window.RIZVI_LIVE_CANDLE_STATE||{}};
 })();
