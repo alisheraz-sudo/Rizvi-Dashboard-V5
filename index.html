@@ -1755,3 +1755,27 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(cleanHeadline,300);
 })();
 </script>
+
+<!-- RIZVI BUTTON UNIFORMITY + VALUE DISPLAY V17 -->
+<style id="rizvi-button-uniform-v17">
+.setupSignals{grid-auto-rows:32px!important;align-items:stretch!important}
+.setupBtn{height:32px!important;min-height:32px!important;max-height:32px!important;box-sizing:border-box!important}
+.setupLevels{align-items:stretch!important}
+.setupLevels .levelBtn{box-sizing:border-box!important}
+@media(max-width:700px){.setupSignals{grid-auto-rows:32px!important}.setupBtn{height:32px!important;min-height:32px!important;max-height:32px!important}}
+@media(max-width:430px){.setupSignals{grid-auto-rows:32px!important}.setupBtn{height:32px!important;min-height:32px!important;max-height:32px!important}}
+</style>
+<script id="rizvi-button-values-v17-script">
+(function(){
+  function setSplit(id,label,value,cls){const el=document.getElementById(id);if(!el)return;el.className=(id.indexOf('chartEntry')===0||id.indexOf('chartSl')===0||id.indexOf('chartTp')===0?'levelBtn ':'setupBtn ')+(cls||'wait');el.innerHTML='<span class="btnLabel">'+label+'</span><span class="btnValue">'+value+'</span>'}
+  function refreshValues(){
+    const st=window.state||{},bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[],sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;if(!sig)return;
+    const dir=sig.direction==='BUY'?'BUY':sig.direction==='SELL'?'SELL':'WAIT',cls=dir==='BUY'?'buy':dir==='SELL'?'sell':'wait';
+    const trend=sig.regime||'RANGE',delta=sig.delta?.status&&sig.delta.status!=='NOT CONNECTED'?sig.delta.status:(window.RIZVI_ORDER_FLOW?.delta||'WAIT'),div=sig.divergence?.bias==='BULLISH'?'BULL DIV':sig.divergence?.bias==='BEARISH'?'BEAR DIV':'NONE',of=window.RIZVI_ORDER_FLOW?.signal||'WAIT',ema=sig.e9>sig.e21?'BULL':'BEAR';
+    setSplit('chartTrendBtn','TREND',trend,trend==='BULL'?'bull':trend==='BEAR'?'bear':'wait');setSplit('chartDeltaBtn','DELTA',delta,delta==='BUYING'?'bull':delta==='SELLING'?'bear':'wait');setSplit('chartDivBtn','DIV',div,div==='BULL DIV'?'bull':div==='BEAR DIV'?'bear':'wait');setSplit('chartOfBtn','OF SIGNAL',of,of==='BUYING'?'bull':of==='SELLING'?'bear':'wait');setSplit('chartRsiBtn','RSI',Number(sig.r).toFixed(1),sig.r>=52?'bull':sig.r<=48?'bear':'wait');setSplit('chartEmaBtn','EMA',ema,ema==='BULL'?'bull':'bear');setSplit('chartSigBtn','SIGNAL',dir,cls);
+    const q=String(sig.quality||'').toUpperCase(),combo=dir==='WAIT'?'WAIT':(q==='HIGH'?(dir==='BUY'?'STRONG BUY':'STRONG SELL'):(q==='WEAK'?(dir==='BUY'?'WEAK BUY':'WEAK SELL'):dir));setSplit('chartComboBtn','COMBO',combo,cls);
+    if(dir==='WAIT'){setSplit('chartEntryBtn','ENTRY','—','wait');setSplit('chartSlBtn','SL','—','wait');setSplit('chartTp1Btn','TP1','—','wait');setSplit('chartTp2Btn','TP2','—','wait');setSplit('chartTp3Btn','TP3','—','wait')}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{refreshValues();setInterval(refreshValues,1200)});setTimeout(refreshValues,500);
+})();
+</script>
