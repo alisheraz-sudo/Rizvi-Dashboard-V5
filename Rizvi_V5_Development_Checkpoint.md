@@ -104,3 +104,10 @@ Add → Test → Fix → Save → Next
 - Verified cTrader adapter writes broker OHLC into the dashboard chart state and maintains real-feed status.
 - Hardened symbol switching to clear previous-symbol OHLC immediately, preventing temporary cross-symbol candle display while the new broker subscription loads.
 - Signal engine remains gated on fresh broker data and Auto Trading remains OFF.
+
+
+## Native iPhone Signing Pipeline Review
+- Reviewed unsigned iPhone device workflow and manual signed IPA workflow.
+- Fixed signed provisioning-profile validation so the Apple Team ID is explicitly available during profile application-identifier validation.
+- Native signing remains unexecuted until the required Apple/GitHub Actions signing secrets are configured; no secrets are stored in the repository or chat.
+- Simulator build had previously been verified successfully; current device/signing workflow is prepared but not claimed as signed/installable until an actual run succeeds.
