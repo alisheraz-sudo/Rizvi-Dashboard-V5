@@ -226,6 +226,14 @@ function applyRealXauPrice(px,ts){
   if(!Number.isFinite(px))return;
   realXauPrev=realXauPrice==null?px:realXauPrice;realXauPrice=px;realXauTime=ts||new Date().toISOString();state.price=px;
   state.history.push(px);state.history=state.history.slice(-260);
+  const tickTs=Date.parse(realXauTime)||Date.now(),bucket=Math.floor(tickTs/60000)*60000;
+  const lastBar=state.ohlc.at(-1);
+  if(lastBar&&Math.floor(lastBar.t/60000)*60000===bucket){
+    lastBar.c=px;lastBar.h=Math.max(lastBar.h,px);lastBar.l=Math.min(lastBar.l,px);
+  }else{
+    const o=lastBar?.c??px;state.ohlc.push({t:bucket,o,h:Math.max(o,px),l:Math.min(o,px),c:px});
+    state.ohlc=state.ohlc.slice(-520);
+  }
   window.RIZVI_REAL_FEED={provider:'XAUS',symbol:'XAU/USD',status:'REAL SPOT',price:px,previous:realXauPrev,updatedAt:realXauTime,stale:false};
   setFeedStatus('REAL XAU/USD',true);
   const base=realXauPrev||px,d=px-base,pct=base?(d/base*100):0,delta=document.querySelector('.delta');
