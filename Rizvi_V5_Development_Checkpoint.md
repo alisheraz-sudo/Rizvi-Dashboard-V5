@@ -137,3 +137,13 @@ Add → Test → Fix → Save → Next
 - Latest Smart V5 source commits: 82f63b49, 267fedf8, f23b1198.
 - Railway was not redeployed; existing Railway deployment remains unchanged/parked.
 
+
+
+## 2026-10-02 Smart V5 source hardening
+- Fixed Smart Mode markup so the advanced-panel CSS is valid HTML/CSS and actually applies.
+- Removed remaining hardcoded asset prices from the symbol metadata; all selectable assets now require a real/reference feed before a price is shown.
+- Removed fake initial BUY/SL/TP values from the visible decision card; unavailable data starts as WAIT / dashes.
+- Fixed the service-worker registration wrapper at the end of index.html.
+- Kept Auto Trading OFF and the approved dashboard layout unchanged.
+- Railway was not redeployed; source changes are saved in GitHub pending the user's explicit deployment request.
+- Latest source commit: c4f517a4.
