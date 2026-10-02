@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       setSmartStatus('REFERENCE • BTC/USD',true);update();
     }catch(e){window.state.price=null;window.state.history=[];window.RIZVI_REAL_FEED={provider:'BROKER',symbol:sym,status:'BROKER FEED PENDING',price:null,stale:true};setSmartStatus('WAIT • BROKER FEED',false);update()}
   }
-  window.addEventListener('rizvi:ctrader',{detail:{},}); 
+  window.addEventListener('rizvi:ctrader',()=>setTimeout(fetchReferenceAsset,200));
   document.addEventListener('DOMContentLoaded',()=>{
     const sel=q('symbolSelect');
     if(sel)sel.addEventListener('change',()=>setTimeout(fetchReferenceAsset,300));
