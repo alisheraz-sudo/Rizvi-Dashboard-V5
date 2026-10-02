@@ -1858,3 +1858,86 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   document.addEventListener('DOMContentLoaded',()=>{update();setInterval(update,1200)});setTimeout(update,500);
 })();
 </script>
+
+
+<!-- RIZVI TYPOGRAPHY FORCE V20 -->
+<style id="rizvi-typography-force-v20">
+/* Force a visibly larger, uniform type scale across the complete action box. */
+.chartSetupBox .setupBtn .btnLabel,
+.chartSetupBox .levelBtn .btnLabel{
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:.15px!important;
+}
+.chartSetupBox .setupBtn .btnValue,
+.chartSetupBox .levelBtn .btnValue{
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  letter-spacing:.1px!important;
+}
+.chartSetupBox #chartComboBtn .btnLabel,
+.chartSetupBox #chartComboBtn .btnValue{
+  font-size:12px!important;
+  line-height:1!important;
+}
+.chartSetupBox .setupHighBox{
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+.chartSetupBox .setupHighBox .btnValue{
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+/* Keep every split visually centered and equally readable. */
+.chartSetupBox .setupBtn,
+.chartSetupBox .levelBtn{
+  font-size:12px!important;
+}
+.chartSetupBox .btnLabel,
+.chartSetupBox .btnValue{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+@media(max-width:700px){
+  .chartSetupBox .setupBtn .btnLabel,
+  .chartSetupBox .levelBtn .btnLabel,
+  .chartSetupBox .setupBtn .btnValue,
+  .chartSetupBox .levelBtn .btnValue{
+    font-size:11.5px!important;
+  }
+  .chartSetupBox #chartComboBtn .btnLabel,
+  .chartSetupBox #chartComboBtn .btnValue{
+    font-size:11.5px!important;
+  }
+}
+@media(max-width:430px){
+  .chartSetupBox .setupBtn .btnLabel,
+  .chartSetupBox .levelBtn .btnLabel,
+  .chartSetupBox .setupBtn .btnValue,
+  .chartSetupBox .levelBtn .btnValue{
+    font-size:11px!important;
+  }
+}
+</style>
+<script id="rizvi-typography-force-v20-script">
+(function(){
+  function force(){
+    const box=document.getElementById('chartSetupBox');
+    if(!box)return;
+    box.querySelectorAll('.setupBtn,.levelBtn').forEach(e=>{
+      e.style.fontSize='12px';
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{force();setInterval(force,900)});
+  setTimeout(force,300);
+})();
+</script>
