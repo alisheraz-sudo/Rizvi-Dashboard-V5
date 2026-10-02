@@ -6,11 +6,12 @@
   const P={APP_AUTH_REQ:2100,APP_AUTH_RES:2101,ACCOUNT_AUTH_REQ:2102,ACCOUNT_AUTH_RES:2103,
     SYMBOLS_LIST_REQ:2114,SYMBOLS_LIST_RES:2115,SUB_SPOTS_REQ:2127,SUB_SPOTS_RES:2128,
     SPOT_EVENT:2131,SUB_TB_REQ:2135,SUB_TB_RES:2165,GET_TB_REQ:2137,GET_TB_RES:2138,
+    DEPTH_EVENT:2155,SUB_DEPTH_REQ:2156,SUB_DEPTH_RES:2157,
     ACCOUNTS_REQ:2149,ACCOUNTS_RES:2150,ERROR_RES:2142,HEARTBEAT:51};
   const PERIOD={M1:1,M2:2,M3:3,M4:4,M5:5,M10:6,M15:7,M30:8,H1:9,H4:10,H12:11,D1:12,W1:13,MN1:14};
   const CFG={clientId:'',clientSecret:'',redirectUri:(window.Capacitor?'com.rizvi.dashboard://ctrader/callback':(window.location.origin+'/ctrader/callback')),scope:'accounts',live:true};
   const S={ws:null,token:null,refreshToken:null,accountId:null,symbols:[],symbolMap:{},activeSymbolId:null,
-    connected:false,authorized:false,manualDisconnect:false,lastQuote:null,lastBar:null,pending:{},heartbeat:null};
+    connected:false,authorized:false,manualDisconnect:false,lastQuote:null,lastBar:null,depth:{bids:{},asks:{},updatedAt:null},pending:{},heartbeat:null};
   const emit=(type,data)=>{try{window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type,...(data||{})}}))}catch{}};
   const setStatus=(s,ok)=>{window.RIZVI_CTRADER={...(window.RIZVI_CTRADER||{}),status:s,connected:!!ok,accountId:S.accountId||null,broker:'FxPro'};const e=document.getElementById('feedStatus');if(e){e.textContent='● '+(s==='REAL BROKER'?'FxPro cTrader':s);e.style.color=ok?'#62dda7':'#d7ae57'}emit('status',{status:s,ok:!!ok})};
   function id(){return 'rizvi-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
@@ -70,6 +71,14 @@
     if(type===P.ACCOUNT_AUTH_RES){setStatus('ACCOUNT AUTHORIZED',true);await loadSymbols();startHeartbeat();emit('ready',{accountId:S.accountId});try{if(window.state&&window.state.symbol)await subscribe(window.state.symbol,window.state.tf||'1M')}catch(e){emit('error',{message:e.message})}}
     if(type===P.SYMBOLS_LIST_RES){S.symbols=(p.symbol||[]);S.symbolMap={};S.symbols.forEach(x=>S.symbolMap[norm(x.symbolName)]=x);emit('symbols',{symbols:S.symbols});}
     if(type===P.SPOT_EVENT){const id=Number(p.symbolId);const scale=priceScale(id);const bid=p.bid!=null?Number(p.bid)/scale:null;const ask=p.ask!=null?Number(p.ask)/scale:null;const price=ask!=null&&bid!=null?(ask+bid)/2:(bid??ask);if(Number.isFinite(price)){S.lastQuote={symbolId:id,bid,ask,price,timestamp:p.timestamp||Date.now()};emit('quote',S.lastQuote);applyQuote(id,price,p.timestamp)}if(Array.isArray(p.trendbar)&&p.trendbar.length) p.trendbar.forEach(b=>applyBar(id,b))}
+    if(type===P.DEPTH_EVENT){
+      const id=Number(p.symbolId);if(id===S.activeSymbolId){
+        const d=S.depth||{bids:{},asks:{},updatedAt:null};
+        (p.newQuotes||[]).forEach(q=>{const price=Number(q.bid!=null?q.bid:q.ask)/priceScale(id),size=Number(q.size||0)/100;if(!Number.isFinite(price))return;(q.bid!=null?d.bids:d.asks)[price.toFixed(5)]=size});
+        (p.deletedQuotes||[]).forEach(qid=>{delete d.bids[qid];delete d.asks[qid]});
+        d.updatedAt=Date.now();S.depth=d;emit('depth',{symbolId:id,depth:d});window.RIZVI_ORDER_FLOW={status:'CONNECTED',updatedAt:d.updatedAt,bids:d.bids,asks:d.asks};
+      }
+    }
     if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(b=>decodeBar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
     if(type===P.ERROR_RES)emit('error',{code:p.errorCode,message:p.description||p.errorCode});
   }
@@ -83,6 +92,8 @@
     S.activeSymbolId=Number(s.symbolId);const period=PERIOD[String(tf||'M1').toUpperCase()]||1;
     await send({payloadType:P.SUB_SPOTS_REQ,ctidTraderAccountId:S.accountId,symbolId:[S.activeSymbolId],subscribeToSpotTimestamp:true});
     await send({payloadType:P.SUB_TB_REQ,ctidTraderAccountId:S.accountId,period,symbolId:S.activeSymbolId});
+    S.depth={bids:{},asks:{},updatedAt:null};
+    try{await send({payloadType:P.SUB_DEPTH_REQ,ctidTraderAccountId:S.accountId,symbolId:[S.activeSymbolId]})}catch(e){emit('error',{message:'Depth subscription unavailable: '+e.message})}
     const now=Date.now(),from=now-(period===1?12:48)*60*60000;
     await send({payloadType:P.GET_TB_REQ,ctidTraderAccountId:S.accountId,fromTimestamp:from,toTimestamp:now,period,symbolId:S.activeSymbolId,count:260});
     emit('subscribed',{symbol:symbolName,symbolId:S.activeSymbolId,period});
