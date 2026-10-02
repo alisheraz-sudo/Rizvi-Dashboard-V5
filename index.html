@@ -1078,7 +1078,33 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.addEventListener('DOMContentLoaded',()=>{colorize();setInterval(colorize,1200)});
   setTimeout(colorize,300);
 })();
-</script></body>
+</script>
+<!-- RIZVI V39 LIVE PRICE + CANDLE SYNC -->
+<style id="rizvi-v39-live-sync">
+#chartArea .candle,#chartArea .wick{will-change:top,height,left}
+</style>
+<script id="rizvi-v39-live-sync-script">
+(function(){
+  if(window.__RIZVI_V39_SYNC)return; window.__RIZVI_V39_SYNC=true;
+  function n(v){const x=Number(v);return Number.isFinite(x)?x:NaN}
+  function syncLast(){
+    const st=window.state;if(!st||st.symbol!=='XAU/USD'||!Array.isArray(st.ohlc)||!st.ohlc.length)return;
+    const live=n(window.RIZVI_REAL_FEED?.price);if(!Number.isFinite(live))return;
+    const bars=st.ohlc, last=bars[bars.length-1];if(!last)return;
+    const prev=n(last.c);if(!Number.isFinite(prev))return;
+    if(Math.abs(live-prev)<0.00001)return;
+    last.c=live;last.h=Math.max(n(last.h),live,n(last.o));last.l=Math.min(n(last.l),live,n(last.o));
+    st.price=live;
+    if(Array.isArray(st.history)){st.history[st.history.length-1]=live}
+    if(typeof window.update==='function'){try{window.update()}catch(e){}}
+    if(typeof window.renderCandles==='function'){try{window.renderCandles()}catch(e){}}
+  }
+  function force(){try{if(typeof window.RIZVI_FORCE_LIVE_PRICE==='function')window.RIZVI_FORCE_LIVE_PRICE()}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(force,250);setInterval(force,2000);setInterval(syncLast,900)});
+  if(document.readyState!=='loading'){setTimeout(force,250);setInterval(force,2000);setInterval(syncLast,900)}
+})();
+</script>
+</body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
 </style>
