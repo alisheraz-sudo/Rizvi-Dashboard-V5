@@ -154,6 +154,21 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Info.plist" | grep -qx "com.rizvi.dashboard"
           shasum -a 256 "$IPA" | tee build/Rizvi-Dashboard-V5-iPhone-IPA.sha256
 
+      - name: Upload IPA to App Store Connect
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          API_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64 }}
+        run: |
+          test -n "$API_KEY_ID"
+          test -n "$API_ISSUER_ID"
+          test -n "$API_PRIVATE_KEY_BASE64"
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey_$API_KEY_ID.p8"
+          echo "$API_PRIVATE_KEY_BASE64" | base64 --decode > "$API_KEY_PATH"
+          IPA=$(find build/export -maxdepth 1 -type f -name '*.ipa' | head -n 1)
+          test -n "$IPA"
+          xcrun altool --upload-app --type ios --file "$IPA" --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
