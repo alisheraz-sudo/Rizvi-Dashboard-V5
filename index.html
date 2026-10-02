@@ -718,7 +718,117 @@ document.addEventListener('DOMContentLoaded',()=>{
 <section class="panel" id="sessionLiquidityPanel"><div class="paneltitle">Session Liquidity Map</div><div class="grid2"><div><span>Asia</span><b id="asiaLiquidity">Balanced</b></div><div><span>London</span><b id="londonLiquidity">Building</b></div><div><span>New York</span><b id="nyLiquidity">Pending</b></div><div><span>Key Range</span><b id="sessionRange">--</b></div></div><div class="notice">Demo/local session map. Liquidity levels are contextual, not broker order-book data.</div></section>
 
 <section class="panel" id="intermarketPanel"><div class="panelhead"><span>Correlation & Intermarket Context</span><span class="tag">DEMO</span></div><div class="grid2"><div><small>DXY</small><b id="dxyCtx">NEUTRAL</b></div><div><small>US10Y</small><b id="us10yCtx">NEUTRAL</b></div><div><small>Gold vs DXY</small><b id="goldDxyCtx">MIXED</b></div><div><small>Cross-Asset Bias</small><b id="crossAssetCtx">WAIT</b></div></div><div class="notice">Intermarket context is a secondary filter. No live DXY/US10Y feed is connected.</div></section><style id="risk-dashboard-style">.riskdash{margin:14px 0;padding:14px;border:1px solid #24324a;border-radius:10px;background:#0b1220;color:#dbe7ff}.riskdash h3{margin:0 0 10px;font-size:15px}.riskgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.riskbox{padding:9px;border:1px solid #1e2b42;border-radius:8px;background:#0f1727}.riskbox span{display:block;font-size:10px;opacity:.65}.riskbox b{display:block;margin-top:4px;font-size:13px}.riskok{color:#55d69b}.riskwarn{color:#ffd166}</style><section class="riskdash"><h3>Trade Risk Gate</h3><div class="riskgrid"><div class="riskbox"><span>Setup Quality</span><b class="riskok">CHECKED</b></div><div class="riskbox"><span>News Gate</span><b class="riskwarn">HIGH IMPACT → WAIT</b></div><div class="riskbox"><span>R:R Guard</span><b class="riskok">MINIMUM CHECK</b></div><div class="riskbox"><span>Execution</span><b>MANUAL ONLY</b></div></div></section>
-<script id="rizvi-live-indicator-matrix-script">(function(){function q(id){return document.getElementById(id)}function put(id,v,cls){const e=q(id);if(!e)return;e.textContent=v||'WAIT';e.className=cls||''}function run(){try{const st=window.state,feed=window.RIZVI_REAL_FEED||{},bars=st&&st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[],sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;if(!sig){['indEma','indRsi','indMacd','indAtr','indAdx','indStoch','indBb','indIchi','indRegime','indMtf','indBos','indCandle'].forEach(id=>put(id,'WAIT','neutral'));const n=q('indicatorNote');if(n)n.textContent=feed.stale===false&&feed.provider==='FxPro cTrader'?'Broker connected • waiting for 30+ OHLC candles':'Waiting for broker OHLC candles • reference price alone does not activate signals';return}put('indEma',sig.e9>sig.e21?'BULL':'BEAR',sig.e9>sig.e21?'bull':'bear');put('indRsi',Number(sig.r).toFixed(1),sig.r>50?'bull':sig.r<50?'bear':'neutral');put('indMacd',sig.m>0?'BULL':'BEAR',sig.m>0?'bull':'bear');put('indAtr',Number(sig.atr).toFixed(2),'');put('indAdx',Number(sig.adx).toFixed(1),sig.adx>=18?'bull':'neutral');put('indStoch',Number(sig.stochRsi).toFixed(1),sig.stochRsi>50?'bull':sig.stochRsi<50?'bear':'neutral');put('indBb',sig.bb.pos>=50?'UPPER HALF':'LOWER HALF',sig.bb.pos>=50?'bull':'bear');put('indIchi',sig.ichi.cloud<=st.price?'ABOVE CLOUD':'BELOW CLOUD',sig.ichi.cloud<=st.price?'bull':'bear');put('indRegime',sig.regime,sig.regime==='BULL'?'bull':sig.regime==='BEAR'?'bear':'neutral');put('indMtf',sig.mtf,sig.mtf==='BULL'?'bull':sig.mtf==='BEAR'?'bear':'neutral');put('indBos',sig.bosUp?'BULL BOS':sig.bosDn?'BEAR BOS':'NO BOS',sig.bosUp?'bull':sig.bosDn?'bear':'neutral');put('indCandle',sig.candle&&sig.candle.name||'WAIT',sig.candle&&sig.candle.bias==='BULLISH'?'bull':sig.candle&&sig.candle.bias==='BEARISH'?'bear':'neutral');const n=q('indicatorNote');if(n)n.textContent='Broker OHLC active • '+sig.quality+' combined quality • '+sig.score+' confirmations';}catch(e){}}run();setInterval(run,2500)})();</script></body>
+<script id="rizvi-live-indicator-matrix-script">(function(){function q(id){return document.getElementById(id)}function put(id,v,cls){const e=q(id);if(!e)return;e.textContent=v||'WAIT';e.className=cls||''}function run(){try{const st=window.state,feed=window.RIZVI_REAL_FEED||{},bars=st&&st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[],sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;if(!sig){['indEma','indRsi','indMacd','indAtr','indAdx','indStoch','indBb','indIchi','indRegime','indMtf','indBos','indCandle'].forEach(id=>put(id,'WAIT','neutral'));const n=q('indicatorNote');if(n)n.textContent=feed.stale===false&&feed.provider==='FxPro cTrader'?'Broker connected • waiting for 30+ OHLC candles':'Waiting for broker OHLC candles • reference price alone does not activate signals';return}put('indEma',sig.e9>sig.e21?'BULL':'BEAR',sig.e9>sig.e21?'bull':'bear');put('indRsi',Number(sig.r).toFixed(1),sig.r>50?'bull':sig.r<50?'bear':'neutral');put('indMacd',sig.m>0?'BULL':'BEAR',sig.m>0?'bull':'bear');put('indAtr',Number(sig.atr).toFixed(2),'');put('indAdx',Number(sig.adx).toFixed(1),sig.adx>=18?'bull':'neutral');put('indStoch',Number(sig.stochRsi).toFixed(1),sig.stochRsi>50?'bull':sig.stochRsi<50?'bear':'neutral');put('indBb',sig.bb.pos>=50?'UPPER HALF':'LOWER HALF',sig.bb.pos>=50?'bull':'bear');put('indIchi',sig.ichi.cloud<=st.price?'ABOVE CLOUD':'BELOW CLOUD',sig.ichi.cloud<=st.price?'bull':'bear');put('indRegime',sig.regime,sig.regime==='BULL'?'bull':sig.regime==='BEAR'?'bear':'neutral');put('indMtf',sig.mtf,sig.mtf==='BULL'?'bull':sig.mtf==='BEAR'?'bear':'neutral');put('indBos',sig.bosUp?'BULL BOS':sig.bosDn?'BEAR BOS':'NO BOS',sig.bosUp?'bull':sig.bosDn?'bear':'neutral');put('indCandle',sig.candle&&sig.candle.name||'WAIT',sig.candle&&sig.candle.bias==='BULLISH'?'bull':sig.candle&&sig.candle.bias==='BEARISH'?'bear':'neutral');const n=q('indicatorNote');if(n)n.textContent='Broker OHLC active • '+sig.quality+' combined quality • '+sig.score+' confirmations';}catch(e){}}run();setInterval(run,2500)})();</script>
+<!-- RIZVI MAIN ACTION BOX V3 -->
+<style id="rizvi-main-action-box-v3">
+/* Main trade-decision box: primary, wide, clean, mobile-safe. */
+.chartSetupBox{
+  left:10px!important;right:10px!important;bottom:7px!important;
+  height:142px!important;padding:8px 9px!important;
+  background:linear-gradient(180deg,#071622,#06101a)!important;
+  border:2px solid #23445d!important;border-radius:9px!important;
+  box-shadow:0 -6px 24px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  overflow:hidden!important;
+}
+.setupHighRow{
+  display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(110px,.65fr)!important;
+  gap:7px!important;margin-bottom:7px!important;
+}
+.setupHighBox{
+  height:34px!important;border-radius:6px!important;
+  font-size:12px!important;font-weight:1000!important;letter-spacing:.45px!important;
+  border-width:2px!important;text-shadow:0 1px 8px rgba(0,0,0,.25);
+}
+.setupHighBox.buy{background:#0a3025!important;border-color:#159b70!important;color:#67e5ae!important}
+.setupHighBox.sell{background:#34131b!important;border-color:#b13c50!important;color:#ff8493!important}
+.setupHighBox.wait{background:#1a180f!important;border-color:#665522!important;color:#e2c45e!important}
+.setupHighBox.entryDisplay{background:#0b1723!important;border-color:#2c475e!important;color:#e8f0f7!important}
+.setupHighBox.entryDisplay.buy{background:#0a3025!important;border-color:#159b70!important;color:#67e5ae!important}
+.setupHighBox.entryDisplay.sell{background:#34131b!important;border-color:#b13c50!important;color:#ff8493!important}
+.setupSignals{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:5px!important;overflow:visible!important;
+}
+.setupBtn{
+  width:100%!important;height:27px!important;padding:0 4px!important;
+  font-size:10px!important;font-weight:900!important;letter-spacing:.2px!important;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.setupLevels{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:5px!important;margin-top:6px!important;overflow:visible!important;
+}
+.levelBtn{
+  min-width:0!important;width:100%!important;height:27px!important;
+  padding:0 4px!important;font-size:10px!important;font-weight:900!important;
+  overflow:hidden;text-overflow:ellipsis;
+}
+#chartComboBtn{font-size:9.5px!important}
+@media(max-width:700px){
+  .chartSetupBox{left:7px!important;right:7px!important;height:154px!important;padding:8px!important}
+  .setupHighRow{grid-template-columns:minmax(0,1.45fr) minmax(100px,.65fr)!important;gap:6px!important}
+  .setupHighBox{height:34px!important;font-size:11px!important}
+  .setupSignals{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important}
+  .setupBtn{height:29px!important;font-size:8.5px!important;padding:0 2px!important}
+  .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important}
+  .levelBtn{height:29px!important;font-size:8.5px!important;padding:0 2px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:166px!important}
+  .setupHighRow{grid-template-columns:1fr!important}
+  .setupHighBox{height:31px!important}
+  .setupSignals{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+</style>
+<script id="rizvi-main-action-box-v3-script">
+(function(){
+  function q(id){return document.getElementById(id)}
+  function addEma(){
+    const row=document.querySelector('#chartSetupBox .setupSignals');
+    if(!row||q('chartEmaBtn'))return;
+    const b=document.createElement('button');
+    b.id='chartEmaBtn';b.className='setupBtn wait';b.textContent='EMA —';
+    row.appendChild(b);
+  }
+  function comboText(sig){
+    if(!sig||sig.direction==='WAIT')return 'COMBO WAIT';
+    const d=sig.direction, quality=String(sig.quality||'').toUpperCase();
+    if(d==='BUY'&&quality==='HIGH')return 'STRONG BUY';
+    if(d==='SELL'&&quality==='HIGH')return 'STRONG SELL';
+    if(d==='BUY'&&quality==='WEAK')return 'WEAK BUY';
+    if(d==='SELL'&&quality==='WEAK')return 'WEAK SELL';
+    return d;
+  }
+  function updateMain(){
+    const box=q('chartSetupBox');if(!box)return;
+    addEma();
+    const st=window.state||{},feed=window.RIZVI_REAL_FEED||{};
+    const bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    const quality=sig&&sig.quality?String(sig.quality).toUpperCase():'WAIT';
+    const cls=dir==='BUY'?'buy':dir==='SELL'?'sell':'wait';
+    const high=q('chartHighSetupBtn');
+    if(high){high.className='setupHighBox '+cls;high.textContent=(quality==='HIGH'&&dir!=='WAIT'?'HIGH QUALITY SETUP — ':'TRADE ACTION — ')+comboText(sig)}
+    const entry=q('chartEntryBtn');
+    if(entry){
+      const price=sig&&dir!=='WAIT'?(sig.entry??st.price):null;
+      const d=(window.SYMBOLS&&window.SYMBOLS[st.symbol]&&window.SYMBOLS[st.symbol].decimals)||2;
+      entry.textContent=dir==='WAIT'?'ENTRY —':(quality==='HIGH'?'HIGH ENTRY ':'ENTRY ')+Number(price).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+      entry.className='levelBtn entryLvl '+(dir==='WAIT'?'wait':cls);
+    }
+    const combo=q('chartComboBtn');if(combo){combo.textContent=comboText(sig);combo.className='setupBtn '+cls}
+    const ema=q('chartEmaBtn');
+    if(ema&&sig){ema.textContent='EMA '+(sig.e9>sig.e21?'BULL':'BEAR');ema.className='setupBtn '+(sig.e9>sig.e21?'bull':'bear')}
+    const feedOk=feed.stale===false;
+    box.setAttribute('data-trade-ready',(dir!=='WAIT'&&feedOk&&quality!=='WAIT')?'YES':'WAIT');
+  }
+  document.addEventListener('DOMContentLoaded',()=>{addEma();updateMain();setInterval(updateMain,1500)});
+  setTimeout(addEma,400);
+})();
+</script>
+</body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
 </style>
