@@ -78,13 +78,21 @@ jobs:
           PROFILE_PATH="$RUNNER_TEMP/rizvi.mobileprovision"
           echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/rizvi.mobileprovision"
+          PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$PROFILE_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" "$PROFILE_PLIST")
+          test -n "$PROFILE_UUID"
+          test -n "$PROFILE_NAME"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
 
       - name: Build signed archive
         env:
           TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
         run: |
-          xcodebuild             -workspace ios/App/App.xcworkspace             -scheme App             -sdk iphoneos             -configuration Release             -archivePath build/RizviDashboard.xcarchive             DEVELOPMENT_TEAM="$TEAM_ID"             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"             CODE_SIGN_STYLE=Manual             CODE_SIGN_IDENTITY="Apple Distribution"             PROVISIONING_PROFILE_SPECIFIER="$BUNDLE_ID"             archive
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphoneos -configuration Release -archivePath build/RizviDashboard.xcarchive DEVELOPMENT_TEAM="$TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" archive
 
       - name: Export IPA
         env:
@@ -104,12 +112,12 @@ jobs:
             <key>provisioningProfiles</key>
             <dict>
               <key>com.rizvi.dashboard</key>
-              <string>com.rizvi.dashboard</string>
+              <string>$PROFILE_NAME</string>
             </dict>
           </dict>
           </plist>
           EOF
-          xcodebuild -exportArchive             -archivePath build/RizviDashboard.xcarchive             -exportPath build/export             -exportOptionsPlist build/ExportOptions.plist
+          xcodebuild -exportArchive -archivePath build/RizviDashboard.xcarchive -exportPath build/export -exportOptionsPlist build/ExportOptions.plist
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
