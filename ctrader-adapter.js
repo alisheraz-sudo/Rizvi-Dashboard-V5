@@ -69,7 +69,7 @@
     if(type===P.ACCOUNT_AUTH_RES){setStatus('ACCOUNT AUTHORIZED',true);await loadSymbols();startHeartbeat();emit('ready',{accountId:S.accountId});try{if(window.state&&window.state.symbol)await subscribe(window.state.symbol,window.state.tf||'1M')}catch(e){emit('error',{message:e.message})}}
     if(type===P.SYMBOLS_LIST_RES){S.symbols=(p.symbol||[]);S.symbolMap={};S.symbols.forEach(x=>S.symbolMap[norm(x.symbolName)]=x);emit('symbols',{symbols:S.symbols});}
     if(type===P.SPOT_EVENT){const id=Number(p.symbolId);const scale=priceScale(id);const bid=p.bid!=null?Number(p.bid)/scale:null;const ask=p.ask!=null?Number(p.ask)/scale:null;const price=ask!=null&&bid!=null?(ask+bid)/2:(bid??ask);if(Number.isFinite(price)){S.lastQuote={symbolId:id,bid,ask,price,timestamp:p.timestamp||Date.now()};emit('quote',S.lastQuote);applyQuote(id,price,p.timestamp)}if(Array.isArray(p.trendbar)&&p.trendbar.length) p.trendbar.forEach(b=>applyBar(id,b))}
-    if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(decodeBar).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
+    if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(b=>decodeBar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
     if(type===P.ERROR_RES)emit('error',{code:p.errorCode,message:p.description||p.errorCode});
   }
   async function accountAuth(){await send({payloadType:P.ACCOUNT_AUTH_REQ,ctidTraderAccountId:S.accountId,accessToken:S.token})}
