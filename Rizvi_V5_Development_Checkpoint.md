@@ -33,16 +33,17 @@
 
 ## Current market-data integration
 - Added `ctrader-adapter.js`
-- cTrader Open API WebSocket flow scaffolded
-- OAuth authorization flow scaffolded
-- Account discovery + live/demo endpoint selection scaffolded
-- Broker symbol discovery/mapping scaffolded
-- Live bid/ask subscription scaffolded
+- cTrader Open API OAuth flow scaffolded
+- Live and demo WebSocket endpoints scaffolded
+- Account discovery scaffolded
+- FxPro/broker symbol discovery and dynamic symbol mapping scaffolded
+- Live bid/ask spot subscription scaffolded
 - Live trendbar subscription scaffolded
 - Historical trendbar loading scaffolded
 - Main and mini charts can consume OHLC bars
 - iOS callback/browser flow scaffolded
-- No trading/order endpoint is enabled
+- Adapter reviewed: no order/new-position/close-position API is present
+- Auto Trading remains OFF by design
 
 ## Pending
 1. Register/configure the cTrader Open API application for the user's FxPro account.
