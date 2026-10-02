@@ -1203,3 +1203,40 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  setTimeout(apply,300);
 })();
 </script>
+
+<!-- RIZVI SIGNAL COMPACT V7 -->
+<style id="rizvi-signal-compact-v7">
+/* SIGNAL keeps its direction prominent; the word SIGNAL is moved out of the value area. */
+#chartSigBtn{
+  position:relative!important;
+  padding-left:6px!important;padding-right:6px!important;
+  font-size:12px!important;font-weight:1000!important;
+}
+#chartSigBtn::before{
+  content:"SIGNAL";
+  position:absolute;left:5px;top:2px;
+  font-size:7px;font-weight:900;letter-spacing:.4px;
+  opacity:.72;line-height:1;
+}
+#chartSigBtn{padding-top:8px!important}
+#chartSigBtn.buy,#chartSigBtn.bull{color:#6ff0b6!important;border-color:#16a878!important;background:#083326!important}
+#chartSigBtn.sell,#chartSigBtn.bear{color:#ff8c9a!important;border-color:#d13f55!important;background:#3a1018!important}
+#chartSigBtn.wait{color:#8fcaff!important;border-color:#3473a8!important;background:#0c2235!important}
+</style>
+<script id="rizvi-signal-compact-v7-script">
+(function(){
+  function compactSignal(){
+    const el=document.getElementById('chartSigBtn'); if(!el)return;
+    const st=window.state||{}, bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    el.textContent=dir;
+    el.setAttribute('aria-label','SIGNAL '+dir);
+    el.title='SIGNAL '+dir;
+    el.classList.remove('buy','sell','bull','bear','wait');
+    el.classList.add(dir==='BUY'?'buy':dir==='SELL'?'sell':'wait');
+  }
+  document.addEventListener('DOMContentLoaded',()=>{compactSignal();setInterval(compactSignal,700)});
+  setTimeout(compactSignal,300);
+})();
+</script>
