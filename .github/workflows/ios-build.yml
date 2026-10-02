@@ -1,0 +1,51 @@
+name: iOS Native Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate native iOS project
+        run: npx cap add ios
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Build unsigned iOS simulator app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          mkdir -p artifacts
+          cp -R build/DerivedData/Build/Products/Debug-iphonesimulator/App.app artifacts/Rizvi-Dashboard-V5-Simulator.app
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rizvi-Dashboard-V5-iOS-Simulator
+          path: artifacts/Rizvi-Dashboard-V5-Simulator.app
