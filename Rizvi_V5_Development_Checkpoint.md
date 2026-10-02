@@ -21,9 +21,11 @@
 
 ## Native iOS build preparation
 - Capacitor native configuration present with app ID `com.rizvi.dashboard`
+- Capacitor iOS WebView scheme is `rizvi`
 - cTrader callback URI: `com.rizvi.dashboard://ctrader/callback`
+- cTrader callback scheme is registered separately from the Capacitor WebView scheme
 - Native iOS build workflow registers the cTrader callback URL scheme in Info.plist before build
-- Workflow verifies callback registration before Xcode build
+- Workflow verifies callback registration and plist syntax before Xcode build
 - Capacitor dependencies pinned to reproducible 7.x versions
 - GitHub Actions macOS/iOS simulator build workflow added
 - Workflow generates the native iOS project, syncs Capacitor, builds an unsigned simulator app, and uploads an artifact
