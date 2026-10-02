@@ -82,6 +82,7 @@ jobs:
       - name: Install provisioning profile
         env:
           PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
         run: |
           PROFILE_PATH="$RUNNER_TEMP/rizvi.mobileprovision"
           echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
