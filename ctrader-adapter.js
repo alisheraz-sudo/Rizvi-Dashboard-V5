@@ -89,7 +89,7 @@
   function applyQuote(id,price,ts){if(id!==S.activeSymbolId)return;window.RIZVI_REAL_FEED={provider:'FxPro cTrader',symbol:window.__RIZVI_ACTIVE_SYMBOL||'XAU/USD',status:'REAL BROKER',price,updatedAt:ts?new Date(Number(ts)).toISOString():new Date().toISOString(),stale:false};if(window.state){window.state.price=price;window.state.history=window.state.history||[];window.state.history.push(price);window.state.history=window.state.history.slice(-260);if(typeof window.update==='function')window.update()}}
   function applyBar(id,b){if(id!==S.activeSymbolId)return;const x=decodeBar(b);if(!x)return;window.__RIZVI_CTRADER_LAST_BAR=x;emit('bar',x);if(window.state){window.state.ohlc=window.state.ohlc||[];const a=window.state.ohlc,i=a.findIndex(y=>y.t===x.t);if(i>=0)a[i]=x;else a.push(x);window.state.ohlc=a.slice(-260);window.state.history=window.state.ohlc.map(y=>y.c);if(typeof window.update==='function')window.update()}}
   function applyHistory(id,bars){if(id!==S.activeSymbolId||!window.state)return;window.state.ohlc=bars.slice(-260);window.state.history=window.state.ohlc.map(x=>x.c);if(window.state.ohlc.length)window.state.price=window.state.ohlc[window.state.ohlc.length-1].c;window.update&&window.update()}
-  async function handleRedirect(url){const u=new URL(url);const code=u.searchParams.get('code');if(!code)throw Error('No cTrader authorization code');await token(code);await connect();await send({payloadType:P.ACCOUNTS_REQ,accessToken:S.token});}
+  async function handleRedirect(url){try{if(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser)await window.Capacitor.Plugins.Browser.close()}catch{} const u=new URL(url);const code=u.searchParams.get('code');if(!code)throw Error('No cTrader authorization code');await token(code);await connect();await send({payloadType:P.ACCOUNTS_REQ,accessToken:S.token});}
   window.RizviCTrader={configure,authUrl,connect,refresh,handleRedirect,subscribe,find,state:S,config:CFG};
   window.addEventListener('rizvi:ctrader-subscribe',e=>{const d=e.detail||{};if(S.authorized)subscribe(d.symbol,d.tf).catch(err=>emit('error',{message:err.message}))});
   function installUI(){
@@ -105,7 +105,7 @@
     document.getElementById('ctDisconnect').onclick=()=>{try{S.ws&&S.ws.close()}catch{};S.authorized=false;S.accountId=null;setStatus('DISCONNECTED',false);document.getElementById('ctMsg').textContent='Status: DISCONNECTED'};
     document.getElementById('ctLogin').onclick=async()=>{
       const clientId=document.getElementById('ctId').value.trim(),clientSecret=document.getElementById('ctSecret').value,redirectUri=document.getElementById('ctRedirect').value.trim();
-      try{const url=configure({clientId,clientSecret,redirectUri,scope:'accounts',live:true});document.getElementById('ctMsg').textContent='Status: opening cTrader authorization…';window.open(url,'_blank');}
+      try{const url=configure({clientId,clientSecret,redirectUri,scope:'accounts',live:true});document.getElementById('ctMsg').textContent='Status: opening cTrader authorization…';if(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser){window.Capacitor.Plugins.Browser.open({url})}else window.open(url,'_blank');}
       catch(e){document.getElementById('ctMsg').textContent='Error: '+e.message}
     };
     window.addEventListener('rizvi:ctrader',e=>{const d=e.detail||{};const m=document.getElementById('ctMsg');if(m)m.textContent='Status: '+(d.status||d.type||'CONNECTED')});
