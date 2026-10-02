@@ -1,11 +1,17 @@
-const CACHE="rizvi-v5-app-2";
-const CORE=["./","./index.html","./manifest.webmanifest","./icon.svg"];
+const CACHE="rizvi-v5-app-3";
+const CORE=["./","./index.html","./manifest.webmanifest","./icon.svg","./live-candle-engine.js"];
+
+async function enhancedIndexResponse(req){
+  const res=await fetch(req,{cache:"no-store"});
+  const html=await res.text();
+  const tag='<script src="./live-candle-engine.js"></script>';
+  const body=html.includes('live-candle-engine.js')?html:html.replace('</body>',tag+'</body>');
+  return new Response(body,{status:res.status,statusText:res.statusText,headers:res.headers});
+}
 
 self.addEventListener("install",e=>{
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c=>c.addAll(CORE))
-      .then(()=>self.skipWaiting())
+    caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())
   );
 });
 
@@ -24,7 +30,7 @@ self.addEventListener("fetch",e=>{
 
   if(isNavigation){
     e.respondWith(
-      fetch(e.request,{cache:"no-store"})
+      enhancedIndexResponse(e.request)
         .then(x=>{
           const y=x.clone();
           caches.open(CACHE).then(c=>c.put("./index.html",y));
