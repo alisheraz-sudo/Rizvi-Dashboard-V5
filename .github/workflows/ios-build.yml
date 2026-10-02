@@ -28,6 +28,7 @@ jobs:
 
       - name: Register cTrader OAuth callback URL scheme
         run: |
+          test -f ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.rizvi.dashboard" ios/App/App/Info.plist || true
@@ -37,6 +38,7 @@ jobs:
       - name: Verify cTrader OAuth callback registration
         run: |
           /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/App/App/Info.plist
+          plutil -lint ios/App/App/Info.plist
           grep -q "com.rizvi.dashboard" ios/App/App/Info.plist
 
       - name: Build unsigned iOS simulator app
