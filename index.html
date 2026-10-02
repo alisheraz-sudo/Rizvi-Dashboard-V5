@@ -2590,3 +2590,27 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(warm,900);
 })();
 </script>
+
+<!-- RIZVI V36.1 IMMEDIATE CANDLE PAINT -->
+<script id="rizvi-v36-1-immediate-candle-paint">
+(function(){
+  function paint(){
+    const area=document.getElementById('chartArea'),st=window.state;
+    if(!area||!st?.ohlc?.length)return;
+    const rows=st.ohlc.slice(-36); if(!rows.length)return;
+    const hi=Math.max(...rows.map(b=>Number(b.h))),lo=Math.min(...rows.map(b=>Number(b.l))),span=hi-lo||1;
+    area.innerHTML='';
+    rows.forEach((b,i)=>{
+      const x=(i/Math.max(1,rows.length-1))*92+2;
+      const wickTop=((hi-b.h)/span)*92,wickH=Math.max(2,((b.h-b.l)/span)*92);
+      const bodyTop=((hi-Math.max(b.o,b.c))/span)*92;
+      const bodyH=Math.max(1.2,(Math.abs(b.c-b.o)/span)*92);
+      const up=b.c>=b.o;
+      const w=document.createElement('i');w.className='wick '+(up?'up':'dn');w.style.left=x+'%';w.style.top=wickTop+'%';w.style.height=wickH+'%';area.appendChild(w);
+      const body=document.createElement('span');body.className='candle '+(up?'up':'dn');body.style.left=x+'%';body.style.top=bodyTop+'%';body.style.height=bodyH+'%';area.appendChild(body);
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(paint,1400);setInterval(paint,1500)});
+  if(document.readyState!=='loading')setTimeout(paint,1400);
+})();
+</script>
