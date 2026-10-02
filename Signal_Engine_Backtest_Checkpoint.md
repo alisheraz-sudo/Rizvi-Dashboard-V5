@@ -29,3 +29,11 @@
 2. Press **Run XAU/USD 5M Backtest**.
 3. Confirm bars, trades, win rate, net R, profit factor, and max drawdown.
 4. Then add out-of-sample validation before treating the result as a strategy-performance claim.
+
+
+## 2026-10-02 Browser Stability Fix
+- Backtest button was causing the Safari/preview page to become blank during execution.
+- Root cause: the first implementation recalculated 15M/60M MTF trend history by scanning prior rows for every 5M candle, creating an O(n²) workload.
+- Fixed in index.html commit 60bbb8c215027f065e85872a0aa6d4cf41eac556.
+- MTF trend series and daily VWAP are now precomputed once, making the candle-by-candle run substantially more efficient.
+- No backtest performance result is claimed until the repaired browser build is run successfully.
