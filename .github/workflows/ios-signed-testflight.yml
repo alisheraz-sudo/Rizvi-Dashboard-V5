@@ -78,6 +78,8 @@ jobs:
           security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
           security default-keychain -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | tee "$RUNNER_TEMP/signing-identities.txt"
+          grep -q "Apple Distribution" "$RUNNER_TEMP/signing-identities.txt"
 
       - name: Install provisioning profile
         env:
