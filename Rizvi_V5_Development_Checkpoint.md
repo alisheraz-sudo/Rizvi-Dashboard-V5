@@ -66,3 +66,11 @@ Add → Test → Fix → Save → Next
 - Backup packages must exclude passwords, API tokens, cTrader client secrets, Apple certificates/private keys, provisioning secrets, and other credentials.
 - Preserve source code, native iOS configuration, build workflows, UI, indicators, backtesting logic, cTrader adapter, and this checkpoint/master record.
 - If a public edition is created later, use a separate release/version rather than exposing the current private deployment.
+
+
+## Latest iOS Signing Pipeline Hardening
+- Signed iOS workflow now detects the provisioning profile UUID and display name from the supplied profile instead of assuming the profile name equals the bundle ID.
+- The workflow validates the provisioning profile application identifier against the configured Apple Team ID + bundle ID.
+- Native iOS Info.plist syntax, cTrader OAuth callback registration, bundle identifier presence, and App.xcworkspace presence are validated before signing.
+- Signed IPA/TestFlight workflow remains manual-trigger only and has not been executed with real Apple signing credentials yet.
+- Railway remains parked and unchanged.
