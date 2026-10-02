@@ -2067,3 +2067,37 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   .chart{width:calc(100vw - 12px)!important;margin:6px auto 12px!important}
 }
 </style>
+
+
+<!-- RIZVI PAGE TITLE V24 -->
+<style id="rizvi-page-title-v24">
+#rizviPageTitle{
+  width:100%;
+  text-align:center;
+  font-size:24px;
+  line-height:1.1;
+  font-weight:950;
+  letter-spacing:.8px;
+  color:#eef6ff;
+  padding:12px 10px 10px;
+  margin:0;
+  position:relative;
+  z-index:1000;
+}
+@media(max-width:700px){
+  #rizviPageTitle{font-size:21px;padding:10px 8px 8px;letter-spacing:.6px}
+}
+</style>
+<script id="rizvi-page-title-v24-script">
+(function(){
+  function add(){
+    if(document.getElementById('rizviPageTitle'))return;
+    const h=document.createElement('div');
+    h.id='rizviPageTitle';
+    h.textContent='Rizvi Dashboard V5';
+    document.body.insertBefore(h,document.body.firstChild);
+  }
+  document.addEventListener('DOMContentLoaded',add);
+  setTimeout(add,300);
+})();
+</script>
