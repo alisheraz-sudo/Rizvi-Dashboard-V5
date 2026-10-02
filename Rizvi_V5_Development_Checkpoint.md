@@ -124,3 +124,16 @@ Add → Test → Fix → Save → Next
 - iPhone installation stage advanced to TestFlight: signed workflow now prepares a verified IPA and uploads it to App Store Connect using GitHub Actions App Store Connect API-key secrets. Actual upload/TestFlight processing remains pending until those secrets are configured and the workflow is manually run.
 
 - Fixed App Store Connect API-key authentication setup: the private key is now validated and copied to the expected App Store Connect private_keys directory before IPA upload.
+
+## 2026-10-02 Smart V5 / PWA cleanup
+- Removed synthetic/seeded asset history from the dashboard path.
+- Initial asset price is no longer presented as a fake live quote.
+- When a broker feed is unavailable, the dashboard shows WAIT • FEED instead of generating a price/signal.
+- XAU/USD continues to use the existing real reference-price/history feed until FxPro cTrader authorization is completed.
+- BTC/USD can show a clearly labelled XAUS reference quote; it is not treated as a broker execution quote.
+- Other selectable symbols remain feed-gated until FxPro/cTrader is authorized.
+- Advanced engines remain in source but are hidden from the primary decision screen to keep the iPhone/PWA dashboard compact and smart.
+- Auto Trading remains OFF.
+- Latest Smart V5 source commits: 82f63b49, 267fedf8, f23b1198.
+- Railway was not redeployed; existing Railway deployment remains unchanged/parked.
+
