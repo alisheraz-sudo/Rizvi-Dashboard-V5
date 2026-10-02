@@ -2658,3 +2658,54 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(load,1200);
 })();
 </script>
+
+
+<!-- RIZVI V37 DYNAMIC PRICE-ACTION AUTOSCALE -->
+<style id="rizvi-v37-dynamic-price-action">
+#chartArea .candle,#chartArea .wick{transition:top .35s ease,height .35s ease,left .25s ease!important}
+</style>
+<script id="rizvi-v37-dynamic-price-action-script">
+(function(){
+  if(window.__RIZVI_V37_DYNAMIC)return; window.__RIZVI_V37_DYNAMIC=true;
+  function fmtP(v){return Number.isFinite(v)?v.toFixed(2):'—'}
+  function draw(){
+    const st=window.state,area=document.getElementById('chartArea');
+    if(!st||!area||st.symbol!=='XAU/USD'||!Array.isArray(st.ohlc)||!st.ohlc.length)return;
+    let raw=st.ohlc.slice(-520), bars;
+    try{ bars=(typeof window.liveAggregate==='function'?window.liveAggregate(raw,st.tf):raw).slice(-36); }
+    catch(e){ bars=raw.slice(-36); }
+    bars=bars.filter(b=>Number.isFinite(Number(b.o))&&Number.isFinite(Number(b.h))&&Number.isFinite(Number(b.l))&&Number.isFinite(Number(b.c)));
+    if(!bars.length)return;
+    const hi0=Math.max(...bars.map(b=>Number(b.h))),lo0=Math.min(...bars.map(b=>Number(b.l)));
+    const span0=Math.max(hi0-lo0,0.01),pad=Math.max(span0*0.10,0.80),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+    area.innerHTML='';
+    bars.forEach((b,i)=>{
+      const x=i/Math.max(1,bars.length-1)*94+2;
+      const wickTop=(hi-Number(b.h))/span*100;
+      const wickH=Math.max(2,(Number(b.h)-Number(b.l))/span*100);
+      const bodyTop=(hi-Math.max(Number(b.o),Number(b.c)))/span*100;
+      const bodyH=Math.max(1.4,Math.abs(Number(b.c)-Number(b.o))/span*100);
+      const up=Number(b.c)>=Number(b.o);
+      const w=document.createElement('i'); w.className='wick '+(up?'up':'dn');
+      w.style.cssText='left:'+x+'%;top:'+wickTop+'%;height:'+wickH+'%;width:2px;position:absolute;display:block;z-index:4;';
+      area.appendChild(w);
+      const body=document.createElement('span'); body.className='candle '+(up?'up':'dn');
+      body.style.cssText='left:'+x+'%;top:'+bodyTop+'%;height:'+bodyH+'%;width:7px;min-height:2px;position:absolute;display:block;z-index:5;';
+      area.appendChild(body);
+    });
+    const cur=Number.isFinite(Number(st.price))?Number(st.price):Number(bars.at(-1).c);
+    const pct=Math.max(1,Math.min(99,(hi-cur)/span*100));
+    const line=document.querySelector('.priceLine'),tag=document.getElementById('chartPrice');
+    if(line)line.style.top=pct+'%';
+    if(tag){tag.style.top=Math.max(2,Math.min(94,pct))+'%';tag.textContent=fmtP(cur);}
+    for(let i=0;i<=18;i++){
+      const id='axis'+i,e=document.getElementById(id);
+      if(e)e.textContent=fmtP(hi-(span*i/18));
+    }
+    const note=document.getElementById('indicatorNote');
+    if(note)note.textContent='XAU/USD live price action • auto-scaled to current candles';
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(draw,1600);setInterval(draw,900)});
+  if(document.readyState!=='loading')setTimeout(draw,1600);
+})();
+</script>
