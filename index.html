@@ -2889,3 +2889,101 @@ button{pointer-events:auto!important}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
 </script>
+
+
+<!-- RIZVI V43 REAL OHLC CANDLE CHART -->
+<style id="rizvi-v43-real-ohlc-chart">
+#chartArea .rizviV43Candle{position:absolute!important;z-index:80!important;transform:translateX(-50%)!important;min-height:1px!important;border-radius:1px!important}
+#chartArea .rizviV43Wick{position:absolute!important;z-index:79!important;width:1.5px!important;transform:translateX(-50%)!important}
+#chartArea .rizviV43Current{position:absolute!important;left:0!important;right:0!important;border-top:1px solid #62e6b0!important;z-index:95!important;pointer-events:none!important}
+#chartArea .rizviV43Price{position:absolute!important;right:-2px!important;transform:translateY(-50%)!important;background:#126344!important;color:#e5fff5!important;border:1px solid #3ac18d!important;border-radius:5px!important;padding:4px 7px!important;font-size:11px!important;font-weight:900!important;z-index:96!important;pointer-events:none!important}
+</style>
+<script id="rizvi-v43-real-ohlc-chart-script">
+(function(){
+  if(window.__RIZVI_V43_REAL_OHLC)return;
+  window.__RIZVI_V43_REAL_OHLC=true;
+  const API='https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=120';
+  const TICK='https://biquote.io/api/XAUUSD';
+  const N=v=>{const n=Number(v);return Number.isFinite(n)?n:NaN};
+  let bars=[],live=NaN,lastBarKey='';
+  function normalize(rows){
+    return (Array.isArray(rows)?rows:[]).map(b=>({
+      t:Date.parse(b.openTime),
+      o:N(b.open),h:N(b.high),l:N(b.low),c:N(b.close),open:Boolean(b.isOpen)
+    })).filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+  }
+  function setLive(px,ts){
+    if(!Number.isFinite(px)||!window.state||window.state.symbol!=='XAU/USD')return;
+    live=px;
+    const stamp=Number.isFinite(ts)?ts:Date.now();
+    const last=bars[bars.length-1];
+    if(last && last.open){
+      last.c=px; last.h=Math.max(last.h,px); last.l=Math.min(last.l,px);
+    }
+    window.state.price=px;
+    window.RIZVI_REAL_FEED={...(window.RIZVI_REAL_FEED||{}),provider:'Biquote MT5',symbol:'XAU/USD',status:'REAL TICK/1M OHLC',price:px,updatedAt:new Date(stamp).toISOString(),stale:false};
+  }
+  async function loadBars(){
+    if(window.RizviCTrader?.state?.authorized||window.state?.symbol!=='XAU/USD')return;
+    try{
+      const r=await fetch(API+'&_='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      const j=await r.json(),next=normalize(j.bars);
+      if(next.length<20)throw Error('Not enough OHLC bars');
+      bars=next.slice(-120);
+      const lb=bars[bars.length-1];
+      if(Number.isFinite(live)&&lb?.open){lb.c=live;lb.h=Math.max(lb.h,live);lb.l=Math.min(lb.l,live);}
+      window.state.ohlc=bars.map(b=>({t:b.t,o:b.o,h:b.h,l:b.l,c:b.c}));
+      window.state.history=window.state.ohlc.map(b=>b.c).slice(-260);
+      window.RIZVI_CANDLE_SOURCE='Biquote real XAUUSD 1-minute OHLC';
+      window.RIZVI_CANDLE_TIMEFRAME='1m';
+      window.RIZVI_CANDLE_COUNT=bars.length;
+      lastBarKey=String(bars[bars.length-1].t);
+      draw();
+    }catch(e){
+      window.RIZVI_CANDLE_SOURCE='Biquote OHLC unavailable';
+    }
+  }
+  async function loadTick(){
+    if(window.RizviCTrader?.state?.authorized||window.state?.symbol!=='XAU/USD')return;
+    try{
+      const r=await fetch(TICK+'?_='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      const j=await r.json(),px=N(j.mid),ts=Date.parse(j.timestamp);
+      if(!Number.isFinite(px))throw Error('No XAUUSD mid');
+      if(j.stale||N(j.quoteAgeSeconds)>30)throw Error('Stale tick');
+      setLive(px,Number.isFinite(ts)?ts:Date.now());
+      draw();
+    }catch(e){}
+  }
+  function draw(){
+    const area=document.getElementById('chartArea');
+    if(!area||window.state?.symbol!=='XAU/USD'||!bars.length)return;
+    const rows=bars.slice(-60);
+    const cur=Number.isFinite(live)?live:rows[rows.length-1].c;
+    const hi0=Math.max(cur,...rows.map(b=>b.h)),lo0=Math.min(cur,...rows.map(b=>b.l));
+    const span0=Math.max(hi0-lo0,0.01),pad=Math.max(span0*.06,0.40),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+    area.querySelectorAll('.rizviV43Candle,.rizviV43Wick,.rizviV43Current,.rizviV43Price').forEach(e=>e.remove());
+    rows.forEach((b,i)=>{
+      const x=rows.length===1?50:(i/(rows.length-1))*93+2.5;
+      const wt=(hi-b.h)/span*100,wh=Math.max(.8,(b.h-b.l)/span*100);
+      const bt=(hi-Math.max(b.o,b.c))/span*100,bh=Math.max(.8,Math.abs(b.c-b.o)/span*100);
+      const up=b.c>=b.o;
+      const w=document.createElement('i');w.className='rizviV43Wick';w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;background:'+(up?'#2ed39a':'#ef6b72')+';';area.appendChild(w);
+      const c=document.createElement('span');c.className='rizviV43Candle';c.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:6px;background:'+(up?'#20c58a':'#e85f68')+';';area.appendChild(c);
+    });
+    const p=Math.max(1,Math.min(99,(hi-cur)/span*100));
+    const line=document.createElement('div');line.className='rizviV43Current';line.style.top=p+'%';area.appendChild(line);
+    const tag=document.createElement('div');tag.className='rizviV43Price';tag.style.top=p+'%';tag.textContent=cur.toFixed(2);area.appendChild(tag);
+    for(let i=0;i<=18;i++){const e=document.getElementById('axis'+i);if(e)e.textContent=(hi-span*i/18).toFixed(2);}
+    const note=document.getElementById('indicatorNote');if(note)note.textContent='XAU/USD REAL 1M OHLC • live open candle • Biquote MT5 feed';
+  }
+  function start(){
+    loadBars();loadTick();
+    setInterval(loadTick,1000);
+    setInterval(loadBars,10000);
+    setInterval(draw,250);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
