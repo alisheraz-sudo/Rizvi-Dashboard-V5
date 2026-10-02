@@ -2365,3 +2365,23 @@ input,select,textarea{
   .chart{background:linear-gradient(180deg,#06271d,#0a3928)!important}
 }
 </style>
+
+
+<!-- RIZVI V28 SINGLE HIGH QUALITY SETUP BAR -->
+<style id="rizvi-v28-single-setup-bar">
+#chartHighSetupBtn{animation:none!important;transition:opacity .7s ease,background-color .7s ease,border-color .7s ease!important}
+</style>
+<script id="rizvi-v28-single-setup-bar-script">
+(function(){
+  function clean(){
+    const all=[...document.querySelectorAll('#chartHighSetupBtn')];
+    if(all.length>1){
+      all.slice(1).forEach(el=>el.remove());
+    }
+    const h=document.getElementById('chartHighSetupBtn');
+    if(h){h.style.animation='none';}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{clean();setTimeout(clean,500);setTimeout(clean,1500);});
+  setInterval(clean,2000);
+})();
+</script>
