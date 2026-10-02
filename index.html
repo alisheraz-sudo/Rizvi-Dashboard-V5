@@ -2614,3 +2614,47 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(paint,1400);
 })();
 </script>
+
+<!-- RIZVI V36.2 HISTORY TIMESTAMP REPAIR -->
+<script id="rizvi-v36-2-history-repair">
+(function(){
+  if(window.__RIZVI_V36_2)return; window.__RIZVI_V36_2=true;
+  const URL='https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh=';
+  function ts(v){
+    if(typeof v==='number'&&Number.isFinite(v)) return v<2e10?v*1000:v;
+    const n=Number(v); if(Number.isFinite(n)&&n>0) return n<2e10?n*1000:n;
+    const d=Date.parse(v); return Number.isFinite(d)?d:NaN;
+  }
+  function paint(bars){
+    const area=document.getElementById('chartArea'); if(!area||!bars.length)return;
+    const rows=bars.slice(-36), hi=Math.max(...rows.map(b=>b.h)),lo=Math.min(...rows.map(b=>b.l)),span=hi-lo||1;
+    area.innerHTML='';
+    rows.forEach((b,i)=>{
+      const x=i/(Math.max(1,rows.length-1))*92+2, wt=(hi-b.h)/span*100, wh=Math.max(2,(b.h-b.l)/span*100), bt=(hi-Math.max(b.o,b.c))/span*100, bh=Math.max(1.2,Math.abs(b.c-b.o)/span*100),up=b.c>=b.o;
+      const w=document.createElement('i'); w.className='wick '+(up?'up':'dn'); w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;width:2px;position:absolute;display:block;'; area.appendChild(w);
+      const q=document.createElement('span'); q.className='candle '+(up?'up':'dn'); q.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:7px;min-height:2px;position:absolute;display:block;'; area.appendChild(q);
+    });
+    const note=document.getElementById('indicatorNote'); if(note)note.textContent='XAU/USD recorded intraday candles active • '+rows.length+' visible bars';
+  }
+  async function load(){
+    if(window.RizviCTrader?.state?.authorized||window.state?.symbol!=='XAU/USD')return;
+    try{
+      const r=await fetch(URL+Date.now(),{cache:'no-store'}); if(!r.ok)throw Error(r.status);
+      const j=await r.json(), pts=Array.isArray(j.points)?j.points:[];
+      const clean=pts.map(x=>({t:ts(x.t??x.ts??x.time??x.timestamp),p:Number(x.p??x.price??x.close??x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
+      if(clean.length<30)throw Error('points='+clean.length);
+      const bars=[]; for(let i=0;i<clean.length;i++){const prev=clean[i-1]?.p??clean[i].p,p=clean[i].p;bars.push({t:clean[i].t,o:prev,h:Math.max(prev,p),l:Math.min(prev,p),c:p});}
+      window.state.ohlc=bars.slice(-520); window.state.history=window.state.ohlc.map(b=>b.c).slice(-260);
+      if(Number.isFinite(window.RIZVI_REAL_FEED?.price))window.state.price=Number(window.RIZVI_REAL_FEED.price);
+      window.RIZVI_CANDLE_SOURCE='XAUS intraday'; window.RIZVI_CANDLE_COUNT=window.state.ohlc.length;
+      paint(window.state.ohlc);
+      if(typeof window.update==='function')window.update();
+      paint(window.state.ohlc);
+    }catch(e){
+      window.RIZVI_CANDLE_SOURCE='WAITING_FOR_XAUS_HISTORY';
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(load,1200);setInterval(load,30000)});
+  if(document.readyState!=='loading')setTimeout(load,1200);
+})();
+</script>
