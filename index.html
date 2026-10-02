@@ -235,13 +235,16 @@ async function fetchRealXau(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json(),px=Number(data.spot_usd_oz),ts=data.price_as_of||data.updated_at||new Date().toISOString();
     if(!Number.isFinite(px))throw new Error('Invalid XAU price');
-    applyRealXauPrice(px,ts);
     const age=Number(data.data_state&&data.data_state.age_seconds||0),stale=Boolean(data.stale)||age>120;
-    window.RIZVI_REAL_FEED.stale=stale;window.RIZVI_REAL_FEED.status=stale?'REAL SPOT / STALE':'REAL SPOT';window.RIZVI_REAL_FEED.updatedAt=ts;
-    setFeedStatus(stale?'REAL XAU/USD • STALE':'REAL XAU/USD',!stale);
+    if(stale)throw new Error('Stale XAU feed');
+    applyRealXauPrice(px,ts);
+    window.RIZVI_REAL_FEED.stale=false;window.RIZVI_REAL_FEED.status='REAL SPOT';window.RIZVI_REAL_FEED.updatedAt=ts;
+    setFeedStatus('REAL XAU/USD',true);
   }catch(err){
-    window.RIZVI_REAL_FEED.status='FEED ERROR';window.RIZVI_REAL_FEED.stale=true;setFeedStatus('REAL FEED ERROR',false);
-    const n=$('signalNotice');if(n)n.textContent='Real XAU/USD feed unavailable. No synthetic price is being added.';
+    window.RIZVI_REAL_FEED.status='FEED ERROR';window.RIZVI_REAL_FEED.stale=true;
+    if(realXauPrice===null){state.price=null;state.history=[];state.ohlc=[];update()}
+    setFeedStatus('REAL FEED ERROR',false);
+    const n=$('signalNotice');if(n)n.textContent='Real XAU/USD feed unavailable/stale. Waiting for verified live data — no synthetic price is used.';
   }finally{realXauBusy=false}
 }
 async function fetchRealXauHistory(){
