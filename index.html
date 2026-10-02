@@ -1643,3 +1643,43 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(fixLevelLayout,300);
 })();
 </script>
+
+<!-- RIZVI ACTION BOX V14: larger chart + extended decision box -->
+<style id="rizvi-action-box-v14">
+/* Give the decision box real vertical room so all level rows remain inside the chart. */
+@media(max-width:700px){
+  .chart{height:575px!important}
+  .chartSetupBox{
+    height:315px!important;
+    left:6px!important;right:6px!important;bottom:7px!important;
+    padding:11px 10px!important;
+    overflow:visible!important;
+  }
+  .chartarea{bottom:327px!important}
+  .grid,.axis{bottom:327px!important}
+  .setupHighRow{height:34px!important;margin-bottom:8px!important}
+  .setupHighBox{height:34px!important;font-size:10px!important}
+  .setupSignals{gap:6px!important}
+  .setupBtn{height:32px!important;min-height:32px!important;font-size:10px!important}
+  .setupLevels{gap:7px!important;margin-top:10px!important}
+  .setupLevels .levelBtn:nth-child(1),
+  .setupLevels .levelBtn:nth-child(2){height:42px!important;min-height:42px!important;flex-basis:calc(50% - 3.5px)!important}
+  .setupLevels .levelBtn:nth-child(3),
+  .setupLevels .levelBtn:nth-child(4),
+  .setupLevels .levelBtn:nth-child(5){height:42px!important;min-height:42px!important;flex-basis:calc(33.333% - 4.7px)!important}
+  .levelBtn .btnLabel{font-size:8.5px!important}
+  .levelBtn .btnValue{font-size:10px!important}
+}
+@media(max-width:430px){
+  .chart{height:585px!important}
+  .chartSetupBox{height:325px!important}
+  .chartarea{bottom:337px!important}
+  .grid,.axis{bottom:337px!important}
+  .setupBtn{height:32px!important;min-height:32px!important}
+  .setupLevels .levelBtn:nth-child(1),
+  .setupLevels .levelBtn:nth-child(2),
+  .setupLevels .levelBtn:nth-child(3),
+  .setupLevels .levelBtn:nth-child(4),
+  .setupLevels .levelBtn:nth-child(5){height:43px!important;min-height:43px!important}
+}
+</style>
