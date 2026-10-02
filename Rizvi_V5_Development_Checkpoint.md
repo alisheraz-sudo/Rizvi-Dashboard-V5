@@ -29,7 +29,9 @@
 - Capacitor dependencies pinned to reproducible 7.x versions
 - GitHub Actions macOS/iOS simulator build workflow added
 - Workflow generates the native iOS project, syncs Capacitor, builds an unsigned simulator app, and uploads an artifact
-- Workflow execution has not yet been independently verified through the available GitHub Actions interface
+- Simulator workflow execution verified: Run #17 passed all steps and uploaded `Rizvi-Dashboard-V5-iOS-Simulator` artifact
+- Added separate iPhone device build-preparation workflow; it builds an unsigned `iphoneos` app and uploads it as an artifact
+- Device build is intentionally unsigned; App Store/TestFlight/iPhone installation still requires Apple signing/provisioning
 
 ## Current market-data integration
 - Added `ctrader-adapter.js`
