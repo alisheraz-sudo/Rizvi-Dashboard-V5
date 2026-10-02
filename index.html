@@ -2709,3 +2709,41 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(draw,1600);
 })();
 </script>
+
+<!-- RIZVI V38 REALTIME PRICE FEED REPAIR -->
+<script id="rizvi-v38-realtime-price-repair">
+(function(){
+  if(window.__RIZVI_V38_RT)return; window.__RIZVI_V38_RT=true;
+  let busy=false,lastAccepted=0,lastPrice=NaN;
+  const endpoint='https://xaus.com/api/v1/spot';
+  function num(v){const n=Number(v);return Number.isFinite(n)?n:NaN}
+  function extract(d){
+    const candidates=[d?.spot_usd_oz,d?.price,d?.spot,d?.close,d?.last,d?.data?.spot_usd_oz,d?.data?.price,d?.data?.last];
+    for(const v of candidates){const n=num(v);if(Number.isFinite(n)&&n>1000&&n<10000)return n}
+    return NaN;
+  }
+  function stamp(d){return d?.price_as_of||d?.updated_at||d?.timestamp||d?.time||new Date().toISOString()}
+  async function poll(){
+    if(busy||window.state?.symbol!=='XAU/USD')return; busy=true;
+    try{
+      const u=endpoint+'?compact=1&fresh='+Date.now()+'&_='+Math.random().toString(36).slice(2);
+      const res=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
+      if(!res.ok)throw Error('HTTP '+res.status);
+      const d=await res.json(),px=extract(d); if(!Number.isFinite(px))throw Error('No live XAU price in response');
+      const ts=stamp(d),age=num(d?.data_state?.age_seconds);
+      if(Boolean(d?.stale)||(Number.isFinite(age)&&age>120))throw Error('Stale source');
+      if(px!==lastPrice||Date.now()-lastAccepted>15000){
+        lastPrice=px;lastAccepted=Date.now();
+        if(typeof window.applyRealXauPrice==='function')window.applyRealXauPrice(px,ts);
+        else if(window.state){window.state.price=px;window.RIZVI_REAL_FEED={...(window.RIZVI_REAL_FEED||{}),provider:'XAUS',symbol:'XAU/USD',status:'REAL SPOT',price:px,previous:window.RIZVI_REAL_FEED?.price,updatedAt:ts,stale:false};if(typeof window.update==='function')window.update()}
+      }
+      const f=window.RIZVI_REAL_FEED||{}; f.provider='XAUS';f.symbol='XAU/USD';f.status='REAL SPOT';f.price=px;f.updatedAt=ts;f.stale=false;window.RIZVI_REAL_FEED=f;
+    }catch(e){
+      const f=window.RIZVI_REAL_FEED||{};f.status='FEED ERROR';f.stale=true;f.lastError=String(e?.message||e);window.RIZVI_REAL_FEED=f;
+    }finally{busy=false}
+  }
+  window.RIZVI_FORCE_LIVE_PRICE=poll;
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(poll,500);setInterval(poll,2000)});
+  if(document.readyState!=='loading')setTimeout(poll,500);
+})();
+</script>
