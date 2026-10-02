@@ -805,4 +805,60 @@ document.addEventListener('DOMContentLoaded',()=>{
 (function(){function cb(){try{const u=new URL(location.href),code=u.searchParams.get('ctrader_code'),err=u.searchParams.get('ctrader_error');if(code&&window.RizviCTrader){history.replaceState({},'',u.pathname);const x=new URL('/ctrader/callback',location.origin);x.searchParams.set('code',code);window.RizviCTrader.handleRedirect(x.toString()).catch(e=>window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type:'error',message:e.message}})))}else if(err){history.replaceState({},'',u.pathname)}}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',cb);else cb()})();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
 </script>
+
+<!-- RIZVI 4COL PREVIEW -->
+<style id="rizvi-4col-preview">
+@media (min-width:1251px){
+.app{grid-template-columns:155px minmax(600px,1fr) 315px 270px!important}
+.fourthRail{display:flex;min-width:0;min-height:100vh;flex-direction:column;background:rgba(5,14,24,.96);border-left:1px solid #153049;padding:13px 11px;overflow:auto}
+.fourthRailHead{display:flex;justify-content:space-between;align-items:center;padding:5px 3px 11px;border-bottom:1px solid #17334a}
+.fourthRailTitle{font-size:12px;font-weight:900;letter-spacing:.06em;color:#e7f0f7}
+.fourthRailTag{font-size:9px;color:#6f879b}
+.fourthCard{margin-top:10px;background:linear-gradient(180deg,#091722,#06111a);border:1px solid #1b3b52;border-radius:8px;padding:10px}
+.fourthLabel{font-size:9px;color:#71899d;letter-spacing:.08em;font-weight:800;margin-bottom:6px}
+.hqPreview{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hqBox{padding:9px 5px;border:1px solid #263b4c;border-radius:6px;background:#0a151f;text-align:center}
+.hqBox span{font-size:8px;color:#71899d}.hqBox b{display:block;font-size:12px;margin-top:3px;color:#b6c4d0}
+.hqBox.buy{border-color:#177c5b;background:#0a3026}.hqBox.buy b{color:#55dfa9}
+.hqBox.sell{border-color:#963546;background:#32121a}.hqBox.sell b{color:#ff7b8b}
+.matrix{display:grid;gap:5px}
+.matrixRow{display:flex;justify-content:space-between;padding:6px 7px;border:1px solid #19364b;border-radius:5px;background:#07131d;font-size:10px;color:#8198aa}
+.matrixRow b{font-size:10px;color:#dbe6ef}.matrixRow .buy{color:#55dfa9}.matrixRow .sell{color:#ff7b8b}.matrixRow .wait{color:#d7ae57}
+.levels4{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.lvl4{padding:7px 6px;border-radius:5px;background:#0a151f;border:1px solid #20394d;font-size:9px;color:#8198aa}
+.lvl4 b{display:block;font-size:11px;margin-top:3px;color:#e0e9f0}
+.lvl4.buy{border-color:#177c5b;background:#0a3026}.lvl4.buy b{color:#55dfa9}
+.lvl4.sell{border-color:#963546;background:#32121a}.lvl4.sell b{color:#ff7b8b}
+.lvl4.sl{border-color:#7d3040;background:#281017}.lvl4.sl b{color:#ff8190}
+.fourthNote{margin-top:auto;padding:9px 3px 2px;color:#60778b;font-size:9px;line-height:1.35}
+}
+@media (max-width:1250px){.fourthRail{display:none!important}}
+</style>
+<script>
+(function(){
+ function add(){
+  var app=document.querySelector('.app');
+  if(!app||document.getElementById('fourthRail'))return;
+  var r=document.createElement('aside');
+  r.className='fourthRail';r.id='fourthRail';
+  r.innerHTML='<div class="fourthRailHead"><span class="fourthRailTitle">SETUP INTELLIGENCE</span><span class="fourthRailTag">PREVIEW</span></div>'+
+  '<div class="fourthCard"><div class="fourthLabel">SETUP QUALITY</div><div class="hqPreview"><div class="hqBox"><span>QUALITY</span><b>HIGH SETUP</b></div><div class="hqBox buy"><span>DIRECTION</span><b>BULLISH</b></div></div></div>'+
+  '<div class="fourthCard"><div class="fourthLabel">SIGNAL MATRIX</div><div class="matrix">'+
+  '<div class="matrixRow"><span>Trend</span><b class="buy">BULLISH</b></div>'+
+  '<div class="matrixRow"><span>Delta</span><b class="wait">WAIT</b></div>'+
+  '<div class="matrixRow"><span>Divergence</span><b class="buy">BULL DIV</b></div>'+
+  '<div class="matrixRow"><span>Order Flow</span><b class="wait">WAIT</b></div>'+
+  '<div class="matrixRow"><span>RSI</span><b>54.2</b></div></div></div>'+
+  '<div class="fourthCard"><div class="fourthLabel">TRADE LEVELS</div><div class="levels4">'+
+  '<div class="lvl4 buy"><span>HIGH ENTRY</span><b>—</b></div>'+
+  '<div class="lvl4 sl"><span>SL RANGE</span><b>—</b></div>'+
+  '<div class="lvl4 buy"><span>TP1</span><b>—</b></div>'+
+  '<div class="lvl4 buy"><span>TP2</span><b>—</b></div>'+
+  '<div class="lvl4 buy"><span>TP3</span><b>—</b></div></div></div>'+
+  '<div class="fourthNote">Preview design only. HIGH SETUP will follow the existing signal engine; no synthetic signal is created.</div>';
+  app.appendChild(r);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+})();
+</script>
 </html>
