@@ -58,18 +58,25 @@ window.renderV5LiveSignal=function(){
   const st=window.state;if(!st||!st.history||st.history.length<30)return;
   const bars=st.history.map((c,i)=>({o:i?st.history[i-1]:c,h:Math.max(c,i?st.history[i-1]:c),l:Math.min(c,i?st.history[i-1]:c),c}));
   const rawSig=window.V5SignalEngine(bars,bars.length-1);if(!rawSig)return;
-  const now=Date.now(), tfMin=({1M:1,5M:5,15M:15,30M:30,1H:60}[st.tf]||1), holdMs=tfMin*60000;
-  window.__RIZVI_LIVE_GATE=window.__RIZVI_LIVE_GATE||{candidate:null,count:0,confirmed:'WAIT',confirmedAt:0};
+  const tfMin=({1M:1,5M:5,15M:15,30M:30,1H:60}[st.tf]||1), holdBars=1;
+  const liveBars=Array.isArray(window.RIZVI_LIVE_BARS)?window.RIZVI_LIVE_BARS:[];
+  const closed=liveBars.filter(b=>b.closed);
+  const closedKey=closed.at(-1)?.t||null;
+  window.__RIZVI_LIVE_GATE=window.__RIZVI_LIVE_GATE||{candidate:null,count:0,confirmed:'WAIT',confirmedAt:0,lastEvaluatedClosedBar:null};
   const gate=window.__RIZVI_LIVE_GATE;
   const rawDir=rawSig.rangeMarket?'WAIT':(rawSig.direction||'WAIT');
-  if(rawDir===gate.candidate)gate.count++;else{gate.candidate=rawDir;gate.count=1;}
-  const opposite=gate.confirmed!=='WAIT'&&rawDir!=='WAIT'&&rawDir!==gate.confirmed;
-  if(gate.confirmed==='WAIT'){
-    if(rawDir!=='WAIT'&&gate.count>=3){gate.confirmed=rawDir;gate.confirmedAt=now;}
-  }else if(opposite&&gate.count>=3&&now-gate.confirmedAt>=holdMs){
-    gate.confirmed=rawDir;gate.confirmedAt=now;
-  }else if(rawDir==='WAIT'&&now-gate.confirmedAt>=holdMs){
-    gate.confirmed='WAIT';gate.confirmedAt=now;
+  const isNewClosedBar=closedKey!==null&&closedKey!==gate.lastEvaluatedClosedBar;
+  if(isNewClosedBar){
+    gate.lastEvaluatedClosedBar=closedKey;
+    if(rawDir===gate.candidate)gate.count++;else{gate.candidate=rawDir;gate.count=1;}
+    const opposite=gate.confirmed!=='WAIT'&&rawDir!=='WAIT'&&rawDir!==gate.confirmed;
+    if(gate.confirmed==='WAIT'){
+      if(rawDir!=='WAIT'&&gate.count>=3){gate.confirmed=rawDir;gate.confirmedAt=closedKey;}
+    }else if(opposite&&gate.count>=3){
+      gate.confirmed=rawDir;gate.confirmedAt=closedKey;
+    }else if(rawDir==='WAIT'&&closedKey-(gate.confirmedAt||0)>=tfMin*60000){
+      gate.confirmed='WAIT';gate.confirmedAt=closedKey;
+    }
   }
   const dir=gate.confirmed, ql=dir==='WAIT'?'WAIT':rawSig.quality, sig={...rawSig,direction:dir}, e=st.price, risk=Math.max(sig.atr*1.15,SYMBOLS[st.symbol].step*2), d=dir==='SELL'?-1:1;
   const sl=e-d*risk,tp1=e+d*risk,tp2=e+d*risk*2,tp3=e+d*risk*3;
