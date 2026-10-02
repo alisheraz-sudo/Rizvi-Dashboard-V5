@@ -2101,3 +2101,96 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(add,300);
 })();
 </script>
+
+
+<!-- RIZVI AUTHORITATIVE DISPLAY CONTROLLER V25 -->
+<style id="rizvi-authoritative-display-v25">
+#chartHighSetupBtn{transition:opacity .55s ease,background-color .55s ease,border-color .55s ease!important}
+#chartSetupBox .btnValue,#chartSetupBox .btnLabel{font-variant-numeric:tabular-nums}
+</style>
+<script id="rizvi-authoritative-display-v25-script">
+(function(){
+  const ids=['chartSigBtn','chartComboBtn','chartTrendBtn','chartDeltaBtn','chartDivBtn','chartOfBtn','chartRsiBtn','chartEmaBtn','chartEntryBtn','chartSlBtn','chartTp1Btn','chartTp2Btn','chartTp3Btn'];
+  const locked=new Set(), protoText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent'), protoHtml=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  const shown=new Map();
+  function lock(el){
+    if(!el||locked.has(el))return;
+    locked.add(el);
+    let currentText=protoText.get.call(el)||'', currentHtml=protoHtml.get.call(el)||'';
+    Object.defineProperty(el,'textContent',{configurable:true,get(){return currentText},set(v){return}});
+    Object.defineProperty(el,'innerHTML',{configurable:true,get(){return currentHtml},set(v){return}});
+    shown.set(el,{text:currentText,html:currentHtml});
+  }
+  function unlockSet(){ids.forEach(id=>lock(document.getElementById(id)));lock(document.getElementById('chartHighSetupBtn'))}
+  function write(el,label,value,cls,level){
+    if(!el)return;
+    lock(el);
+    const html='<span class="btnLabel">'+label+'</span><span class="btnValue">'+value+'</span>';
+    el.className=(level?'levelBtn ':'setupBtn ')+(cls||'wait');
+    protoHtml.set.call(el,html);
+    const s=shown.get(el); if(s){s.html=html;s.text=label+' '+value}
+  }
+  function price(v,d){
+    return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+  }
+  function snapshot(){
+    const st=window.state||{}, bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    if(!bars.length||!window.V5SignalEngine)return null;
+    const sig=window.V5SignalEngine(bars,bars.length-1); if(!sig)return null;
+    const dir=sig.direction==='BUY'?'BUY':sig.direction==='SELL'?'SELL':'WAIT';
+    const cls=dir==='BUY'?'buy':dir==='SELL'?'sell':'wait', q=String(sig.quality||'').toUpperCase();
+    const combo=dir==='WAIT'?'WAIT':q==='HIGH'?(dir==='BUY'?'STRONG BUY':'STRONG SELL'):q==='WEAK'?(dir==='BUY'?'WEAK BUY':'WEAK SELL'):dir;
+    const trend=sig.regime||'RANGE', ema=sig.e9>sig.e21?'BULL':'BEAR';
+    const div=sig.divergence?.bias==='BULLISH'?'BULL DIV':sig.divergence?.bias==='BEARISH'?'BEAR DIV':'NONE';
+    const of=window.RIZVI_ORDER_FLOW?.signal||'WAIT';
+    const delta=sig.delta?.status&&sig.delta.status!=='NOT CONNECTED'?sig.delta.status:(window.RIZVI_ORDER_FLOW?.delta||'WAIT');
+    const d=(window.SYMBOLS&&window.SYMBOLS[st.symbol]&&window.SYMBOLS[st.symbol].decimals)||2, ss=window.signalState||{};
+    const entry=Number.isFinite(Number(ss.entry))?Number(ss.entry):Number(st.price), atr=Number(sig.atr);
+    const sl=Number.isFinite(Number(ss.sl))?Number(ss.sl):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry-atr:dir==='SELL'?entry+atr:NaN:NaN);
+    const tp1=Number.isFinite(Number(ss.tp1))?Number(ss.tp1):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry+atr:dir==='SELL'?entry-atr:NaN:NaN);
+    const tp2=Number.isFinite(Number(ss.tp2))?Number(ss.tp2):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry+2*atr:dir==='SELL'?entry-2*atr:NaN:NaN);
+    const tp3=Number.isFinite(Number(ss.tp3))?Number(ss.tp3):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry+3*atr:dir==='SELL'?entry-3*atr:NaN:NaN);
+    return {dir,cls,q,combo,trend,delta,div,of,ema,rsi:Number(sig.r),entry,sl,tp1,tp2,tp3,d};
+  }
+  let displayed=null,lastDraw=0,pending=null;
+  function render(s){
+    if(!s)return;
+    write(document.getElementById('chartSigBtn'),'SIGNAL',s.dir,s.cls,false);
+    write(document.getElementById('chartComboBtn'),'COMBO',s.combo,s.cls,false);
+    write(document.getElementById('chartTrendBtn'),'TREND',s.trend,s.trend==='BULL'?'bull':s.trend==='BEAR'?'bear':'wait',false);
+    write(document.getElementById('chartDeltaBtn'),'DELTA',s.delta,'wait',false);
+    write(document.getElementById('chartDivBtn'),'DIV',s.div,s.div==='BULL DIV'?'bull':s.div==='BEAR DIV'?'bear':'wait',false);
+    write(document.getElementById('chartOfBtn'),'OF SIGNAL',s.of,s.of==='BUYING'?'bull':s.of==='SELLING'?'bear':'wait',false);
+    write(document.getElementById('chartRsiBtn'),'RSI',Number.isFinite(s.rsi)?s.rsi.toFixed(1):'—',s.rsi>=52?'bull':s.rsi<=48?'bear':'wait',false);
+    write(document.getElementById('chartEmaBtn'),'EMA',s.ema,s.ema==='BULL'?'bull':'bear',false);
+    write(document.getElementById('chartEntryBtn'),'ENTRY',s.dir==='WAIT'?'—':price(s.entry,s.d),s.cls,true);
+    write(document.getElementById('chartSlBtn'),'SL',s.dir==='WAIT'?'—':price(s.sl,s.d),s.dir==='WAIT'?'wait':'sell',true);
+    write(document.getElementById('chartTp1Btn'),'TP1',s.dir==='WAIT'?'—':price(s.tp1,s.d),s.cls,true);
+    write(document.getElementById('chartTp2Btn'),'TP2',s.dir==='WAIT'?'—':price(s.tp2,s.d),s.cls,true);
+    write(document.getElementById('chartTp3Btn'),'TP3',s.dir==='WAIT'?'—':price(s.tp3,s.d),s.cls,true);
+    const h=document.getElementById('chartHighSetupBtn');
+    if(h){
+      lock(h);
+      const text=(s.q==='HIGH'&&s.dir!=='WAIT')?'HIGH QUALITY SETUP — '+s.dir:'TRADE ACTION — '+s.dir;
+      h.className='setupHighBox '+s.cls;
+      protoText.set.call(h,text);
+      const z=shown.get(h);if(z){z.text=text;z.html=protoHtml.get.call(h)}
+    }
+    displayed=s;lastDraw=Date.now();
+  }
+  function tick(){
+    unlockSet();
+    const s=snapshot();if(!s)return;
+    if(!displayed){render(s);pending=null;return}
+    const changed=JSON.stringify(s)!==JSON.stringify(displayed);
+    if(changed){
+      pending=s;
+      if(Date.now()-lastDraw>=3000) {render(pending);pending=null}
+    } else pending=null;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>{unlockSet();tick()},1200);
+    setInterval(tick,500);
+  });
+})();
+</script>
