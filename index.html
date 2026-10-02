@@ -2045,3 +2045,25 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(refresh,900);
 })();
 </script>
+
+
+<!-- RIZVI CHART FRONT CENTER V23 -->
+<style id="rizvi-chart-front-center-v23">
+/* Remove the candle-chart's left tool rail and give the chart the visual foreground. */
+.chart > div[style*="left:8px"][style*="width:28px"]{display:none!important}
+@media(max-width:1100px){
+  .app{display:block!important;min-height:100vh!important;background:#030912!important}
+  .side,.right{display:none!important}
+  .main{width:100%!important;max-width:none!important;margin:0!important}
+  .chart{
+    width:calc(100vw - 20px)!important;
+    max-width:1440px!important;
+    margin:10px auto 18px!important;
+    position:relative!important;
+    z-index:100!important;
+  }
+}
+@media(max-width:700px){
+  .chart{width:calc(100vw - 12px)!important;margin:6px auto 12px!important}
+}
+</style>
