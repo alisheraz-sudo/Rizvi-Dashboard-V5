@@ -805,4 +805,41 @@ document.addEventListener('DOMContentLoaded',()=>{
 (function(){function cb(){try{const u=new URL(location.href),code=u.searchParams.get('ctrader_code'),err=u.searchParams.get('ctrader_error');if(code&&window.RizviCTrader){history.replaceState({},'',u.pathname);const x=new URL('/ctrader/callback',location.origin);x.searchParams.set('code',code);window.RizviCTrader.handleRedirect(x.toString()).catch(e=>window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type:'error',message:e.message}})))}else if(err){history.replaceState({},'',u.pathname)}}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',cb);else cb()})();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
 </script>
-
+<style id="rizvi-price-action-setup-v2">
+.chartSetupBox{left:12px!important;right:12px!important;bottom:8px!important;height:126px!important;padding:7px 8px!important;background:#06101a!important}
+.setupHighRow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.setupHighBox{flex:1;height:27px;display:flex;align-items:center;justify-content:center;border:1px solid #314253;border-radius:5px;background:#0b1723;color:#b7c5d1;font-size:10px;font-weight:900;letter-spacing:.35px}
+.setupHighBox.buy{background:#0a3026;border-color:#168b68;color:#58dda8}
+.setupHighBox.sell{background:#32121a;border-color:#963546;color:#ff7b8b}
+.setupHighBox.wait{background:#19170f;border-color:#5d4b21;color:#d7ae57}
+.setupSignals{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px!important}
+.setupBtn{width:100%;height:25px!important;padding:0 5px!important;font-size:9px!important}
+.setupLevels{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important;margin-top:5px!important}
+.levelBtn{min-width:0!important;width:100%;height:25px!important;padding:0 5px!important;font-size:9px!important}
+@media(max-width:700px){.chartSetupBox{height:136px!important;left:8px!important;right:8px!important}.setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+</style>
+<script id="rizvi-price-action-setup-v2-script">
+(function(){
+ function apply(){
+  const box=document.getElementById('chartSetupBox');if(!box)return;
+  if(!box.querySelector('.setupHighRow')){
+   const row=document.createElement('div');row.className='setupHighRow';
+   const h=document.createElement('div');h.id='chartHighSetupBtn';h.className='setupHighBox wait';h.textContent='HIGH QUALITY SETUP — WAIT';
+   row.appendChild(h);box.insertBefore(row,box.firstChild);
+  }
+ }
+ function decorate(){
+  apply();
+  const st=window.state,feed=window.RIZVI_REAL_FEED||{};
+  const bars=st&&st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+  const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+  const el=document.getElementById('chartHighSetupBtn');if(!el)return;
+  const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+  const high=!!sig&&sig.quality==='HIGH'&&dir!=='WAIT'&&feed.stale===false;
+  el.className='setupHighBox '+(high?(dir==='BUY'?'buy':'sell'):'wait');
+  el.textContent='HIGH QUALITY SETUP — '+dir;
+ }
+ document.addEventListener('DOMContentLoaded',()=>{apply();decorate();setInterval(decorate,2500)});
+ setTimeout(apply,300);
+})();
+</script>
