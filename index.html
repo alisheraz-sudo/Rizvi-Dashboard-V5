@@ -760,7 +760,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     setInterval(fetchReferenceAsset,5000);
   });
 })();
-<script>
 (function(){function cb(){try{const u=new URL(location.href),code=u.searchParams.get('ctrader_code'),err=u.searchParams.get('ctrader_error');if(code&&window.RizviCTrader){history.replaceState({},'',u.pathname);const x=new URL('/ctrader/callback',location.origin);x.searchParams.set('code',code);window.RizviCTrader.handleRedirect(x.toString()).catch(e=>window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type:'error',message:e.message}})))}else if(err){history.replaceState({},'',u.pathname)}}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',cb);else cb()})();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
 </script>
