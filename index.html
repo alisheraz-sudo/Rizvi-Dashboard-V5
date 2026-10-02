@@ -990,7 +990,95 @@ document.addEventListener('DOMContentLoaded',()=>{
   .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important}
   .levelBtn{height:34px!important;font-size:9.5px!important}
 }
-</style></body>
+</style><!-- RIZVI MAIN ACTION BOX V6 -->
+<style id="rizvi-main-action-box-v6">
+/* Readable primary trade-decision panel: direction is the color language. */
+:root{
+  --rza6-height:292px;
+  --rza6-mobile-height:300px;
+  --rza6-title-font:16px;
+  --rza6-button-font:12px;
+  --rza6-level-font:12px;
+}
+.chartSetupBox{
+  left:6px!important;right:6px!important;bottom:7px!important;
+  height:var(--rza6-height)!important;padding:11px 12px!important;
+  background:#06111b!important;border:2px solid #31516a!important;
+  border-radius:11px!important;box-shadow:0 -8px 26px rgba(0,0,0,.35)!important;
+  overflow:hidden!important;box-sizing:border-box!important;
+}
+.setupHighRow{gap:8px!important;margin-bottom:9px!important}
+.setupHighBox{
+  height:45px!important;border-width:2px!important;border-radius:8px!important;
+  font-size:var(--rza6-title-font)!important;font-weight:1000!important;
+  letter-spacing:.5px!important;
+}
+.setupHighBox.buy{background:#083326!important;border-color:#16a878!important;color:#6ff0b6!important}
+.setupHighBox.sell{background:#3a1018!important;border-color:#d13f55!important;color:#ff8c9a!important}
+.setupHighBox.wait{background:#0c2235!important;border-color:#3473a8!important;color:#8fcaff!important}
+.setupHighBox.entryDisplay{background:#0c1b29!important;border-color:#31516a!important;color:#eaf2f8!important}
+.setupSignals{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;overflow:visible!important;
+}
+.setupBtn{
+  height:35px!important;padding:0 5px!important;
+  font-size:var(--rza6-button-font)!important;font-weight:1000!important;
+  letter-spacing:.15px!important;border-width:2px!important;border-radius:6px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.setupBtn.wait{color:#8fcaff!important;border-color:#3473a8!important;background:#0c2235!important}
+.setupLevels{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:7px!important;margin-top:10px!important;overflow:visible!important;
+}
+.levelBtn{
+  height:38px!important;padding:0 4px!important;font-size:var(--rza6-level-font)!important;
+  font-weight:1000!important;border-width:2px!important;border-radius:6px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.levelBtn.slLvl{background:#30121a!important;border-color:#d13f55!important;color:#ff8c9a!important}
+.levelBtn.entryLvl.wait,.levelBtn.tpLvl.wait{background:#0c2235!important;border-color:#3473a8!important;color:#8fcaff!important}
+@media(max-width:700px){
+  .chartSetupBox{height:var(--rza6-mobile-height)!important;left:5px!important;right:5px!important;padding:10px!important}
+  .setupHighBox{font-size:14px!important;height:43px!important}
+  .setupBtn{font-size:11px!important;height:36px!important}
+  .levelBtn{font-size:11px!important;height:39px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:304px!important}
+  .setupHighRow{grid-template-columns:1fr!important}
+  .setupHighBox{height:40px!important;font-size:13px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+  .setupBtn{height:35px!important;font-size:11px!important}
+  .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+  .levelBtn{height:39px!important;font-size:10.5px!important}
+}
+</style>
+<script id="rizvi-main-action-box-v6-script">
+(function(){
+  function colorize(){
+    const st=window.state||{}, bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    const cls=dir==='BUY'?'buy':dir==='SELL'?'sell':'wait';
+    const high=document.getElementById('chartHighSetupBtn');
+    const combo=document.getElementById('chartComboBtn');
+    if(high){
+      high.classList.remove('buy','sell','wait');
+      high.classList.add(cls);
+    }
+    if(combo){
+      combo.classList.remove('bull','bear','wait');
+      combo.classList.add(cls==='buy'?'bull':cls==='sell'?'bear':'wait');
+    }
+    const sigBtn=document.getElementById('chartSigBtn');
+    if(sigBtn){sigBtn.classList.remove('bull','bear','wait');sigBtn.classList.add(cls==='buy'?'bull':cls==='sell'?'bear':'wait')}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{colorize();setInterval(colorize,1200)});
+  setTimeout(colorize,300);
+})();
+</script></body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
 </style>
