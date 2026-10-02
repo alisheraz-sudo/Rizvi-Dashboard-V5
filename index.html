@@ -1332,3 +1332,54 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   document.addEventListener('DOMContentLoaded',()=>{fixLevelText();setInterval(fixLevelText,1500)});
 })();
 </script>
+
+<!-- RIZVI ACTION BOX V9: mobile full-visibility fix -->
+<style id="rizvi-action-box-v9">
+/* Keep every decision field inside the chart on narrow screens; nothing gets clipped. */
+.chartSetupBox{
+  height:190px!important;
+  bottom:7px!important;
+  padding:7px 8px!important;
+  overflow:visible!important;
+}
+.setupHighRow{height:29px!important;margin-bottom:5px!important}
+.setupHighBox{height:29px!important;line-height:1!important}
+.setupSignals{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important}
+.setupBtn{height:27px!important;min-height:27px!important;line-height:1!important}
+.setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;margin-top:5px!important}
+.levelBtn{height:27px!important;min-height:27px!important;line-height:1!important}
+.chartarea{bottom:198px!important}
+.grid{bottom:198px!important}
+.axis{bottom:198px!important}
+@media(max-width:700px){
+  .chartSetupBox{height:190px!important;left:6px!important;right:6px!important;bottom:7px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}
+  .setupBtn{height:27px!important;min-height:27px!important;font-size:9px!important}
+  .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important}
+  .levelBtn{height:27px!important;min-height:27px!important;font-size:8.5px!important;padding:0 2px!important}
+  .chartarea{bottom:204px!important}
+  .grid,.axis{bottom:204px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:190px!important}
+  .setupHighRow{height:28px!important;margin-bottom:5px!important}
+  .setupHighBox{height:28px!important;font-size:9.5px!important}
+  .setupSignals{gap:4px!important}
+  .setupBtn{height:27px!important;min-height:27px!important}
+  .setupLevels{gap:3px!important}
+  .levelBtn{height:27px!important;min-height:27px!important;font-size:8.5px!important}
+}
+</style>
+<script id="rizvi-action-box-v9-script">
+(function(){
+  function keepLevelsVisible(){
+    const box=document.getElementById('chartSetupBox'); if(!box)return;
+    box.style.overflow='visible';
+    ['chartEntryBtn','chartSlBtn','chartTp1Btn','chartTp2Btn','chartTp3Btn'].forEach(id=>{
+      const e=document.getElementById(id); if(e)e.style.visibility='visible';
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{keepLevelsVisible();setInterval(keepLevelsVisible,1000)});
+  setTimeout(keepLevelsVisible,300);
+})();
+</script>
