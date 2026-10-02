@@ -80,3 +80,9 @@ Add → Test → Fix → Save → Next
 - Fixed historical trendbar decoding to pass the active symbol ID into the decoder, ensuring historical candles use that instrument's discovered price precision rather than the fallback scale.
 - Live spot quote and live candle decoding already use the symbol-specific precision helper.
 - This is a code-level fix only; real FxPro authorization/feed still needs end-to-end verification with the user's authorized cTrader account.
+
+
+## cTrader Disconnect / Stale-Feed Hardening
+- Manual disconnect now prevents the adapter's automatic reconnect timer from reopening the connection.
+- Disconnect clears the active symbol and marks the broker feed stale/disconnected so old prices are not treated as current live data.
+- Automatic reconnect remains available after unexpected connection loss when credentials are configured.
