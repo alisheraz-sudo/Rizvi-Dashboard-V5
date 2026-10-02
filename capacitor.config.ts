@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   webDir: '.',
   bundledWebRuntime: false,
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    iosScheme: 'rizvi'
   }
 };
 
