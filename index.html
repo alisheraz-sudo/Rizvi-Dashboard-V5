@@ -1559,3 +1559,87 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(apply,300);
 })();
 </script>
+
+<!-- RIZVI LEVEL LAYOUT V13 -->
+<style id="rizvi-level-layout-v13">
+/* Levels: Entry + SL on one 50/50 row; TP1/TP2/TP3 on the full-width row below. */
+.chartSetupBox{
+  height:255px!important;
+  bottom:7px!important;
+  padding:10px 10px!important;
+}
+.setupHighRow{height:32px!important;margin-bottom:7px!important}
+.setupHighBox{height:32px!important;font-size:10px!important}
+.setupSignals{gap:5px!important}
+.setupBtn{height:30px!important;min-height:30px!important;font-size:10px!important;font-weight:850!important}
+.setupLevels{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  grid-template-rows:36px 38px!important;
+  gap:6px!important;
+  margin-top:8px!important;
+  overflow:visible!important;
+}
+.setupLevels .levelBtn{
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  min-height:36px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  letter-spacing:.2px!important;
+}
+.setupLevels .levelBtn:nth-child(3){grid-column:1/2}
+.setupLevels .levelBtn:nth-child(4){grid-column:2/3}
+.setupLevels .levelBtn:nth-child(5){
+  grid-column:1/3;
+  width:calc(33.333% - 4px)!important;
+  justify-self:center;
+  transform:translateX(-34%)!important;
+}
+/* Put TP buttons in a true 3-column visual row using the level container pseudo-layout. */
+.setupLevels{position:relative!important;display:flex!important;flex-wrap:wrap!important;align-items:stretch!important}
+.setupLevels .levelBtn:nth-child(1),.setupLevels .levelBtn:nth-child(2){width:calc(50% - 3px)!important;flex:0 0 calc(50% - 3px)!important}
+.setupLevels .levelBtn:nth-child(3),.setupLevels .levelBtn:nth-child(4),.setupLevels .levelBtn:nth-child(5){
+  width:calc(33.333% - 4px)!important;flex:0 0 calc(33.333% - 4px)!important;
+  transform:none!important;
+  margin-top:0!important;
+}
+.setupLevels .levelBtn:nth-child(3){margin-left:0!important}
+.setupLevels .levelBtn:nth-child(5){margin-right:0!important}
+/* Slightly larger, clearer text without making the whole box heavy. */
+.setupBtn .btnLabel,.levelBtn .btnLabel,.setupHighBox .btnLabel{font-size:8.5px!important;font-weight:800!important}
+.setupBtn .btnValue,.levelBtn .btnValue,.setupHighBox .btnValue{font-size:10px!important;font-weight:850!important}
+@media(max-width:700px){
+  .chartSetupBox{height:255px!important;left:6px!important;right:6px!important;bottom:7px!important;padding:10px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+  .setupBtn{height:30px!important;min-height:30px!important;font-size:10px!important}
+  .setupLevels{gap:6px!important;margin-top:8px!important}
+  .setupLevels .levelBtn:nth-child(1),.setupLevels .levelBtn:nth-child(2){height:37px!important;min-height:37px!important;flex-basis:calc(50% - 3px)!important}
+  .setupLevels .levelBtn:nth-child(3),.setupLevels .levelBtn:nth-child(4),.setupLevels .levelBtn:nth-child(5){height:38px!important;min-height:38px!important;flex-basis:calc(33.333% - 4px)!important}
+  .levelBtn .btnLabel{font-size:8px!important}.levelBtn .btnValue{font-size:9.5px!important}
+  .chartarea{bottom:267px!important}.grid{bottom:267px!important}.axis{bottom:267px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:255px!important}
+  .setupBtn{height:30px!important;min-height:30px!important}
+  .setupLevels .levelBtn:nth-child(1),.setupLevels .levelBtn:nth-child(2){height:38px!important;min-height:38px!important}
+  .setupLevels .levelBtn:nth-child(3),.setupLevels .levelBtn:nth-child(4),.setupLevels .levelBtn:nth-child(5){height:39px!important;min-height:39px!important}
+  .levelBtn .btnLabel{font-size:7.8px!important}.levelBtn .btnValue{font-size:9px!important}
+}
+</style>
+<script id="rizvi-level-layout-v13-script">
+(function(){
+  function fixLevelLayout(){
+    const box=document.getElementById('chartSetupBox');
+    const levels=document.querySelector('.setupLevels');
+    if(!box||!levels)return;
+    box.style.overflow='visible';
+    levels.style.display='flex';levels.style.flexWrap='wrap';
+    const all=levels.querySelectorAll('.levelBtn');
+    all.forEach((e,i)=>{e.style.overflow='hidden';e.style.visibility='visible'});
+  }
+  document.addEventListener('DOMContentLoaded',()=>{fixLevelLayout();setInterval(fixLevelLayout,700)});
+  setTimeout(fixLevelLayout,300);
+})();
+</script>
