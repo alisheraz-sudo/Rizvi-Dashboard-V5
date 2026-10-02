@@ -12,13 +12,13 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@capacitor/core": "latest",
-    "@capacitor/android": "latest",
-    "@capacitor/ios": "latest",
-    "@capacitor/app": "latest",
-    "@capacitor/browser": "latest"
+    "@capacitor/core": "7.4.3",
+    "@capacitor/android": "7.4.3",
+    "@capacitor/ios": "7.4.3",
+    "@capacitor/app": "7.1.0",
+    "@capacitor/browser": "7.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "latest"
+    "@capacitor/cli": "7.4.3"
   }
 }
