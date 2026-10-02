@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 document.addEventListener('DOMContentLoaded',()=>{
  const host=document.querySelector('.right'); if(!host||document.getElementById('qualityEnginePanel'))return;
  const d=document.createElement('div'); d.className='panel qePanel'; d.id='qualityEnginePanel';
- d.innerHTML='<h3>Setup Quality Engine</h3><div class="qeScore"><span>Rule-based Setup Strength</span><strong id="qeScore">— / 9</strong></div><div class="qeGrid"><div class="qeItem">Higher-TF Trend <b id="qeTrend">—</b></div><div class="qeItem">Structure / BOS <b id="qeStructure">—</b></div><div class="qeItem">EMA Alignment <b id="qeEma">—</b></div><div class="qeItem">RSI <b id="qeRsi">—</b></div><div class="qeItem">MACD <b id="qeMacd">—</b></div><div class="qeItem">S/R Location <b id="qeSr">—</b></div><div class="qeItem">ATR / Volatility <b id="qeAtr">—</b></div><div class="qeItem">Conflict Filter <b id="qeConflict">—</b></div></div><div class="qeNote" id="qeNote">Calculating from available dashboard/demo state. Score is setup strength, not probability.</div>';
+ d.innerHTML='<h3>Setup Quality Engine</h3><div class="qeScore"><span>Rule-based Setup Strength</span><strong id="qeScore">— / 9</strong></div><div class="qeGrid"><div class="qeItem">Higher-TF Trend <b id="qeTrend">—</b></div><div class="qeItem">Structure / BOS <b id="qeStructure">—</b></div><div class="qeItem">EMA Alignment <b id="qeEma">—</b></div><div class="qeItem">RSI <b id="qeRsi">—</b></div><div class="qeItem">MACD <b id="qeMacd">—</b></div><div class="qeItem">S/R Location <b id="qeSr">—</b></div><div class="qeItem">ATR / Volatility <b id="qeAtr">—</b></div><div class="qeItem">Volume / Delta <b id="qeVolume">—</b></div><div class="qeItem">Conflict Filter <b id="qeConflict">—</b></div></div><div class="qeNote" id="qeNote">Calculating from available dashboard/demo state. Score is setup strength, not probability.</div>';
  host.appendChild(d);
  const q=id=>document.getElementById(id);
  function set(id,ok){q(id).textContent=ok?'✓':'—';q(id).className=ok?'qeHigh':'qeWait'}
@@ -360,9 +360,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   const macdOK=bull||bear;
   const srOK=Math.abs(price-avg(Math.min(24,h.length)))>Math.max(price*0.00001,0.01);
   const atrOK=Math.abs(h.at(-1)-h.at(-2))>Math.max(price*0.000005,0.02);
+  const volumeOK=Number(q('deltaValue')?.textContent?.replace(/[^0-9.-]/g,''))!==0 || Math.abs(h.at(-1)-h.at(-2))>Math.max(price*0.000003,0.01);
   const conflict=mtf.includes('MIXED');
-  const pts=[trendOK,structureOK,emaOK,rsiOK,macdOK,srOK,atrOK,!conflict].filter(Boolean).length;
-  ['qeTrend','qeStructure','qeEma','qeRsi','qeMacd','qeSr','qeAtr'].forEach((id,i)=>set(id,[trendOK,structureOK,emaOK,rsiOK,macdOK,srOK,atrOK][i]));
+  const pts=[trendOK,structureOK,emaOK,rsiOK,macdOK,srOK,atrOK,volumeOK,!conflict].filter(Boolean).length;
+  ['qeTrend','qeStructure','qeEma','qeRsi','qeMacd','qeSr','qeAtr','qeVolume'].forEach((id,i)=>set(id,[trendOK,structureOK,emaOK,rsiOK,macdOK,srOK,atrOK,volumeOK][i]));
   set('qeConflict',!conflict);
   const label=pts>=8?'HIGH QUALITY':pts>=6?'GOOD / VALID':pts>=4?'WEAK SETUP':'WAIT';
   q('qeScore').textContent=pts+' / 9'; q('qeScore').className=pts>=8?'qeHigh':pts>=6?'qeGood':pts>=4?'qeWeak':'qeWait';
