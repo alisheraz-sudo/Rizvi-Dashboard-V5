@@ -106,7 +106,7 @@ window.renderV5LiveSignal=function(){
   const feed=window.RIZVI_REAL_FEED||{};
   const brokerConnected=!!(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized);
   const liveOK=brokerConnected ? !!(feed.price&&feed.stale===false) : (st.symbol!=='XAU/USD'||!!(feed.price&&feed.stale===false));
-  const bars=st.history.map((c,i)=>({o:i?st.history[i-1]:c,h:Math.max(c,i?st.history[i-1]:c),l:Math.min(c,i?st.history[i-1]:c),c}));
+  const bars=(st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):st.history.map((c,i)=>({o:i?st.history[i-1]:c,h:Math.max(c,i?st.history[i-1]:c),l:Math.min(c,i?st.history[i-1]:c),c})));
   const sig=window.V5SignalEngine(bars,bars.length-1);if(!sig)return;
   const rawDir=sig.direction||'WAIT', ql=sig.quality;
   const now=Date.now(), existing=window.signalState;
