@@ -8,7 +8,7 @@
     SPOT_EVENT:2131,SUB_TB_REQ:2135,SUB_TB_RES:2165,GET_TB_REQ:2137,GET_TB_RES:2138,
     ACCOUNTS_REQ:2149,ACCOUNTS_RES:2150,ERROR_RES:2142,HEARTBEAT:51};
   const PERIOD={M1:1,M2:2,M3:3,M4:4,M5:5,M10:6,M15:7,M30:8,H1:9,H4:10,H12:11,D1:12,W1:13,MN1:14};
-  const CFG={clientId:'',clientSecret:'',redirectUri:'com.rizvi.dashboard://ctrader/callback',scope:'accounts',live:true};
+  const CFG={clientId:'',clientSecret:'',redirectUri:(window.Capacitor?'com.rizvi.dashboard://ctrader/callback':(window.location.origin+'/ctrader/callback')),scope:'accounts',live:true};
   const S={ws:null,token:null,refreshToken:null,accountId:null,symbols:[],symbolMap:{},activeSymbolId:null,
     connected:false,authorized:false,manualDisconnect:false,lastQuote:null,lastBar:null,pending:{},heartbeat:null};
   const emit=(type,data)=>{try{window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type,...(data||{})}}))}catch{}};
