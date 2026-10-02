@@ -333,7 +333,8 @@ function btExecutionRows(idx,horizonBars=10){const tfm=btTfMinutes(document.getE
 function btOutcome(idx,s){const risk=Math.max(s.atr*1.15,(SYMBOLS[document.getElementById('btSymbol').value]||SYMBOLS['XAU/USD']).step*2);const dir=s.direction==='BUY'?1:-1;const ex=btExecSettings(),half=ex.spread/2;const mid=btBars[idx].c;const entry=mid+dir*half;const sl=entry-dir*risk,tp1=entry+dir*risk,tp2=entry+dir*risk*1.6,tp3=entry+dir*risk*2.4;let result='TIMEOUT',rr=0,exit=entry;const rows=btExecutionRows(idx,10);for(const b of rows){const bidH=b.h-half,bidL=b.l-half,askH=b.h+half,askL=b.l+half;const slip=ex.slippage;const slHit=dir>0?bidL<=sl:askH>=sl;const tp3Hit=dir>0?bidH>=tp3:askL<=tp3;const tp2Hit=dir>0?bidH>=tp2:askL<=tp2;const tp1Hit=dir>0?bidH>=tp1:askL<=tp1;if(slHit){result='SL';exit=dir>0?sl-slip:sl+slip;break}if(tp3Hit){result='TP3';exit=dir>0?tp3-slip:tp3+slip;break}if(tp2Hit){result='TP2';exit=dir>0?tp2-slip:tp2+slip;break}if(tp1Hit){result='TP1';exit=dir>0?tp1-slip:tp1+slip;break}}if(result==='TIMEOUT'){const last=rows.length?rows[rows.length-1].c:btBars[Math.min(btBars.length-1,idx+9)].c;exit=last-dir*half;rr=((exit-entry)*dir)/risk} else rr=((exit-entry)*dir)/risk;const grossR=rr;rr=grossR-ex.commission;return {result,rr,grossR,commission:ex.commission,entry,sl,tp1,tp2,tp3,exit}}
 async function btRunFull(){
  if(btDataLoading)return;
- if(!btBars.length){await btSeedData();if(!btBars.length)return;}
+ if(!btBars.length||!btExecRowsReal.length||btDataError){await btSeedData();}
+ if(!btBars.length||!btExecRowsReal.length||btDataError){const status=document.getElementById('btBatchStatus');if(status)status.textContent='Full-run: BLOCKED • verified real historical dataset unavailable';btRender();return;}
  clearInterval(btTimer);
  const btn=document.getElementById('btRunFull'),status=document.getElementById('btBatchStatus');
  if(btn)btn.disabled=true;
