@@ -1240,3 +1240,95 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(compactSignal,300);
 })();
 </script>
+
+<!-- RIZVI ACTION BOX V8 -->
+<style id="rizvi-action-box-v8">
+/* Compact decision box: keep the chart dominant and levels as a thin readable strip. */
+.chartSetupBox{
+  left:7px!important;right:7px!important;bottom:7px!important;
+  height:158px!important;padding:7px 8px!important;
+  border-radius:9px!important;box-sizing:border-box!important;
+}
+.setupHighRow{gap:5px!important;margin-bottom:5px!important}
+.setupHighBox{
+  height:29px!important;border-radius:6px!important;
+  font-size:10px!important;letter-spacing:.3px!important;
+}
+.setupSignals{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:4px!important;
+}
+.setupBtn{
+  height:24px!important;padding:0 4px!important;
+  font-size:9px!important;border-width:1px!important;
+  border-radius:5px!important;
+}
+.setupLevels{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:4px!important;margin-top:5px!important;
+}
+.levelBtn{
+  height:24px!important;padding:0 3px!important;
+  font-size:9px!important;font-weight:900!important;
+  border-width:1px!important;border-radius:5px!important;
+  white-space:nowrap!important;
+}
+.levelBtn.entryLvl,
+.levelBtn.slLvl,
+.levelBtn.tpLvl{
+  background:#0b1824!important;
+  border-color:#29455c!important;
+  color:#dce9f3!important;
+}
+.levelBtn.entryLvl.buy,.levelBtn.tpLvl.buy{border-color:#168b68!important;color:#6ff0b6!important}
+.levelBtn.entryLvl.sell,.levelBtn.tpLvl.sell{border-color:#963546!important;color:#ff8c9a!important}
+.levelBtn.slLvl{background:#25121a!important;border-color:#963546!important;color:#ff8c9a!important}
+
+/* Reserve a clean candle area above the action box. */
+.chartarea{bottom:174px!important}
+.grid{bottom:174px!important}
+.axis{bottom:174px!important}
+
+/* Thin, crisp candles: clear bodies + single-pixel wicks. */
+.chartarea .candle{
+  width:2px!important;
+  min-width:2px!important;
+  border-radius:1px!important;
+  opacity:1!important;
+}
+.chartarea .wick{
+  width:1px!important;
+  min-width:1px!important;
+  opacity:.95!important;
+}
+@media(max-width:700px){
+  .chartSetupBox{height:164px!important;left:6px!important;right:6px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .setupBtn{height:24px!important;font-size:9px!important}
+  .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important}
+  .levelBtn{height:24px!important;font-size:8.5px!important;padding:0 2px!important}
+  .chartarea{bottom:180px!important}
+  .grid,.axis{bottom:180px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:166px!important}
+  .setupHighBox{height:28px!important;font-size:9.5px!important}
+  .setupSignals{gap:4px!important}
+  .setupLevels{gap:3px!important}
+  .levelBtn{font-size:8.5px!important}
+}
+</style>
+<script id="rizvi-action-box-v8-script">
+(function(){
+  function fixLevelText(){
+    const ids=[['chartEntryBtn','ENTRY'],['chartSlBtn','SL'],['chartTp1Btn','TP1'],['chartTp2Btn','TP2'],['chartTp3Btn','TP3']];
+    ids.forEach(([id,label])=>{
+      const e=document.getElementById(id); if(!e)return;
+      /* Keep the existing price; only ensure the label stays compact. */
+      const t=e.textContent||'';
+      if(t.startsWith(label+' ')) e.setAttribute('data-level-label',label);
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{fixLevelText();setInterval(fixLevelText,1500)});
+})();
+</script>
