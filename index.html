@@ -55,8 +55,15 @@ window.V5SignalEngine=function(bars,idx){
   return {direction,score,quality,atr:atrv,e9,e21,r,m,bosUp,bosDn,body,impulse,rangeMarket,rangeWidth,trendGap};
 };
 window.renderV5LiveSignal=function(){
-  const st=window.state;if(!st||!st.history||st.history.length<30)return;
-  const bars=st.history.map((c,i)=>({o:i?st.history[i-1]:c,h:Math.max(c,i?st.history[i-1]:c),l:Math.min(c,i?st.history[i-1]:c),c}));
+  const st=window.state;if(!st)return;
+  const live=Array.isArray(window.RIZVI_LIVE_BARS)?window.RIZVI_LIVE_BARS:[];
+  let bars;
+  if(st.symbol==='XAU/USD'&&!window.RIZVI_REAL_FEED?.stale&&live.length>=30){
+    bars=live.slice(-260).map(b=>({t:b.t,o:b.o,h:b.h,l:b.l,c:b.c,closed:!!b.closed}));
+  }else{
+    if(!st.history||st.history.length<30)return;
+    bars=st.history.map((c,i)=>({o:i?st.history[i-1]:c,h:Math.max(c,i?st.history[i-1]:c),l:Math.min(c,i?st.history[i-1]:c),c}));
+  }
   const rawSig=window.V5SignalEngine(bars,bars.length-1);if(!rawSig)return;
   const tfMin=({1M:1,5M:5,15M:15,30M:30,1H:60}[st.tf]||1), holdBars=1;
   const liveBars=Array.isArray(window.RIZVI_LIVE_BARS)?window.RIZVI_LIVE_BARS:[];
