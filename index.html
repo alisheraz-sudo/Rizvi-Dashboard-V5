@@ -15,16 +15,6 @@ document.querySelectorAll('#signalModes button').forEach(btn=>btn.addEventListen
 document.getElementById('assetSelect').addEventListener('change',e=>{const a=e.target.value;document.getElementById('assetTitle').textContent=a+' Market Dashboard';document.getElementById('chartAsset').textContent=a;});
 document.querySelectorAll('#timeframes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#timeframes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');document.getElementById('tfLabel').textContent=' '+btn.textContent+' • Price Action';}));
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}<script>
-const ENGINE_RULES = {
-  signal: "BUY when bullish trend + RSI confirmation + price above VWAP + bullish market structure + MTF confirmation; SELL is the inverse; otherwise NO TRADE.",
-  entry: "Signal candle close / defined setup price; no look-ahead.",
-  stopLoss: "Beyond the invalidation swing/structure level.",
-  targets: ["TP1 = 1R","TP2 = 2R","TP3 = 3R"],
-  filters: ["RSI","EMA trend","VWAP","Market Structure","Multi-Timeframe Confirmation"],
-  execution: "Manual Trading only; Auto Execution OFF",
-  backtest: "Candle-by-candle historical simulation with no look-ahead."
-};
-</script></script></body></html><script>
 const ENGINE_RULES = Object.freeze({
   timeframe:"5m",
   emaFast:20, emaSlow:50, rsiPeriod:14, rsiBuyMin:55, rsiBuyMax:70, rsiSellMin:30, rsiSellMax:45,
@@ -35,10 +25,23 @@ const BACKTEST_DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauus
 function ema(vals,p){const k=2/(p+1),o=new Array(vals.length).fill(null);let s=0;for(let i=0;i<vals.length;i++){s+=vals[i];if(i===p-1)o[i]=s/p;else if(i>=p)o[i]=vals[i]*k+o[i-1]*(1-k)}return o}
 function rsi(vals,p){const o=new Array(vals.length).fill(null);let g=0,l=0;for(let i=1;i<=p&&i<vals.length;i++){const d=vals[i]-vals[i-1];g+=Math.max(d,0);l+=Math.max(-d,0)}if(vals.length<=p)return o;let ag=g/p,al=l/p;o[p]=al===0?100:100-100/(1+ag/al);for(let i=p+1;i<vals.length;i++){const d=vals[i]-vals[i-1];ag=(ag*(p-1)+Math.max(d,0))/p;al=(al*(p-1)+Math.max(-d,0))/p;o[i]=al===0?100:100-100/(1+ag/al)}return o}
 function parseCSV(t){return t.trim().split(/\r?\n/).slice(1).map(x=>{const [datetime,open,high,low,close,volume]=x.split(",");return {datetime,open:+open,high:+high,low:+low,close:+close,volume:+volume}}).filter(x=>Number.isFinite(x.close))}
-function sessionVWAP(rows,i){const d=rows[i].datetime.slice(0,10);let pv=0,v=0;for(let j=i;j>=0&&rows[j].datetime.slice(0,10)===d;j--){pv+=rows[j].close*rows[j].volume;v+=rows[j].volume}return v?pv/v:null}
-function bucketTrend(rows,i,mins){const t=new Date(rows[i].datetime).getTime();const b=Math.floor(t/(mins*60000));const closes=[];for(let j=0;j<=i;j++){const bj=Math.floor(new Date(rows[j].datetime).getTime()/(mins*60000));if(bj!==b&&bj===b-1)closes.push(rows[j].close)}if(closes.length<ENGINE_RULES.emaSlow)return null;const ef=ema(closes,ENGINE_RULES.emaFast),es=ema(closes,ENGINE_RULES.emaSlow);return ef.at(-1)>es.at(-1)?1:ef.at(-1)<es.at(-1)?-1:0}
+function sessionVWAPSeries(rows){
+  const out=new Array(rows.length).fill(null);let day="",pv=0,v=0;
+  for(let i=0;i<rows.length;i++){const d=rows[i].datetime.slice(0,10);if(d!==day){day=d;pv=0;v=0}pv+=rows[i].close*rows[i].volume;v+=rows[i].volume;out[i]=v?pv/v:null}
+  return out;
+}
+function mtfTrendSeries(rows,mins){
+  const buckets=new Map(), ids=new Array(rows.length);
+  for(let i=0;i<rows.length;i++){const id=Math.floor(new Date(rows[i].datetime).getTime()/(mins*60000));ids[i]=id;if(!buckets.has(id))buckets.set(id,{id,close:rows[i].close});else buckets.get(id).close=rows[i].close}
+  const arr=[...buckets.values()], closes=arr.map(x=>x.close), ef=ema(closes,ENGINE_RULES.emaFast), es=ema(closes,ENGINE_RULES.emaSlow), trendByBucket=new Map();
+  for(let i=ENGINE_RULES.emaSlow-1;i<arr.length;i++){const t=ef[i]>es[i]?1:ef[i]<es[i]?-1:0;trendByBucket.set(arr[i].id,t)}
+  const out=new Array(rows.length).fill(null);
+  for(let i=0;i<rows.length;i++)out[i]=trendByBucket.get(ids[i]-1)??null;
+  return out;
+}
 function runBacktest(rows){
   const close=rows.map(x=>x.close), ef=ema(close,20), es=ema(close,50), rr=rsi(close,14);
+  const vwapSeries=sessionVWAPSeries(rows), trend15=mtfTrendSeries(rows,15), trend60=mtfTrendSeries(rows,60);
   const trades=[];let open=null, equity=0, peak=0, maxDD=0, wins=0,losses=0,partials=0;
   for(let i=ENGINE_RULES.emaSlow;i<rows.length;i++){
     const b=rows[i];
@@ -54,8 +57,8 @@ function runBacktest(rows){
         continue;
       }
     }
-    const vwap=sessionVWAP(rows,i), trend=ef[i]>es[i]?1:ef[i]<es[i]?-1:0;
-    const mtf15=bucketTrend(rows,i,15), mtf60=bucketTrend(rows,i,60);
+    const vwap=vwapSeries[i], trend=ef[i]>es[i]?1:ef[i]<es[i]?-1:0;
+    const mtf15=trend15[i], mtf60=trend60[i];
     if(!vwap||rr[i]==null||!trend||!mtf15||!mtf60||trend!==mtf15||trend!==mtf60)continue;
     const start=Math.max(0,i-ENGINE_RULES.structureLookback), prior=rows.slice(start,i);
     if(prior.length<ENGINE_RULES.structureLookback)continue;
@@ -78,8 +81,9 @@ async function executeBacktest(){
   btn.disabled=true;st.textContent="Loading XAU/USD 5M historical sample…";
   try{
     const res=await fetch(BACKTEST_DATA_URL,{cache:"no-store"});if(!res.ok)throw new Error("Historical data request failed");
-    const rows=parseCSV(await res.text());st.textContent="Running candle-by-candle • no look-ahead…";
+    const rows=parseCSV(await res.text());st.textContent="Running optimized candle-by-candle test • no look-ahead…";
     const out=runBacktest(rows);
+    await new Promise(requestAnimationFrame);
     m.innerHTML=`Bars: <b>${out.bars.toLocaleString()}</b> • Trades: <b>${out.trades}</b><br>Win Rate: <b>${out.winRate.toFixed(2)}%</b> • Net: <b>${out.netR.toFixed(2)}R</b> • Profit Factor: <b>${out.profitFactor==null?"—":out.profitFactor.toFixed(2)}</b><br>Max Drawdown: <b>${out.maxDrawdownR.toFixed(2)}R</b><br><span class="notice">${out.period[0]} → ${out.period[1]}</span>`;
     st.textContent="Backtest complete • sample processed";
   }catch(e){st.textContent="Backtest could not run: "+e.message;m.textContent="No result claimed.";btn.disabled=false}
