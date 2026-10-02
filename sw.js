@@ -1,4 +1,4 @@
-const CACHE="rizvi-v5-app-3";
+const CACHE="rizvi-v5-app-4";
 const CORE=["./","./index.html","./manifest.webmanifest","./icon.svg","./live-candle-engine.js"];
 
 async function enhancedIndexResponse(req){
