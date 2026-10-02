@@ -1,10 +1,1 @@
-{
-  "name":"Rizvi Dashboard V5",
-  "short_name":"Rizvi",
-  "start_url":"/",
-  "scope":"/",
-  "display":"standalone",
-  "background_color":"#070b10",
-  "theme_color":"#070b10",
-  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
-}
+{"name":"Rizvi Dashboard V5","short_name":"Rizvi V5","start_url":"/","display":"standalone","background_color":"#050b12","theme_color":"#050b12","description":"Private Rizvi Dashboard V5 trading workspace.","icons":[{"src":"/icons/rizvi-192.svg","sizes":"192x192","type":"image/svg+xml","purpose":"any maskable"},{"src":"/icons/rizvi-512.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}
