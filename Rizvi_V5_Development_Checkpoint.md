@@ -58,3 +58,11 @@
 
 ## Rule
 Add → Test → Fix → Save → Next
+
+
+## Backup / Future Public Release Safety
+- Project is intended to remain private by default.
+- A future public edition can be created from a versioned source backup without changing the private production state.
+- Backup packages must exclude passwords, API tokens, cTrader client secrets, Apple certificates/private keys, provisioning secrets, and other credentials.
+- Preserve source code, native iOS configuration, build workflows, UI, indicators, backtesting logic, cTrader adapter, and this checkpoint/master record.
+- If a public edition is created later, use a separate release/version rather than exposing the current private deployment.
