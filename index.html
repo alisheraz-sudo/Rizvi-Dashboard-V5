@@ -1683,3 +1683,19 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   .setupLevels .levelBtn:nth-child(5){height:43px!important;min-height:43px!important}
 }
 </style>
+
+<!-- RIZVI OF SIGNAL LABEL V15 -->
+<style id="rizvi-of-signal-v15">
+#chartOfBtn .btnLabel{font-size:7.5px!important;letter-spacing:.15px!important}
+@media(max-width:430px){#chartOfBtn .btnLabel{font-size:7px!important;letter-spacing:0!important}}
+</style>
+<script id="rizvi-of-signal-v15-script">
+(function(){
+  function rename(){
+    const e=document.getElementById('chartOfBtn');if(!e)return;
+    const l=e.querySelector('.btnLabel');if(l)l.textContent='OF SIGNAL';
+  }
+  document.addEventListener('DOMContentLoaded',()=>{rename();setInterval(rename,700)});
+  setTimeout(rename,300);
+})();
+</script>
