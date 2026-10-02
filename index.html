@@ -2987,3 +2987,20 @@ button{pointer-events:auto!important}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
 </script>
+
+<!-- RIZVI V44 REAL CHART CLEANUP + DEPLOY MARKER -->
+<style id="rizvi-v44-real-chart-cleanup">
+#chartArea .candle,#chartArea .wick{display:none!important}
+</style>
+<script id="rizvi-v44-real-chart-cleanup-script">
+(function(){
+ if(window.__RIZVI_V44_CLEANUP)return; window.__RIZVI_V44_CLEANUP=true;
+ function clean(){
+   const a=document.getElementById('chartArea'); if(!a)return;
+   a.querySelectorAll('.candle,.wick').forEach(e=>e.remove());
+ }
+ document.addEventListener('DOMContentLoaded',()=>{clean();setInterval(clean,200)});
+ if(document.readyState!=='loading')setInterval(clean,200);
+ window.RIZVI_APP_VERSION='V44-REAL-OHLC';
+})();
+</script>
