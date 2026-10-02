@@ -1699,3 +1699,59 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(rename,300);
 })();
 </script>
+
+<!-- RIZVI SETUP HIERARCHY V16 -->
+<style id="rizvi-setup-hierarchy-v16">
+/* Top strip is ONLY the High Quality Setup; Combo stays in its own 50/50 button. */
+.setupHighRow{margin-bottom:8px!important}
+.setupHighBox{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  height:38px!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  letter-spacing:.45px!important;
+  border-width:1px!important;
+}
+.setupHighBox .btnLabel{display:none!important}
+.setupHighBox .btnValue{display:flex!important;width:100%!important;border:0!important;justify-content:center!important;font-size:11px!important;font-weight:900!important}
+/* Keep Combo as a normal 50/50 split button, not merged into the headline. */
+#chartComboBtn{display:grid!important;grid-template-columns:1fr 1fr!important}
+#chartComboBtn .btnLabel,#chartComboBtn .btnValue{font-size:10px!important;font-weight:850!important}
+/* Slightly stronger typography across the decision box, while keeping it clean. */
+.setupBtn{font-weight:850!important;letter-spacing:.3px!important}
+.setupBtn .btnLabel,.levelBtn .btnLabel{font-size:8.5px!important;font-weight:850!important;letter-spacing:.25px!important}
+.setupBtn .btnValue,.levelBtn .btnValue{font-size:10.5px!important;font-weight:900!important}
+/* Reduce the visual weight of the internal dividers so the box reads as one clean panel. */
+.setupBtn .btnLabel,.levelBtn .btnLabel{border-right:1px solid rgba(120,160,190,.42)!important}
+@media(max-width:700px){
+  .setupHighBox{height:39px!important;font-size:11px!important}
+  .setupHighBox .btnValue{font-size:11px!important}
+  .setupBtn .btnLabel,.levelBtn .btnLabel{font-size:8px!important}
+  .setupBtn .btnValue,.levelBtn .btnValue{font-size:10px!important}
+}
+@media(max-width:430px){
+  .setupHighBox{height:40px!important;font-size:10.5px!important}
+  .setupHighBox .btnValue{font-size:10.5px!important}
+}
+</style>
+<script id="rizvi-setup-hierarchy-v16-script">
+(function(){
+  function cleanHeadline(){
+    const h=document.getElementById('chartHighSetupBtn');if(!h)return;
+    h.textContent='HIGH QUALITY SETUP';
+    h.className='setupHighBox wait';
+    const st=window.state||{}, feed=window.RIZVI_REAL_FEED||{};
+    const bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    const high=!!sig&&sig.quality==='HIGH'&&dir!=='WAIT'&&feed.stale===false;
+    h.textContent='HIGH QUALITY SETUP';
+    h.className='setupHighBox '+(high?(dir==='BUY'?'buy':'sell'):'wait');
+    h.title='HIGH QUALITY SETUP — '+dir;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{cleanHeadline();setInterval(cleanHeadline,1000)});
+  setTimeout(cleanHeadline,300);
+})();
+</script>
