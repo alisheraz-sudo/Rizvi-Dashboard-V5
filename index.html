@@ -2523,3 +2523,70 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(activate,900);
 })();
 </script>
+
+<!-- RIZVI V36 REAL CANDLE WARM-UP + RENDER REPAIR -->
+<style id="rizvi-v36-candle-repair">
+.chartarea .candle{width:4px!important;min-width:3px!important;z-index:5!important;display:block!important;visibility:visible!important;opacity:1!important;border-radius:1px!important}
+.chartarea .wick{width:2px!important;min-width:2px!important;z-index:4!important;display:block!important;visibility:visible!important;opacity:.95!important}
+</style>
+<script id="rizvi-v36-candle-repair-script">
+(function(){
+  if(window.__RIZVI_V36_CANDLE_REPAIR)return;
+  window.__RIZVI_V36_CANDLE_REPAIR=true;
+  const API='https://xaus.com/api/v1/intraday?symbol=xau&hours=48&fresh=';
+  function parsePoints(data){
+    const src=Array.isArray(data?.points)?data.points:(Array.isArray(data?.data?.points)?data.data.points:(Array.isArray(data?.series)?data.series:[]));
+    return src.map(x=>({t:Date.parse(x?.t||x?.ts||x?.time||x?.timestamp||''),p:Number(x?.p??x?.price??x?.c??x?.close)}))
+      .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
+  }
+  function makeBars(points){
+    const out=[];
+    for(let i=1;i<points.length;i++){
+      const a=points[i-1],b=points[i];
+      if(b.t<=a.t)continue;
+      out.push({t:b.t,o:a.p,h:Math.max(a.p,b.p),l:Math.min(a.p,b.p),c:b.p});
+    }
+    return out;
+  }
+  function mergeBars(bars){
+    if(!bars.length||!window.state||window.state.symbol!=='XAU/USD')return false;
+    if(window.RizviCTrader?.state?.authorized)return false;
+    const current=window.state.ohlc||[];
+    const keep=current.filter(x=>Number.isFinite(x?.t)&&Number.isFinite(x?.c));
+    const map=new Map(keep.map(x=>[x.t,x]));
+    bars.forEach(b=>map.set(b.t,b));
+    const merged=[...map.values()].sort((a,b)=>a.t-b.t).slice(-520);
+    window.state.ohlc=merged;
+    window.state.history=merged.map(x=>x.c).slice(-260);
+    const live=Number(window.RIZVI_REAL_FEED?.price);
+    if(Number.isFinite(live))window.state.price=live;
+    window.RIZVI_CANDLE_SOURCE='XAUS recorded intraday sample (2-minute source) + live spot';
+    window.RIZVI_CANDLE_COUNT=merged.length;
+    return merged.length>0;
+  }
+  async function warm(){
+    if(window.RizviCTrader?.state?.authorized||!window.state||window.state.symbol!=='XAU/USD')return;
+    try{
+      const res=await fetch(API+Date.now(),{cache:'no-store'});
+      if(!res.ok)throw Error('HTTP '+res.status);
+      const data=await res.json();
+      const pts=parsePoints(data),bars=makeBars(pts);
+      if(bars.length<30)throw Error('Not enough recorded candles: '+bars.length);
+      if(mergeBars(bars)){
+        if(typeof window.update==='function')window.update();
+        if(typeof window.renderCandles==='function')window.renderCandles();
+        const note=document.getElementById('signalNotice');
+        if(note && bars.length>=30)note.textContent='Real XAU/USD candles active • XAUS recorded intraday source + live spot.';
+      }
+    }catch(e){
+      const note=document.getElementById('signalNotice');
+      if(note && !window.RIZVI_REAL_FEED?.price)note.textContent='Waiting for verified XAU/USD candle history…';
+    }
+  }
+  function paint(){
+    if(window.state?.ohlc?.length && typeof window.renderCandles==='function')window.renderCandles();
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(warm,900);setInterval(warm,30000);setInterval(paint,1500)});
+  if(document.readyState!=='loading')setTimeout(warm,900);
+})();
+</script>
