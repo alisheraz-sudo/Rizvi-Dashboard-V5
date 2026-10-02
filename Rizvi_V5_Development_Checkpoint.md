@@ -118,3 +118,5 @@ Add → Test → Fix → Save → Next
 - Signed IPA workflow is ready for a manual GitHub Actions run once Apple signing secrets are configured.
 - The available GitHub control interface does not expose manual workflow dispatch, so no signed-run success is claimed here.
 - Previously verified simulator build remains the verified native-build baseline.
+
+- Signed workflow now verifies an Apple Distribution signing identity after certificate import, verifies the signed archive, and verifies the exported IPA signature and bundle identifier.
