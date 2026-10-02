@@ -165,6 +165,9 @@ jobs:
           test -n "$API_PRIVATE_KEY_BASE64"
           API_KEY_PATH="$RUNNER_TEMP/AuthKey_$API_KEY_ID.p8"
           echo "$API_PRIVATE_KEY_BASE64" | base64 --decode > "$API_KEY_PATH"
+          test -s "$API_KEY_PATH"
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          cp "$API_KEY_PATH" "$HOME/.appstoreconnect/private_keys/AuthKey_$API_KEY_ID.p8"
           IPA=$(find build/export -maxdepth 1 -type f -name '*.ipa' | head -n 1)
           test -n "$IPA"
           xcrun altool --upload-app --type ios --file "$IPA" --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
