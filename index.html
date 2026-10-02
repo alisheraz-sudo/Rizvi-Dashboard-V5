@@ -8,7 +8,7 @@
 <section class="chart"><div class="charthead"><div><span class="charttitle" id="chartAsset">XAU/USD</span><span class="sub" id="tfLabel"> &nbsp;15M • Price Action</span></div><div class="tf" id="timeframes"><button type="button">1M</button><button type="button">5M</button><button type="button" class="sel">15M</button><button type="button">30M</button><button type="button">1H</button></div></div><div class="grid"></div><div class="priceLine"></div><div class="ema"></div><div class="charttag">4,812.60</div>
 <div class="candle" style="left:10%;height:70px"></div><div class="candle" style="left:14%;height:95px;bottom:62px"></div><div class="candle" style="left:18%;height:55px;bottom:82px"></div><div class="candle" style="left:23%;height:115px;bottom:72px"></div><div class="candle" style="left:28%;height:80px;bottom:96px"></div><div class="candle" style="left:34%;height:135px;bottom:80px"></div><div class="candle" style="left:40%;height:105px;bottom:108px"></div><div class="candle" style="left:46%;height:150px;bottom:90px"></div><div class="candle" style="left:52%;height:120px;bottom:112px"></div><div class="candle" style="left:58%;height:170px;bottom:86px"></div><div class="candle" style="left:64%;height:145px;bottom:105px"></div><div class="candle" style="left:70%;height:185px;bottom:80px"></div><div class="candle" style="left:76%;height:155px;bottom:102px"></div><div class="candle" style="left:82%;height:205px;bottom:75px"></div><div class="candle" style="left:88%;height:175px;bottom:95px"></div></section>
 <section class="under"><div class="panel"><h3>Multi-Timeframe Confirmation</h3><div class="rows"><div class="row"><span>1M • Entry / Price Action</span><b class="bull">Bullish</b></div><div class="row"><span>5M • Confirmation</span><b class="bull">Bullish</b></div><div class="row"><span>15M • Structure</span><b class="bull">Bullish</b></div><div class="row"><span>30M • Trend</span><b class="neutral">Neutral+</b></div><div class="row"><span>1H • Higher TF Bias</span><b class="bull">Bullish</b></div></div></div><div class="panel"><h3>Market Analysis</h3><div class="rows"><div class="row"><span>EMA</span><b class="bull">Uptrend</b></div><div class="row"><span>RSI</span><b>61.8 • Healthy</b></div><div class="row"><span>VWAP</span><b class="bull">Price Above</b></div><div class="row"><span>Volume Profile</span><b>High Activity</b></div><div class="row"><span>Liquidity / Imbalance</span><b class="neutral">Mixed</b></div></div></div></section></main>
-<aside class="right"><div class="rightTitle">ACTIVE TRADE SETUP</div><div class="signalbox"><div class="label">Current Signal</div><div class="sigbig">BUY</div><div class="sigprice">4,812.60</div><span class="align">5 / 5 TIMEFRAMES ALIGNED</span><div class="levels"><div class="level"><span>ENTRY</span><b>4,812.60</b></div><div class="level"><span>STOP LOSS</span><b class="sl">4,804.20</b></div><div class="level"><span>TP1</span><b class="tp">4,821.00</b></div><div class="level"><span>TP2</span><b class="tp">4,831.50</b></div><div class="level"><span>TP3</span><b class="tp">4,844.00</b></div></div><button class="action">Manual Trade Setup</button><div class="backtest panel"><h3>Backtest Status</h3><div class="btstatus">Rules freeze required before historical testing. No backtest result is claimed yet.</div></div><div class="notice">No automatic order execution. Real-time signal generation requires a connected live market-data feed.</div></div>
+<aside class="right"><div class="rightTitle">ACTIVE TRADE SETUP</div><div class="signalbox"><div class="label">Current Signal</div><div class="sigbig">BUY</div><div class="sigprice">4,812.60</div><span class="align">5 / 5 TIMEFRAMES ALIGNED</span><div class="levels"><div class="level"><span>ENTRY</span><b>4,812.60</b></div><div class="level"><span>STOP LOSS</span><b class="sl">4,804.20</b></div><div class="level"><span>TP1</span><b class="tp">4,821.00</b></div><div class="level"><span>TP2</span><b class="tp">4,831.50</b></div><div class="level"><span>TP3</span><b class="tp">4,844.00</b></div></div><button class="action">Manual Trade Setup</button><div class="backtest panel"><h3>Backtest Engine</h3><div class="btstatus" id="btStatus">Engine ready • historical test not run in this browser yet.</div><button id="runBacktest" class="action" type="button">Run XAU/USD 5M Backtest</button><div class="notice" id="btMetrics">No performance result is claimed until the historical dataset is processed candle-by-candle.</div></div><div class="notice">No automatic order execution. Real-time signal generation requires a connected live market-data feed.</div></div>
 <div class="rightgrid"><div class="panel"><h3>Market Overview</h3><div class="rows"><div class="row"><span>VWAP</span><b>4,807.90</b></div><div class="row"><span>Delta</span><b class="bull">Buy Pressure</b></div><div class="row"><span>Liquidity</span><b class="neutral">Mixed</b></div><div class="row"><span>Structure</span><b class="bull">HH / HL</b></div></div></div><div class="panel"><h3>Recent Signals</h3><div class="rows"><div class="row"><span>15M • BUY</span><b class="bull">Confirmed</b></div><div class="row"><span>5M • BUY</span><b class="bull">Confirmed</b></div><div class="row"><span>1M • WAIT</span><b class="neutral">Pending</b></div></div></div></div>
 </aside></div><script>
 document.querySelectorAll('#signalModes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#signalModes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');const s=btn.textContent;const el=document.querySelector('.signal');el.textContent=s;el.className='signal '+(s==='SELL'?'bear':s==='NO TRADE'?'neutral':'');}));
@@ -24,4 +24,69 @@ const ENGINE_RULES = {
   execution: "Manual Trading only; Auto Execution OFF",
   backtest: "Candle-by-candle historical simulation with no look-ahead."
 };
-</script></script></body></html>
+</script></script></body></html><script>
+const ENGINE_RULES = Object.freeze({
+  timeframe:"5m",
+  emaFast:20, emaSlow:50, rsiPeriod:14, rsiBuyMin:55, rsiBuyMax:70, rsiSellMin:30, rsiSellMax:45,
+  structureLookback:20, swingLookback:10, tpR:[1,2,3], scale:[1/3,1/3,1/3],
+  execution:"Entry at signal-candle close; no look-ahead; Auto Execution OFF"
+});
+const BACKTEST_DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauusd-5m-ohlcv-metals-historical-data/main/XAUUSD_5m.csv";
+function ema(vals,p){const k=2/(p+1),o=new Array(vals.length).fill(null);let s=0;for(let i=0;i<vals.length;i++){s+=vals[i];if(i===p-1)o[i]=s/p;else if(i>=p)o[i]=vals[i]*k+o[i-1]*(1-k)}return o}
+function rsi(vals,p){const o=new Array(vals.length).fill(null);let g=0,l=0;for(let i=1;i<=p&&i<vals.length;i++){const d=vals[i]-vals[i-1];g+=Math.max(d,0);l+=Math.max(-d,0)}if(vals.length<=p)return o;let ag=g/p,al=l/p;o[p]=al===0?100:100-100/(1+ag/al);for(let i=p+1;i<vals.length;i++){const d=vals[i]-vals[i-1];ag=(ag*(p-1)+Math.max(d,0))/p;al=(al*(p-1)+Math.max(-d,0))/p;o[i]=al===0?100:100-100/(1+ag/al)}return o}
+function parseCSV(t){return t.trim().split(/\r?\n/).slice(1).map(x=>{const [datetime,open,high,low,close,volume]=x.split(",");return {datetime,open:+open,high:+high,low:+low,close:+close,volume:+volume}}).filter(x=>Number.isFinite(x.close))}
+function sessionVWAP(rows,i){const d=rows[i].datetime.slice(0,10);let pv=0,v=0;for(let j=i;j>=0&&rows[j].datetime.slice(0,10)===d;j--){pv+=rows[j].close*rows[j].volume;v+=rows[j].volume}return v?pv/v:null}
+function bucketTrend(rows,i,mins){const t=new Date(rows[i].datetime).getTime();const b=Math.floor(t/(mins*60000));const closes=[];for(let j=0;j<=i;j++){const bj=Math.floor(new Date(rows[j].datetime).getTime()/(mins*60000));if(bj!==b&&bj===b-1)closes.push(rows[j].close)}if(closes.length<ENGINE_RULES.emaSlow)return null;const ef=ema(closes,ENGINE_RULES.emaFast),es=ema(closes,ENGINE_RULES.emaSlow);return ef.at(-1)>es.at(-1)?1:ef.at(-1)<es.at(-1)?-1:0}
+function runBacktest(rows){
+  const close=rows.map(x=>x.close), ef=ema(close,20), es=ema(close,50), rr=rsi(close,14);
+  const trades=[];let open=null, equity=0, peak=0, maxDD=0, wins=0,losses=0,partials=0;
+  for(let i=ENGINE_RULES.emaSlow;i<rows.length;i++){
+    const b=rows[i];
+    if(open){
+      let hit=null;
+      if(open.side===1){if(b.low<=open.sl)hit="SL";else if(b.high>=open.tp3)hit="TP3";else if(b.high>=open.tp2)hit="TP2";else if(b.high>=open.tp1)hit="TP1"}
+      else {if(b.high>=open.sl)hit="SL";else if(b.low<=open.tp3)hit="TP3";else if(b.low<=open.tp2)hit="TP2";else if(b.low<=open.tp1)hit="TP1"}
+      if(hit){
+        const r=hit==="SL"?-1:hit==="TP1"?1/3:hit==="TP2"?2/3:1;
+        equity+=r;partials++;if(r>0)wins++;else losses++;
+        peak=Math.max(peak,equity);maxDD=Math.max(maxDD,peak-equity);
+        trades.push({...open,exit:b.close,result:hit,rMultiple:r,timeExit:b.datetime});open=null;
+        continue;
+      }
+    }
+    const vwap=sessionVWAP(rows,i), trend=ef[i]>es[i]?1:ef[i]<es[i]?-1:0;
+    const mtf15=bucketTrend(rows,i,15), mtf60=bucketTrend(rows,i,60);
+    if(!vwap||rr[i]==null||!trend||!mtf15||!mtf60||trend!==mtf15||trend!==mtf60)continue;
+    const start=Math.max(0,i-ENGINE_RULES.structureLookback), prior=rows.slice(start,i);
+    if(prior.length<ENGINE_RULES.structureLookback)continue;
+    const priorHigh=Math.max(...prior.map(x=>x.high)),priorLow=Math.min(...prior.map(x=>x.low));
+    const swingLow=Math.min(...rows.slice(Math.max(0,i-10),i).map(x=>x.low));
+    const swingHigh=Math.max(...rows.slice(Math.max(0,i-10),i).map(x=>x.high));
+    let side=0;
+    if(trend===1&&rr[i]>=55&&rr[i]<=70&&b.close>vwap&&b.close>priorHigh)side=1;
+    if(trend===-1&&rr[i]>=30&&rr[i]<=45&&b.close<vwap&&b.close<priorLow)side=-1;
+    if(side){
+      const entry=b.close,sl=side===1?swingLow:swingHigh,risk=Math.abs(entry-sl);
+      if(risk>0&&risk/entry<0.01)open={side,entry,sl,tp1:entry+side*risk,tp2:entry+side*2*risk,tp3:entry+side*3*risk,time:b.datetime};
+    }
+  }
+  const n=trades.length, net=trades.reduce((s,t)=>s+t.result,0), grossWin=trades.filter(t=>t.result>0).reduce((s,t)=>s+t.result,0),grossLoss=Math.abs(trades.filter(t=>t.result<0).reduce((s,t)=>s+t.result,0));
+  return {bars:rows.length,trades:n,wins,losses,winRate:n?wins/n*100:0,netR:net,profitFactor:grossLoss?grossWin/grossLoss:null,maxDrawdownR:maxDD,period:rows.length?[rows[0].datetime,rows.at(-1).datetime]:[]};
+}
+async function executeBacktest(){
+  const st=document.getElementById("btStatus"),m=document.getElementById("btMetrics"),btn=document.getElementById("runBacktest");
+  btn.disabled=true;st.textContent="Loading XAU/USD 5M historical sample…";
+  try{
+    const res=await fetch(BACKTEST_DATA_URL,{cache:"no-store"});if(!res.ok)throw new Error("Historical data request failed");
+    const rows=parseCSV(await res.text());st.textContent="Running candle-by-candle • no look-ahead…";
+    const out=runBacktest(rows);
+    m.innerHTML=`Bars: <b>${out.bars.toLocaleString()}</b> • Trades: <b>${out.trades}</b><br>Win Rate: <b>${out.winRate.toFixed(2)}%</b> • Net: <b>${out.netR.toFixed(2)}R</b> • Profit Factor: <b>${out.profitFactor==null?"—":out.profitFactor.toFixed(2)}</b><br>Max Drawdown: <b>${out.maxDrawdownR.toFixed(2)}R</b><br><span class="notice">${out.period[0]} → ${out.period[1]}</span>`;
+    st.textContent="Backtest complete • sample processed";
+  }catch(e){st.textContent="Backtest could not run: "+e.message;m.textContent="No result claimed.";btn.disabled=false}
+}
+document.getElementById("runBacktest").addEventListener("click",executeBacktest);
+document.querySelectorAll('#signalModes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#signalModes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');const s=btn.textContent;const el=document.querySelector('.signal');el.textContent=s;el.className='signal '+(s==='SELL'?'bear':s==='NO TRADE'?'neutral':'')}));
+document.getElementById('assetSelect').addEventListener('change',e=>{const a=e.target.value;document.getElementById('assetTitle').textContent=a+' Market Dashboard';document.getElementById('chartAsset').textContent=a});
+document.querySelectorAll('#timeframes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#timeframes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');document.getElementById('tfLabel').textContent=' '+btn.textContent+' • Price Action'}));
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}))}
+</script></body></html>
