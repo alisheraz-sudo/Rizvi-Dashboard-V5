@@ -111,3 +111,10 @@ Add → Test → Fix → Save → Next
 - Fixed signed provisioning-profile validation so the Apple Team ID is explicitly available during profile application-identifier validation.
 - Native signing remains unexecuted until the required Apple/GitHub Actions signing secrets are configured; no secrets are stored in the repository or chat.
 - Simulator build had previously been verified successfully; current device/signing workflow is prepared but not claimed as signed/installable until an actual run succeeds.
+
+
+## iPhone Signed Run Readiness
+- Final native configuration review confirms Capacitor iOS app ID com.rizvi.dashboard, iOS web assets, pinned Capacitor dependencies, and separate cTrader OAuth callback scheme are aligned.
+- Signed IPA workflow is ready for a manual GitHub Actions run once Apple signing secrets are configured.
+- The available GitHub control interface does not expose manual workflow dispatch, so no signed-run success is claimed here.
+- Previously verified simulator build remains the verified native-build baseline.
