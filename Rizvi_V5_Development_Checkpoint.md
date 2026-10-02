@@ -92,3 +92,8 @@ Add → Test → Fix → Save → Next
 - Live signal generation now requires a fresh, non-stale broker feed whenever cTrader is authorized, regardless of symbol.
 - This prevents BTC/USD, Forex, XAU/USD and other cTrader symbols from retaining or generating live BUY/SELL signals from stale prices after feed interruption.
 - Existing XAU/USD non-cTrader feed behavior remains protected by its fresh-feed requirement.
+
+
+## Feed/Signal UI Synchronization
+- Signal notice and feed-block reason now use the active symbol dynamically rather than hard-coded XAU/USD wording.
+- When live broker data is stale/unavailable, the active signal is blocked and the dashboard communicates the exact active symbol/feed condition.
