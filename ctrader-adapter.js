@@ -12,7 +12,7 @@
   const S={ws:null,token:null,refreshToken:null,accountId:null,symbols:[],symbolMap:{},activeSymbolId:null,
     connected:false,authorized:false,lastQuote:null,lastBar:null,pending:{},heartbeat:null};
   const emit=(type,data)=>{try{window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type,...(data||{})}}))}catch{}};
-  const setStatus=(s,ok)=>{window.RIZVI_CTRADER={...(window.RIZVI_CTRADER||{}),status:s,connected:!!ok,accountId:S.accountId||null,broker:(S.symbols[0]&&S.symbols[0].broker)||null};emit('status',{status:s,ok:!!ok})};
+  const setStatus=(s,ok)=>{window.RIZVI_CTRADER={...(window.RIZVI_CTRADER||{}),status:s,connected:!!ok,accountId:S.accountId||null,broker:'FxPro'};const e=document.getElementById('feedStatus');if(e){e.textContent='● '+(s==='REAL BROKER'?'FxPro cTrader':s);e.style.color=ok?'#62dda7':'#d7ae57'}emit('status',{status:s,ok:!!ok})};
   function id(){return 'rizvi-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
   function send(payload,timeout=12000){
     if(!S.ws||S.ws.readyState!==WebSocket.OPEN) throw Error('cTrader WebSocket is not connected');
@@ -66,7 +66,7 @@
     if(m&&m.clientMsgId&&S.pending[m.clientMsgId]){const x=S.pending[m.clientMsgId];clearTimeout(x.t);delete S.pending[m.clientMsgId];if(type===P.ERROR_RES)x.reject(Error(p.description||p.errorCode||'cTrader error'));else x.resolve(p)}
     if(type===P.HEARTBEAT)return;
     if(type===P.ACCOUNTS_RES){const a=p.ctidTraderAccount||[];const live=a.filter(x=>!!x.isLive);const pool=CFG.live?live:a;const chosen=pool[0];if(chosen){S.accountId=Number(chosen.ctidTraderAccountId);await accountAuth();}}
-    if(type===P.ACCOUNT_AUTH_RES){setStatus('ACCOUNT AUTHORIZED',true);await loadSymbols();startHeartbeat();emit('ready',{accountId:S.accountId})}
+    if(type===P.ACCOUNT_AUTH_RES){setStatus('ACCOUNT AUTHORIZED',true);await loadSymbols();startHeartbeat();emit('ready',{accountId:S.accountId});try{if(window.state&&window.state.symbol)await subscribe(window.state.symbol,window.state.tf||'1M')}catch(e){emit('error',{message:e.message})}}
     if(type===P.SYMBOLS_LIST_RES){S.symbols=(p.symbol||[]);S.symbolMap={};S.symbols.forEach(x=>S.symbolMap[norm(x.symbolName)]=x);emit('symbols',{symbols:S.symbols});}
     if(type===P.SPOT_EVENT){const id=Number(p.symbolId);const bid=p.bid!=null?Number(p.bid)/100000:null;const ask=p.ask!=null?Number(p.ask)/100000:null;const price=ask!=null&&bid!=null?(ask+bid)/2:(bid??ask);if(Number.isFinite(price)){S.lastQuote={symbolId:id,bid,ask,price,timestamp:p.timestamp||Date.now()};emit('quote',S.lastQuote);applyQuote(id,price,p.timestamp)}if(Array.isArray(p.trendbar)&&p.trendbar.length) p.trendbar.forEach(b=>applyBar(id,b))}
     if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(decodeBar).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
@@ -76,7 +76,7 @@
   async function loadSymbols(){const r=await send({payloadType:P.SYMBOLS_LIST_REQ,ctidTraderAccountId:S.accountId,includeArchivedSymbols:false});S.symbols=r.symbol||[];S.symbolMap={};S.symbols.forEach(x=>S.symbolMap[norm(x.symbolName)]=x);emit('symbols',{symbols:S.symbols});}
   function startHeartbeat(){clearInterval(S.heartbeat);S.heartbeat=setInterval(()=>{try{if(S.ws&&S.ws.readyState===1)S.ws.send(JSON.stringify({clientMsgId:id(),payloadType:P.HEARTBEAT,payload:{}}))}catch{}},10000)}
   function decodeBar(b){if(!b||b.low==null)return null;const low=Number(b.low)/100000;const o=low+Number(b.deltaOpen||0)/100000;const c=low+Number(b.deltaClose||0)/100000;const h=low+Number(b.deltaHigh||0)/100000;return {t:Number(b.utcTimestampInMinutes||0)*60000,o,h,l:low,c,v:Number(b.volume||0)}}
-  function find(name){return S.symbolMap[norm(name)]||S.symbols.find(x=>norm(x.symbolName)===norm(name))}
+  function find(name){const n=norm(name);return S.symbolMap[n]||S.symbols.find(x=>norm(x.symbolName)===n)||S.symbols.find(x=>norm(x.symbolName).startsWith(n)||n.startsWith(norm(x.symbolName)))}
   async function subscribe(symbolName,tf){
     const s=find(symbolName);if(!s)throw Error('cTrader symbol not found: '+symbolName);
     S.activeSymbolId=Number(s.symbolId);const period=PERIOD[String(tf||'M1').toUpperCase()]||1;
