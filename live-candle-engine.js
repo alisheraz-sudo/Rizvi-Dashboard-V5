@@ -10,6 +10,24 @@
   function tfMin(){return TF[state()?.tf]||1}
   function bucket(ts,min){const ms=min*60000;return Math.floor(ts/ms)*ms}
 
+  function seedFromPoints(points){
+    const st=state();if(!st||st.symbol!=='XAU/USD'||!Array.isArray(points))return;
+    const min=tfMin(),ms=min*60000,groups=new Map();
+    points.forEach(p=>{
+      const t=Date.parse(p?.t),px=Number(p?.p);
+      if(!Number.isFinite(t)||!Number.isFinite(px))return;
+      const k=Math.floor(t/ms)*ms;
+      let g=groups.get(k);if(!g){g={t:k,o:px,h:px,l:px,c:px,closed:true,source:'XAUS sampled reference price'};groups.set(k,g)}
+      else{g.h=Math.max(g.h,px);g.l=Math.min(g.l,px);g.c=px}
+    });
+    const arr=[...groups.values()].sort((a,b)=>a.t-b.t).slice(-260);
+    if(arr.length){arr.at(-1).closed=false;barsByTf[min]=arr;window.RIZVI_LIVE_BARS=arr;
+      window.RIZVI_LIVE_CANDLE_STATE={timeframe:st.tf,source:'XAUS sampled reference price',trueOHLC:false,lastClosedAt:arr.filter(x=>x.closed).at(-1)?.t||null,current:arr.at(-1)};
+      if(arr.length>=12){st.history=arr.map(x=>x.c).slice(-260)}
+      renderStatus();
+    }
+  }
+
   function ingest(){
     const st=state(),f=feed();
     if(!st||st.symbol!=='XAU/USD'||!Number.isFinite(Number(f.price))||f.stale)return;
@@ -94,5 +112,5 @@
   setInterval(ingest,1000);
   setInterval(()=>{engineHook();draw();candleCloseGate()},1200);
   setTimeout(boot,1200);
-  window.RIZVI_LIVE_CANDLE_ENGINE={ingest,draw,getBars:()=>window.RIZVI_LIVE_BARS||[],getState:()=>window.RIZVI_LIVE_CANDLE_STATE||{}};
+  window.RIZVI_LIVE_CANDLE_ENGINE={ingest,draw,seedFromPoints,getBars:()=>window.RIZVI_LIVE_BARS||[],getState:()=>window.RIZVI_LIVE_CANDLE_STATE||{}};
 })();
