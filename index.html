@@ -2829,7 +2829,7 @@ button{pointer-events:auto!important}
     }finally{busy=false}
   }
   window.RIZVI_FORCE_LIVE_PRICE=poll;
-  document.addEventListener('DOMContentLoaded',()=>{setTimeout(poll,500);setInterval(poll,2000)});
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(poll,250);setInterval(poll,500)});
   if(document.readyState!=='loading')setTimeout(poll,500);
 })();
 </script>
