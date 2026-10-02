@@ -86,3 +86,9 @@ Add → Test → Fix → Save → Next
 - Manual disconnect now prevents the adapter's automatic reconnect timer from reopening the connection.
 - Disconnect clears the active symbol and marks the broker feed stale/disconnected so old prices are not treated as current live data.
 - Automatic reconnect remains available after unexpected connection loss when credentials are configured.
+
+
+## Universal Fresh-Broker Signal Gate
+- Live signal generation now requires a fresh, non-stale broker feed whenever cTrader is authorized, regardless of symbol.
+- This prevents BTC/USD, Forex, XAU/USD and other cTrader symbols from retaining or generating live BUY/SELL signals from stale prices after feed interruption.
+- Existing XAU/USD non-cTrader feed behavior remains protected by its fresh-feed requirement.
