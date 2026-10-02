@@ -74,3 +74,9 @@ Add → Test → Fix → Save → Next
 - Native iOS Info.plist syntax, cTrader OAuth callback registration, bundle identifier presence, and App.xcworkspace presence are validated before signing.
 - Signed IPA/TestFlight workflow remains manual-trigger only and has not been executed with real Apple signing credentials yet.
 - Railway remains parked and unchanged.
+
+
+## cTrader Adapter Precision Regression Fix
+- Fixed historical trendbar decoding to pass the active symbol ID into the decoder, ensuring historical candles use that instrument's discovered price precision rather than the fallback scale.
+- Live spot quote and live candle decoding already use the symbol-specific precision helper.
+- This is a code-level fix only; real FxPro authorization/feed still needs end-to-end verification with the user's authorized cTrader account.
