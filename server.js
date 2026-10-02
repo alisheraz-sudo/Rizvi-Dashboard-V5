@@ -46,6 +46,15 @@ const server=http.createServer((req,res)=>{
 
   if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
 
+  if(url.pathname==='/ctrader/callback' && req.method==='GET'){
+    const code=url.searchParams.get('code');
+    const error=url.searchParams.get('error');
+    const target=code
+      ? '/?ctrader_code='+encodeURIComponent(code)
+      : '/?ctrader_error='+encodeURIComponent(error||'authorization_failed');
+    return res.writeHead(302,{Location:target,'Cache-Control':'no-store'}).end();
+  }
+
   if(url.pathname==='/login' && req.method==='GET'){
     if(validSession(req))return res.writeHead(302,{Location:'/'}).end();
     return send(res,200,'text/html; charset=utf-8',loginPage(),{'Cache-Control':'no-store'});
