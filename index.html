@@ -98,7 +98,7 @@ async function fetchRealXauHistory(){
   try{
     const res=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json(),pts=Array.isArray(data.points)?data.points:[],vals=pts.map(x=>Number(x.p)).filter(Number.isFinite);
-    if(vals.length>=30){state.history=vals.slice(-260);state.price=state.history.at(-1);realXauPrice=state.price;update()}
+    if(vals.length>=30){state.history=vals.slice(-260);if(Number.isFinite(realXauPrice)){state.history.push(realXauPrice);state.history=state.history.slice(-260);state.price=realXauPrice}else{state.price=state.history.at(-1);realXauPrice=state.price}update()}
   }catch(err){}
 }
 function switchSymbolRealAware(s){
