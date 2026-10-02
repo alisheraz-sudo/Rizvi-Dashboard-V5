@@ -20,6 +20,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Prepare Capacitor web assets
+        run: |
+          rm -rf www
+          mkdir -p www
+          cp index.html www/index.html
+          cp ctrader-adapter.js www/ctrader-adapter.js
+
       - name: Generate native iOS project
         run: npx cap add ios
 
@@ -43,15 +50,7 @@ jobs:
 
       - name: Build unsigned iOS simulator app
         run: |
-          xcodebuild \
-            -project ios/App/App.xcodeproj \
-            -scheme App \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            build
+          xcodebuild             -project ios/App/App.xcodeproj             -scheme App             -sdk iphonesimulator             -configuration Debug             -derivedDataPath build/DerivedData             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             build
 
       - name: Package simulator app
         run: |
