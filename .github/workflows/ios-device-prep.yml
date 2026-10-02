@@ -1,0 +1,65 @@
+name: iOS Device Build Prep
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  ios-device-prep:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare Capacitor web assets
+        run: |
+          rm -rf www
+          mkdir -p www
+          cp index.html www/index.html
+          cp ctrader-adapter.js www/ctrader-adapter.js
+
+      - name: Generate native iOS project
+        run: npx cap add ios
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Register cTrader OAuth callback URL scheme
+        run: |
+          test -f ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.rizvi.dashboard" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.rizvi.dashboard" ios/App/App/Info.plist || true
+
+      - name: Verify iOS project and callback
+        run: |
+          test -f ios/App/App.xcworkspace/contents.xcworkspacedata
+          /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/App/App/Info.plist
+          plutil -lint ios/App/App/Info.plist
+          grep -q "com.rizvi.dashboard" ios/App/App/Info.plist
+
+      - name: Build unsigned iPhone device app
+        run: |
+          xcodebuild             -workspace ios/App/App.xcworkspace             -scheme App             -sdk iphoneos             -configuration Debug             -derivedDataPath build/DeviceDerivedData             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             build
+
+      - name: Package unsigned device app
+        run: |
+          mkdir -p artifacts
+          cp -R build/DeviceDerivedData/Build/Products/Debug-iphoneos/App.app artifacts/Rizvi-Dashboard-V5-iPhone-Unsigned.app
+
+      - name: Upload unsigned device artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rizvi-Dashboard-V5-iPhone-Unsigned
+          path: artifacts/Rizvi-Dashboard-V5-iPhone-Unsigned.app
