@@ -1993,3 +1993,55 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(watch,800);setInterval(watch,300)});
 })();
 </script>
+
+
+<!-- RIZVI CURRENT NUMERIC VALUES V22 -->
+<style id="rizvi-current-numeric-values-v22">
+.chartSetupBox .btnValue{font-variant-numeric:tabular-nums;letter-spacing:.15px!important}
+</style>
+<script id="rizvi-current-numeric-values-v22-script">
+(function(){
+  function fmt(v,d){
+    return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+  }
+  function put(id,label,value,cls,level){
+    const e=document.getElementById(id);if(!e)return;
+    e.className=(level?'levelBtn ':'setupBtn ')+(cls||'wait');
+    e.innerHTML='<span class="btnLabel">'+label+'</span><span class="btnValue">'+value+'</span>';
+  }
+  function refresh(){
+    const st=window.state||{}, bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    if(!bars.length||!window.V5SignalEngine)return;
+    const sig=V5SignalEngine(bars,bars.length-1);
+    if(!sig)return;
+    const dir=sig.direction==='BUY'?'BUY':sig.direction==='SELL'?'SELL':'WAIT';
+    const cls=dir==='BUY'?'buy':dir==='SELL'?'sell':'wait';
+    const q=String(sig.quality||'').toUpperCase();
+    const combo=dir==='WAIT'?'WAIT':q==='HIGH'?(dir==='BUY'?'STRONG BUY':'STRONG SELL'):q==='WEAK'?(dir==='BUY'?'WEAK BUY':'WEAK SELL'):dir;
+    const decimals=(window.SYMBOLS&&window.SYMBOLS[st.symbol]&&window.SYMBOLS[st.symbol].decimals)||2;
+    const ss=window.signalState||{};
+    const current=Number(st.price);
+    const entry=Number.isFinite(Number(ss.entry))?Number(ss.entry):current;
+    const atr=Number(sig.atr);
+    const sl=Number.isFinite(Number(ss.sl))?Number(ss.sl):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry-atr:dir==='SELL'?entry+atr:NaN:NaN);
+    const tp1=Number.isFinite(Number(ss.tp1))?Number(ss.tp1):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry+atr:dir==='SELL'?entry-atr:NaN:NaN);
+    const tp2=Number.isFinite(Number(ss.tp2))?Number(ss.tp2):(Number.isFinite(entry)&&Number.isFinite(atr)?dir==='BUY'?entry+2*atr:dir==='SELL'?entry-2*atr:NaN:NaN);
+    const tp3=Number.isFinite(Number(ss.tp3))?Number(ss.tp3):(Number.isFinite(Number(entry))&&Number.isFinite(atr)?dir==='BUY'?entry+3*atr:dir==='SELL'?entry-3*atr:NaN:NaN);
+    put('chartSigBtn','SIGNAL',dir,cls,false);
+    put('chartComboBtn','COMBO',combo,cls,false);
+    put('chartTrendBtn','TREND',sig.regime||'RANGE',sig.regime==='BULL'?'bull':sig.regime==='BEAR'?'bear':'wait',false);
+    put('chartDeltaBtn','DELTA',sig.delta&&sig.delta.status&&sig.delta.status!=='NOT CONNECTED'?sig.delta.status:(window.RIZVI_ORDER_FLOW?.delta||'WAIT'),'wait',false);
+    put('chartDivBtn','DIV',sig.divergence?.bias==='BULLISH'?'BULL DIV':sig.divergence?.bias==='BEARISH'?'BEAR DIV':'NONE',sig.divergence?.bias==='BULLISH'?'bull':sig.divergence?.bias==='BEARISH'?'bear':'wait',false);
+    put('chartOfBtn','OF SIGNAL',window.RIZVI_ORDER_FLOW?.signal||'WAIT',(window.RIZVI_ORDER_FLOW?.signal==='BUYING'?'bull':window.RIZVI_ORDER_FLOW?.signal==='SELLING'?'bear':'wait'),false);
+    put('chartRsiBtn','RSI',Number(sig.r).toFixed(1),sig.r>=52?'bull':sig.r<=48?'bear':'wait',false);
+    put('chartEmaBtn','EMA',sig.e9>sig.e21?'BULL':'BEAR',sig.e9>sig.e21?'bull':'bear',false);
+    put('chartEntryBtn','ENTRY',dir==='WAIT'?'—':fmt(entry,decimals),cls,true);
+    put('chartSlBtn','SL',dir==='WAIT'?'—':fmt(sl,decimals),'sell',true);
+    put('chartTp1Btn','TP1',dir==='WAIT'?'—':fmt(tp1,decimals),cls,true);
+    put('chartTp2Btn','TP2',dir==='WAIT'?'—':fmt(tp2,decimals),cls,true);
+    put('chartTp3Btn','TP3',dir==='WAIT'?'—':fmt(tp3,decimals),cls,true);
+  }
+  document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,3000)});
+  setTimeout(refresh,900);
+})();
+</script>
