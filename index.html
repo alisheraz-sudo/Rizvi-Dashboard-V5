@@ -2455,3 +2455,24 @@ input,select,textarea{background:#042117!important;color:#d9eee7!important;borde
 .badge,.tag{background:#083a2a!important;border-color:#1a654a!important}
 #rizviPageTitle{background:linear-gradient(90deg,#02140d,#075032,#02140d)!important;border-bottom:1px solid #1a694d!important;color:#1768b5!important}
 </style>
+
+<!-- RIZVI V33 FINAL ACTIVE INDICATOR STATE -->
+<style id="rizvi-v33-final-active-indicators">
+#chartSetupBox .setupBtn,#chartSetupBox .levelBtn{opacity:1!important;visibility:visible!important;filter:none!important;transition:background-color .6s ease,border-color .6s ease,box-shadow .6s ease!important}
+#chartSetupBox .setupBtn:not(.wait),#chartSetupBox .levelBtn:not(.wait){box-shadow:0 0 10px rgba(27,177,125,.14)!important}
+#chartSetupBox .setupBtn.wait,#chartSetupBox .levelBtn.wait{box-shadow:0 0 8px rgba(54,115,90,.12)!important}
+#chartSetupBox .btnLabel,#chartSetupBox .btnValue{opacity:1!important;visibility:visible!important}
+</style>
+<script id="rizvi-v33-final-active-indicators-script">
+(function(){
+  function activate(){
+    const box=document.getElementById('chartSetupBox');
+    if(!box)return;
+    box.querySelectorAll('.setupBtn,.levelBtn').forEach(el=>{
+      el.style.opacity='1';el.style.visibility='visible';el.style.filter='none';
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{activate();setTimeout(activate,700);setTimeout(activate,1600);});
+  setInterval(activate,2500);
+})();
+</script>
