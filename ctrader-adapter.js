@@ -74,8 +74,8 @@
     if(type===P.DEPTH_EVENT){
       const id=Number(p.symbolId);if(id===S.activeSymbolId){
         const d=S.depth||{bids:{},asks:{},updatedAt:null};
-        (p.newQuotes||[]).forEach(q=>{const price=Number(q.bid!=null?q.bid:q.ask)/priceScale(id),size=Number(q.size||0)/100;if(!Number.isFinite(price))return;(q.bid!=null?d.bids:d.asks)[price.toFixed(5)]=size});
-        (p.deletedQuotes||[]).forEach(qid=>{delete d.bids[qid];delete d.asks[qid]});
+        (p.newQuotes||[]).forEach(q=>{const price=Number(q.bid!=null?q.bid:q.ask)/priceScale(id),size=Number(q.size||0)/100,key=String(q.id||price.toFixed(5));if(!Number.isFinite(price))return;(q.bid!=null?d.bids:d.asks)[key]={id:key,price,size}});
+        (p.deletedQuotes||[]).forEach(qid=>{delete d.bids[String(qid)];delete d.asks[String(qid)]});
         d.updatedAt=Date.now();S.depth=d;emit('depth',{symbolId:id,depth:d});window.RIZVI_ORDER_FLOW={status:'CONNECTED',updatedAt:d.updatedAt,bids:d.bids,asks:d.asks};
       }
     }
