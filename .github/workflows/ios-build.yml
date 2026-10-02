@@ -26,6 +26,19 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
+      - name: Register cTrader OAuth callback URL scheme
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.rizvi.dashboard" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.rizvi.dashboard" ios/App/App/Info.plist || true
+
+      - name: Verify cTrader OAuth callback registration
+        run: |
+          /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/App/App/Info.plist
+          grep -q "com.rizvi.dashboard" ios/App/App/Info.plist
+
       - name: Build unsigned iOS simulator app
         run: |
           xcodebuild \
