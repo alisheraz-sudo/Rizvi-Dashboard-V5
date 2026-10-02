@@ -140,8 +140,10 @@ window.renderV5LiveSignal=function(){
   const st=window.state;if(!st)return;
   const feed=window.RIZVI_REAL_FEED||{};
   const brokerConnected=!!(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized);
-  const liveOK=brokerConnected && !!(feed.price&&feed.stale===false);
-  const bars=(st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[]);
+  const realFeedOK=!!(feed.price&&feed.stale===false&&feed.status==='REAL SPOT');
+  const liveOK=brokerConnected||realFeedOK;
+  const rawBars=(st.ohlc&&st.ohlc.length?st.ohlc.slice(-520):[]);
+  const bars=liveAggregate(rawBars,st.tf).slice(-260);
   if(bars.length<30){
     const ss=window.signalState||{};
     ss.status='WAIT • FEED';ss.direction='WAIT';ss.reason='Broker OHLC candles required';
