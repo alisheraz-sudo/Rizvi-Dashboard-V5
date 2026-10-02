@@ -1104,6 +1104,66 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(document.readyState!=='loading'){setTimeout(force,250);setInterval(force,2000);setInterval(syncLast,900)}
 })();
 </script>
+
+<!-- RIZVI V40 CANDLE + CURRENT PRICE LINE LOCK -->
+<style id="rizvi-v40-candle-line">
+#chartArea{position:relative;overflow:hidden}
+#rizviLivePriceLine{position:absolute;left:0;right:0;height:1px;z-index:30;pointer-events:none;border-top:1px solid rgba(255,255,255,.72)}
+#rizviLivePriceTag{position:absolute;right:2px;z-index:31;transform:translateY(-50%);font:700 10px/1.8 monospace;padding:0 5px;border-radius:3px;background:#17212b;color:#fff;pointer-events:none}
+#chartArea .candle,#chartArea .wick{transition:top .18s linear,height .18s linear,left .12s linear!important}
+</style>
+<script id="rizvi-v40-candle-line-script">
+(function(){
+ if(window.__RIZVI_V40)return; window.__RIZVI_V40=true;
+ const N=v=>{const n=Number(v);return Number.isFinite(n)?n:NaN};
+ function ensureLine(area){
+   let line=document.getElementById('rizviLivePriceLine');
+   if(!line){line=document.createElement('div');line.id='rizviLivePriceLine';area.appendChild(line)}
+   let tag=document.getElementById('rizviLivePriceTag');
+   if(!tag){tag=document.createElement('div');tag.id='rizviLivePriceTag';area.appendChild(tag)}
+   return {line,tag};
+ }
+ function draw(){
+   const st=window.state,area=document.getElementById('chartArea');
+   if(!st||!area||st.symbol!=='XAU/USD'||!Array.isArray(st.ohlc)||!st.ohlc.length)return;
+   const live=N(window.RIZVI_REAL_FEED?.price);
+   if(Number.isFinite(live)){
+     st.price=live;
+     const last=st.ohlc[st.ohlc.length-1];
+     if(last&&N(last.o)===N(last.o)){
+       last.c=live;
+       last.h=Math.max(N(last.h),N(last.o),live);
+       last.l=Math.min(N(last.l),N(last.o),live);
+     }
+     if(Array.isArray(st.history)&&st.history.length)st.history[st.history.length-1]=live;
+   }
+   let bars=st.ohlc.slice(-36).map(b=>({o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)}))
+     .filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite));
+   if(!bars.length)return;
+   const cur=Number.isFinite(live)?live:(N(st.price)||bars.at(-1).c);
+   const hi0=Math.max(...bars.map(b=>b.h),cur),lo0=Math.min(...bars.map(b=>b.l),cur);
+   const span0=Math.max(hi0-lo0,.01),pad=Math.max(span0*.08,.60),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+   area.querySelectorAll('.candle,.wick').forEach(e=>e.remove());
+   bars.forEach((b,i)=>{
+     const x=bars.length===1?50:(i/(bars.length-1))*94+2;
+     const wt=(hi-b.h)/span*100,wh=Math.max(1.5,(b.h-b.l)/span*100);
+     const bt=(hi-Math.max(b.o,b.c))/span*100,bh=Math.max(1.2,Math.abs(b.c-b.o)/span*100);
+     const up=b.c>=b.o;
+     const w=document.createElement('i');w.className='wick '+(up?'up':'dn');
+     w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;width:2px;position:absolute;display:block;z-index:4';
+     const body=document.createElement('span');body.className='candle '+(up?'up':'dn');
+     body.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:7px;min-height:2px;position:absolute;display:block;z-index:5';
+     area.append(w,body);
+   });
+   const pct=Math.max(1,Math.min(99,(hi-cur)/span*100)),els=ensureLine(area);
+   els.line.style.top=pct+'%';els.tag.style.top=pct+'%';els.tag.textContent=cur.toFixed(2);
+   for(let i=0;i<=18;i++){const e=document.getElementById('axis'+i);if(e)e.textContent=(hi-span*i/18).toFixed(2)}
+ }
+ function start(){setTimeout(draw,300);setInterval(draw,350)}
+ document.addEventListener('DOMContentLoaded',start);
+ if(document.readyState!=='loading')start();
+})();
+</script>
 </body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
