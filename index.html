@@ -2494,3 +2494,32 @@ input,select,textarea{background:#042117!important;color:#d9eee7!important;borde
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(start,1200);setInterval(start,2000)});
 })();
 </script>
+
+
+<!-- RIZVI V35 ALL CORE FUNCTIONS ACTIVATION GUARD -->
+<style id="rizvi-v35-function-activation">
+button{pointer-events:auto!important}
+#chartSetupBox .setupBtn,#chartSetupBox .levelBtn{pointer-events:auto!important;cursor:default!important}
+#logTradeBtn,#backtestNav,#paperStart,#paperPause,#paperEntry,#paperReset,
+#btStep,#btPlay,#btPause,#btReset,#btRunFull,#btExport,#btMonteCarlo,#btRobustness,#btCostStress,#btTfConsistency,#btSensitivity,#btRegimeTest{pointer-events:auto!important}
+</style>
+<script id="rizvi-v35-function-activation-script">
+(function(){
+  if(window.__RIZVI_V35_ACTIVE)return;
+  window.__RIZVI_V35_ACTIVE=true;
+  window.RIZVI_FUNCTIONS=window.RIZVI_FUNCTIONS||{};
+  Object.assign(window.RIZVI_FUNCTIONS,{liveFeed:true,signalEngine:true,indicators:true,journal:true,backtest:true,robustness:true,paperTrading:true,autoTrading:false});
+  function activate(){
+    const ids=['logTradeBtn','backtestNav','paperStart','paperPause','paperEntry','paperReset','btStep','btPlay','btPause','btReset','btRunFull','btExport','btMonteCarlo','btRobustness','btCostStress','btTfConsistency','btSensitivity','btRegimeTest'];
+    ids.forEach(id=>{const e=document.getElementById(id);if(e)e.removeAttribute('aria-disabled');});
+    const st=window.state;
+    if(st&&st.price!=null&&typeof window.update==='function'){try{window.update()}catch(e){}}
+    if(typeof window.updateOF==='function'){try{window.updateOF()}catch(e){}}
+    const feed=window.RIZVI_REAL_FEED;
+    window.RIZVI_FUNCTIONS.feedStatus=feed?String(feed.status||'UNKNOWN'):'STARTING';
+    window.RIZVI_FUNCTIONS.lastCheck=Date.now();
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(activate,900);setInterval(activate,5000)});
+  if(document.readyState!=='loading')setTimeout(activate,900);
+})();
+</script>
