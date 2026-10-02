@@ -10,7 +10,7 @@
   const PERIOD={M1:1,M2:2,M3:3,M4:4,M5:5,M10:6,M15:7,M30:8,H1:9,H4:10,H12:11,D1:12,W1:13,MN1:14};
   const CFG={clientId:'',clientSecret:'',redirectUri:'com.rizvi.dashboard://ctrader/callback',scope:'accounts',live:true};
   const S={ws:null,token:null,refreshToken:null,accountId:null,symbols:[],symbolMap:{},activeSymbolId:null,
-    connected:false,authorized:false,lastQuote:null,lastBar:null,pending:{},heartbeat:null};
+    connected:false,authorized:false,manualDisconnect:false,lastQuote:null,lastBar:null,pending:{},heartbeat:null};
   const emit=(type,data)=>{try{window.dispatchEvent(new CustomEvent('rizvi:ctrader',{detail:{type,...(data||{})}}))}catch{}};
   const setStatus=(s,ok)=>{window.RIZVI_CTRADER={...(window.RIZVI_CTRADER||{}),status:s,connected:!!ok,accountId:S.accountId||null,broker:'FxPro'};const e=document.getElementById('feedStatus');if(e){e.textContent='● '+(s==='REAL BROKER'?'FxPro cTrader':s);e.style.color=ok?'#62dda7':'#d7ae57'}emit('status',{status:s,ok:!!ok})};
   function id(){return 'rizvi-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
@@ -48,6 +48,7 @@
     return authUrl();
   }
   function connect(){
+    S.manualDisconnect=false;
     const host=CFG.live?'wss://live.ctraderapi.com:5036':'wss://demo.ctraderapi.com:5036';
     setStatus('CONNECTING',false);
     return new Promise((resolve,reject)=>{
@@ -58,7 +59,7 @@
       }catch(e){setStatus('AUTH ERROR',false);reject(e)}};
       ws.onmessage=e=>{try{handle(JSON.parse(e.data))}catch(err){emit('error',{message:String(err)})}};
       ws.onerror=()=>{setStatus('CONNECTION ERROR',false)};
-      ws.onclose=()=>{S.connected=false;clearInterval(S.heartbeat);setStatus('DISCONNECTED',false);setTimeout(()=>{if(CFG.clientId&&CFG.clientSecret)connect().catch(()=>{})},3000)};
+      ws.onclose=()=>{S.connected=false;clearInterval(S.heartbeat);setStatus('DISCONNECTED',false);if(!S.manualDisconnect)setTimeout(()=>{if(CFG.clientId&&CFG.clientSecret&&!S.manualDisconnect)connect().catch(()=>{})},3000)};
     });
   }
   async function handle(m){
@@ -102,7 +103,7 @@
     const close=()=>box.style.display='none';
     if(gear)gear.addEventListener('click',open);
     document.getElementById('ctClose').onclick=close;
-    document.getElementById('ctDisconnect').onclick=()=>{try{S.ws&&S.ws.close()}catch{};S.authorized=false;S.accountId=null;setStatus('DISCONNECTED',false);document.getElementById('ctMsg').textContent='Status: DISCONNECTED'};
+    document.getElementById('ctDisconnect').onclick=()=>{S.manualDisconnect=true;try{S.ws&&S.ws.close()}catch{};S.authorized=false;S.accountId=null;S.activeSymbolId=null;window.RIZVI_REAL_FEED={...(window.RIZVI_REAL_FEED||{}),status:'DISCONNECTED',stale:true};setStatus('DISCONNECTED',false);document.getElementById('ctMsg').textContent='Status: DISCONNECTED'};
     document.getElementById('ctLogin').onclick=async()=>{
       const clientId=document.getElementById('ctId').value.trim(),clientSecret=document.getElementById('ctSecret').value,redirectUri=document.getElementById('ctRedirect').value.trim();
       try{const url=configure({clientId,clientSecret,redirectUri,scope:'accounts',live:true});document.getElementById('ctMsg').textContent='Status: opening cTrader authorization…';if(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser){window.Capacitor.Plugins.Browser.open({url})}else window.open(url,'_blank');}
