@@ -97,3 +97,10 @@ Add → Test → Fix → Save → Next
 ## Feed/Signal UI Synchronization
 - Signal notice and feed-block reason now use the active symbol dynamically rather than hard-coded XAU/USD wording.
 - When live broker data is stale/unavailable, the active signal is blocked and the dashboard communicates the exact active symbol/feed condition.
+
+
+## Final Regression Pass — Symbol/TF/OHLC Lifecycle
+- Verified symbol and timeframe changes dispatch the cTrader subscription event.
+- Verified cTrader adapter writes broker OHLC into the dashboard chart state and maintains real-feed status.
+- Hardened symbol switching to clear previous-symbol OHLC immediately, preventing temporary cross-symbol candle display while the new broker subscription loads.
+- Signal engine remains gated on fresh broker data and Auto Trading remains OFF.
