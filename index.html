@@ -1441,3 +1441,38 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(splitSignal,300);
 })();
 </script>
+
+<!-- RIZVI ACTION BOX V11: extra vertical room for levels -->
+<style id="rizvi-action-box-v11">
+.chartSetupBox{
+  height:225px!important;
+  bottom:7px!important;
+  padding:9px 9px!important;
+}
+.setupHighRow{height:31px!important;margin-bottom:7px!important}
+.setupHighBox{height:31px!important}
+.setupSignals{gap:5px!important}
+.setupBtn{height:29px!important;min-height:29px!important}
+.setupLevels{gap:5px!important;margin-top:7px!important}
+.levelBtn{height:32px!important;min-height:32px!important;font-size:9.5px!important}
+.chartarea{bottom:233px!important}
+.grid{bottom:233px!important}
+.axis{bottom:233px!important}
+@media(max-width:700px){
+  .chartSetupBox{height:225px!important;left:6px!important;right:6px!important;bottom:7px!important;padding:9px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+  .setupBtn{height:29px!important;min-height:29px!important}
+  .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;margin-top:7px!important}
+  .levelBtn{height:34px!important;min-height:34px!important;font-size:8.5px!important;padding:0 2px!important}
+  .chartarea{bottom:239px!important}
+  .grid,.axis{bottom:239px!important}
+}
+@media(max-width:430px){
+  .chartSetupBox{height:225px!important}
+  .setupHighRow{height:30px!important;margin-bottom:6px!important}
+  .setupHighBox{height:30px!important;font-size:9.5px!important}
+  .setupBtn{height:29px!important;min-height:29px!important;font-size:9px!important}
+  .setupLevels{gap:4px!important;margin-top:7px!important}
+  .levelBtn{height:34px!important;min-height:34px!important;font-size:8.5px!important}
+}
+</style>
