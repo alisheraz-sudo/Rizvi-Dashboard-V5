@@ -106,6 +106,14 @@ jobs:
         run: |
           xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphoneos -configuration Release -archivePath build/RizviDashboard.xcarchive DEVELOPMENT_TEAM="$TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" archive
 
+      - name: Verify signed archive
+        run: |
+          test -d build/RizviDashboard.xcarchive
+          test -f build/RizviDashboard.xcarchive/Info.plist
+          /usr/bin/xcrun codesign --verify --deep --strict build/RizviDashboard.xcarchive/Products/Applications/App.app
+          /usr/bin/codesign -dvv build/RizviDashboard.xcarchive/Products/Applications/App.app 2>&1 | tee build/codesign.txt
+          grep -q "Identifier=com.rizvi.dashboard" build/codesign.txt
+
       - name: Export IPA
         env:
           TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
@@ -130,6 +138,18 @@ jobs:
           </plist>
           EOF
           xcodebuild -exportArchive -archivePath build/RizviDashboard.xcarchive -exportPath build/export -exportOptionsPlist build/ExportOptions.plist
+
+      - name: Verify exported IPA
+        run: |
+          IPA=$(find build/export -maxdepth 1 -type f -name '*.ipa' | head -n 1)
+          test -n "$IPA"
+          test -s "$IPA"
+          mkdir -p build/ipa-check
+          unzip -q "$IPA" -d build/ipa-check
+          APP_PATH=$(find build/ipa-check/Payload -maxdepth 1 -type d -name '*.app' | head -n 1)
+          test -n "$APP_PATH"
+          /usr/bin/xcrun codesign --verify --deep --strict "$APP_PATH"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Info.plist" | grep -qx "com.rizvi.dashboard"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
