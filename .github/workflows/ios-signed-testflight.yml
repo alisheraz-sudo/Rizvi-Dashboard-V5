@@ -42,6 +42,14 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" ios/App/App/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.rizvi.dashboard" ios/App/App/Info.plist || true
 
+      - name: Verify iOS app configuration
+        run: |
+          test -f ios/App/App/Info.plist
+          plutil -lint ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes" ios/App/App/Info.plist
+          grep -q "com.rizvi.dashboard" ios/App/App/Info.plist
+          test -f ios/App/App.xcworkspace/contents.xcworkspacedata
+
       - name: Verify required signing secrets
         env:
           CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
