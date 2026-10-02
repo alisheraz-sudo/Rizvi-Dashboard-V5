@@ -14,4 +14,14 @@
 document.querySelectorAll('#signalModes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#signalModes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');const s=btn.textContent;const el=document.querySelector('.signal');el.textContent=s;el.className='signal '+(s==='SELL'?'bear':s==='NO TRADE'?'neutral':'');}));
 document.getElementById('assetSelect').addEventListener('change',e=>{const a=e.target.value;document.getElementById('assetTitle').textContent=a+' Market Dashboard';document.getElementById('chartAsset').textContent=a;});
 document.querySelectorAll('#timeframes button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#timeframes button').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');document.getElementById('tfLabel').textContent=' '+btn.textContent+' • Price Action';}));
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}</script></body></html>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}<script>
+const ENGINE_RULES = {
+  signal: "BUY when bullish trend + RSI confirmation + price above VWAP + bullish market structure + MTF confirmation; SELL is the inverse; otherwise NO TRADE.",
+  entry: "Signal candle close / defined setup price; no look-ahead.",
+  stopLoss: "Beyond the invalidation swing/structure level.",
+  targets: ["TP1 = 1R","TP2 = 2R","TP3 = 3R"],
+  filters: ["RSI","EMA trend","VWAP","Market Structure","Multi-Timeframe Confirmation"],
+  execution: "Manual Trading only; Auto Execution OFF",
+  backtest: "Candle-by-candle historical simulation with no look-ahead."
+};
+</script></script></body></html>
