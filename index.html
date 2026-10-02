@@ -2111,15 +2111,15 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 <script id="rizvi-authoritative-display-v25-script">
 (function(){
   const ids=['chartSigBtn','chartComboBtn','chartTrendBtn','chartDeltaBtn','chartDivBtn','chartOfBtn','chartRsiBtn','chartEmaBtn','chartEntryBtn','chartSlBtn','chartTp1Btn','chartTp2Btn','chartTp3Btn'];
-  const locked=new Set(), protoText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent'), protoHtml=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  const locked=new Set(), protoText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent'), protoHtml=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML'), protoClass=Object.getOwnPropertyDescriptor(Element.prototype,'className');
   const shown=new Map();
   function lock(el){
     if(!el||locked.has(el))return;
     locked.add(el);
-    let currentText=protoText.get.call(el)||'', currentHtml=protoHtml.get.call(el)||'';
+    let currentText=protoText.get.call(el)||'', currentHtml=protoHtml.get.call(el)||'', currentClass=protoClass.get.call(el)||'';
     Object.defineProperty(el,'textContent',{configurable:true,get(){return currentText},set(v){return}});
-    Object.defineProperty(el,'innerHTML',{configurable:true,get(){return currentHtml},set(v){return}});
-    shown.set(el,{text:currentText,html:currentHtml});
+    Object.defineProperty(el,'innerHTML',{configurable:true,get(){return currentHtml},set(v){return}});\n    Object.defineProperty(el,'className',{configurable:true,get(){return currentClass},set(v){return}});
+    shown.set(el,{text:currentText,html:currentHtml,className:currentClass});
   }
   function unlockSet(){ids.forEach(id=>lock(document.getElementById(id)));lock(document.getElementById('chartHighSetupBtn'))}
   function write(el,label,value,cls,level){
@@ -2128,7 +2128,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     const html='<span class="btnLabel">'+label+'</span><span class="btnValue">'+value+'</span>';
     el.className=(level?'levelBtn ':'setupBtn ')+(cls||'wait');
     protoHtml.set.call(el,html);
-    const s=shown.get(el); if(s){s.html=html;s.text=label+' '+value}
+    const s=shown.get(el); if(s){s.html=html;s.text=label+' '+value;s.className=nextClass}
   }
   function price(v,d){
     return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
