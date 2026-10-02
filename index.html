@@ -1383,3 +1383,61 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(keepLevelsVisible,300);
 })();
 </script>
+
+<!-- RIZVI SIGNAL SPLIT V10 -->
+<style id="rizvi-signal-split-v10">
+#chartSigBtn{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  align-items:center!important;
+  justify-items:center!important;
+  padding:0!important;
+  gap:0!important;
+  overflow:hidden!important;
+}
+#chartSigBtn::before{display:none!important}
+#chartSigBtn .signalWord,#chartSigBtn .signalAction{
+  width:100%!important;
+  height:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  line-height:1!important;
+}
+#chartSigBtn .signalWord{
+  color:#8aa0b5!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.45px!important;
+  border-right:1px solid currentColor!important;
+  opacity:.9!important;
+}
+#chartSigBtn .signalAction{
+  font-size:12px!important;
+  font-weight:1000!important;
+  letter-spacing:.2px!important;
+}
+#chartSigBtn.buy .signalWord{color:#6ff0b6!important}
+#chartSigBtn.sell .signalWord{color:#ff8c9a!important}
+#chartSigBtn.wait .signalWord{color:#8fcaff!important}
+#chartSigBtn.buy .signalAction{color:#6ff0b6!important}
+#chartSigBtn.sell .signalAction{color:#ff8c9a!important}
+#chartSigBtn.wait .signalAction{color:#8fcaff!important}
+</style>
+<script id="rizvi-signal-split-v10-script">
+(function(){
+  function splitSignal(){
+    const el=document.getElementById('chartSigBtn'); if(!el)return;
+    const st=window.state||{}, bars=st.ohlc&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    el.classList.remove('buy','sell','wait','bull','bear');
+    el.classList.add(dir==='BUY'?'buy':dir==='SELL'?'sell':'wait');
+    el.innerHTML='<span class="signalWord">SIGNAL</span><span class="signalAction">'+dir+'</span>';
+    el.setAttribute('aria-label','SIGNAL '+dir);
+    el.title='SIGNAL '+dir;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{splitSignal();setInterval(splitSignal,500)});
+  setTimeout(splitSignal,300);
+})();
+</script>
