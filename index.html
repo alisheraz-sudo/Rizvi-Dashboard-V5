@@ -2413,3 +2413,22 @@ input,select,textarea{background:#d0f1d8!important;color:#173e2b!important;borde
 .badge,.tag{background:#a9ddb9!important;border-color:#67a97c!important}
 #rizviPageTitle{background:#b9e8c8!important;border-bottom:1px solid #72a9d8!important;color:#1768b5!important;font-weight:950!important}
 </style>
+
+<!-- RIZVI V31 SINGLE HEADLINE GUARD -->
+<style id="rizvi-v31-single-headline">
+#chartHighSetupBtn{display:block!important;visibility:visible!important;animation:none!important;}
+</style>
+<script id="rizvi-v31-single-headline-script">
+(function(){
+  function enforce(){
+    const box=document.getElementById('chartSetupBox');
+    if(!box)return;
+    const hs=[...box.querySelectorAll('[id="chartHighSetupBtn"]')];
+    if(hs.length>1)hs.slice(1).forEach(e=>e.remove());
+    const h=hs[0]||document.getElementById('chartHighSetupBtn');
+    if(h) h.style.animation='none';
+  }
+  document.addEventListener('DOMContentLoaded',()=>{enforce();setTimeout(enforce,300);setTimeout(enforce,1000);setTimeout(enforce,2000);});
+  new MutationObserver(enforce).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
