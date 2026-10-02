@@ -120,3 +120,5 @@ Add → Test → Fix → Save → Next
 - Previously verified simulator build remains the verified native-build baseline.
 
 - Signed workflow now verifies an Apple Distribution signing identity after certificate import, verifies the signed archive, and verifies the exported IPA signature and bundle identifier.
+
+- iPhone installation stage advanced to TestFlight: signed workflow now prepares a verified IPA and uploads it to App Store Connect using GitHub Actions App Store Connect API-key secrets. Actual upload/TestFlight processing remains pending until those secrets are configured and the workflow is manually run.
