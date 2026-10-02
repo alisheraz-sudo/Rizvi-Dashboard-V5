@@ -5,7 +5,7 @@
   "description": "Rizvi Dashboard V5 mobile trading dashboard",
   "scripts": {
     "dev": "npx serve .",
-    "build": "node -e \"console.log('Rizvi Dashboard V5 static build ready')\",
+    "build": "node -e 'console.log("Rizvi Dashboard V5 static build ready")'",
     "cap:sync": "npx cap sync",
     "android": "npx cap open android",
     "ios": "npx cap open ios",
