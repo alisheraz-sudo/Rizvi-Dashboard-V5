@@ -2833,3 +2833,59 @@ button{pointer-events:auto!important}
   if(document.readyState!=='loading')setTimeout(poll,500);
 })();
 </script>
+
+<!-- RIZVI V42 SINGLE-SCALE LIVE CANDLE + PRICE LINE -->
+<style id="rizvi-v42-single-scale">
+#chartArea{position:absolute!important;overflow:visible!important}
+#chartArea .rizviV42Line{position:absolute!important;left:0!important;right:0!important;height:0!important;border-top:1px dashed #53dca5!important;z-index:60!important;pointer-events:none!important;opacity:1!important}
+#chartArea .rizviV42Tag{position:absolute!important;right:-2px!important;transform:translateY(-50%)!important;background:#17603e!important;color:#d8ffec!important;border:1px solid #2aa979!important;border-radius:5px!important;padding:6px 9px!important;font-size:12px!important;font-weight:900!important;z-index:61!important;pointer-events:none!important;white-space:nowrap!important;box-shadow:0 0 12px rgba(42,169,121,.18)!important}
+.priceLine,#chartPrice{display:none!important}
+</style>
+<script id="rizvi-v42-single-scale-script">
+(function(){
+  if(window.__RIZVI_V42_SINGLE_SCALE)return;window.__RIZVI_V42_SINGLE_SCALE=true;
+  const N=v=>{const n=Number(v);return Number.isFinite(n)?n:NaN};
+  function els(area){
+    let line=area.querySelector('.rizviV42Line');
+    if(!line){line=document.createElement('div');line.className='rizviV42Line';area.appendChild(line)}
+    let tag=area.querySelector('.rizviV42Tag');
+    if(!tag){tag=document.createElement('div');tag.className='rizviV42Tag';area.appendChild(tag)}
+    return {line,tag};
+  }
+  function draw(){
+    const st=window.state,area=document.getElementById('chartArea');
+    if(!st||st.symbol!=='XAU/USD'||!area||!Array.isArray(st.ohlc)||!st.ohlc.length)return;
+    const live=N(window.RIZVI_REAL_FEED?.price);
+    if(Number.isFinite(live)){
+      st.price=live;
+      const last=st.ohlc[st.ohlc.length-1];
+      if(last&&N(last.o)===N(last.o)){
+        last.c=live;
+        last.h=Math.max(N(last.h),N(last.o),live);
+        last.l=Math.min(N(last.l),N(last.o),live);
+      }
+      if(Array.isArray(st.history)&&st.history.length)st.history[st.history.length-1]=live;
+    }
+    let bars=st.ohlc.slice(-36).map(b=>({o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)})).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite));
+    if(!bars.length)return;
+    const cur=Number.isFinite(live)?live:N(st.price);
+    const useCur=Number.isFinite(cur)?cur:bars[bars.length-1].c;
+    const hi0=Math.max(useCur,...bars.map(b=>b.h)),lo0=Math.min(useCur,...bars.map(b=>b.l));
+    const span0=Math.max(hi0-lo0,0.01),pad=Math.max(span0*.08,.50),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+    area.querySelectorAll('.candle,.wick').forEach(e=>e.remove());
+    bars.forEach((b,i)=>{
+      const x=bars.length===1?50:(i/(bars.length-1))*94+2;
+      const wt=(hi-b.h)/span*100,wh=Math.max(1.5,(b.h-b.l)/span*100);
+      const bt=(hi-Math.max(b.o,b.c))/span*100,bh=Math.max(1.2,Math.abs(b.c-b.o)/span*100),up=b.c>=b.o;
+      const w=document.createElement('i');w.className='wick '+(up?'up':'dn');w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;width:2px;position:absolute;display:block;z-index:54;transform:translateX(-50%)';area.appendChild(w);
+      const body=document.createElement('span');body.className='candle '+(up?'up':'dn');body.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:7px;min-height:2px;position:absolute;display:block;z-index:55;transform:translateX(-50%);transition:top .18s linear,height .18s linear,left .18s linear';area.appendChild(body);
+    });
+    const p=Math.max(1,Math.min(99,(hi-useCur)/span*100)),x=els(area);
+    x.line.style.top=p+'%';x.tag.style.top=p+'%';x.tag.textContent=useCur.toFixed(2);
+    for(let i=0;i<=18;i++){const e=document.getElementById('axis'+i);if(e)e.textContent=(hi-span*i/18).toFixed(2)}
+    const note=document.getElementById('indicatorNote');if(note)note.textContent='XAU/USD live price action • single scale locked to current price';
+  }
+  function start(){draw();setInterval(draw,150)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
