@@ -32,6 +32,7 @@
 - Simulator workflow execution verified: Run #17 passed all steps and uploaded `Rizvi-Dashboard-V5-iOS-Simulator` artifact
 - Added separate iPhone device build-preparation workflow; it builds an unsigned `iphoneos` app and uploads it as an artifact
 - Device build is intentionally unsigned; App Store/TestFlight/iPhone installation still requires Apple signing/provisioning
+- Device workflow configuration reviewed and preserved; manual dispatch remains available in GitHub Actions
 
 ## Current market-data integration
 - Added `ctrader-adapter.js`
