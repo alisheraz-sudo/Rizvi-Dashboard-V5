@@ -1,0 +1,10 @@
+{
+  "name":"Rizvi Dashboard V5",
+  "short_name":"Rizvi",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#070b10",
+  "theme_color":"#070b10",
+  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
