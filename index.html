@@ -181,7 +181,8 @@ async function fetchRealXauHistory(){
   }catch(err){}
 }
 function switchSymbolRealAware(s){
-  state.symbol=s;window.__RIZVI_ACTIVE_SYMBOL=s;state.price=SYMBOLS[s].price;$('symbolTitle').textContent=s;$('chartSymbol').textContent=s;
+  if(state.symbol===s)return;
+  state.symbol=s;window.__RIZVI_ACTIVE_SYMBOL=s;state.price=SYMBOLS[s].price;state.ohlc=[];$('symbolTitle').textContent=s;$('chartSymbol').textContent=s;
   if(window.RizviCTrader&&window.RizviCTrader.state.authorized){
     setFeedStatus('CONNECTING FxPro cTrader',false);
     window.dispatchEvent(new CustomEvent('rizvi:ctrader-subscribe',{detail:{symbol:s,tf:state.tf}}));
