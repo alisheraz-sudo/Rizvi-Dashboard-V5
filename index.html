@@ -250,9 +250,19 @@ async function fetchRealXau(){
 async function fetchRealXauHistory(){
   if(state.symbol!=='XAU/USD')return;
   try{
-    const res=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json(),pts=Array.isArray(data.points)?data.points:[],vals=pts.map(x=>Number(x.p)).filter(Number.isFinite);
-    if(vals.length>=30){state.history=vals.slice(-260);if(Number.isFinite(realXauPrice)){state.history.push(realXauPrice);state.history=state.history.slice(-260)}update()}
+    const res=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json(),pts=Array.isArray(data.points)?data.points:[],
+      clean=pts.map(x=>({t:Date.parse(x.t||x.ts||x.time||''),p:Number(x.p)})).filter(x=>Number.isFinite(x.p)&&Number.isFinite(x.t)).sort((a,b)=>a.t-b.t);
+    if(clean.length>=30){
+      state.history=clean.slice(-260).map(x=>x.p);
+      state.ohlc=clean.slice(-260).map((x,i,a)=>{const prev=a[i-1]?.p??x.p,o=prev,c=x.p,h=Math.max(o,c),l=Math.min(o,c);return {t:x.t,o,h,l,c}});
+      if(Number.isFinite(realXauPrice)){
+        state.history.push(realXauPrice);state.history=state.history.slice(-260);
+        const last=state.ohlc.at(-1);if(last){last.c=realXauPrice;last.h=Math.max(last.o,last.c);last.l=Math.min(last.o,last.c)}
+      }
+      update();
+    }
   }catch(err){}
 }
 function switchSymbolRealAware(s){
