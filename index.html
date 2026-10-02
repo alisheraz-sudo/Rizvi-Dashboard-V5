@@ -1476,3 +1476,86 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   .levelBtn{height:34px!important;min-height:34px!important;font-size:8.5px!important}
 }
 </style>
+
+<!-- RIZVI ALL BUTTONS 50/50 SPLIT V12 -->
+<style id="rizvi-all-buttons-split-v12">
+.setupBtn,.levelBtn,.setupHighBox{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  align-items:center!important;
+  justify-items:stretch!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.setupBtn .btnLabel,.setupBtn .btnValue,
+.levelBtn .btnLabel,.levelBtn .btnValue,
+.setupHighBox .btnLabel,.setupHighBox .btnValue{
+  min-width:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  line-height:1!important;
+}
+.setupBtn .btnLabel,.levelBtn .btnLabel,.setupHighBox .btnLabel{
+  color:#91a6b9!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.25px!important;
+  border-right:1px solid currentColor!important;
+  opacity:.9!important;
+}
+.setupBtn .btnValue,.levelBtn .btnValue,.setupHighBox .btnValue{
+  font-size:9px!important;
+  font-weight:1000!important;
+}
+.setupBtn.bull .btnValue,.levelBtn.buy .btnValue,.setupHighBox.buy .btnValue{color:#6ff0b6!important}
+.setupBtn.bear .btnValue,.levelBtn.sell .btnValue,.setupHighBox.sell .btnValue{color:#ff8c9a!important}
+.setupBtn.wait .btnValue,.levelBtn.wait .btnValue,.setupHighBox.wait .btnValue{color:#8fcaff!important}
+@media(max-width:430px){
+  .setupBtn .btnLabel,.levelBtn .btnLabel,.setupHighBox .btnLabel{font-size:7.5px!important}
+  .setupBtn .btnValue,.levelBtn .btnValue,.setupHighBox .btnValue{font-size:8.5px!important}
+}
+</style>
+<script id="rizvi-all-buttons-split-v12-script">
+(function(){
+  function splitButton(el,label){
+    if(!el)return;
+    let text=(el.textContent||'').replace(/\s+/g,' ').trim();
+    if(!text)return;
+    const oldLabel=el.querySelector('.btnLabel'), oldValue=el.querySelector('.btnValue');
+    if(oldLabel&&oldValue)return;
+    let value=text;
+    const m=text.match(/^([A-Z0-9]+)\\s*[—-]\\s*(.*)$/i);
+    if(m){label=m[1];value=m[2]||'—'}
+    else if(label==='SIGNAL'&&/^(BUY|SELL|WAIT)$/i.test(text)){value=text}
+    else if(label&&text.toUpperCase().startsWith(label+' ')){value=text.slice(label.length).trim()||'—'}
+    el.textContent='';
+    const a=document.createElement('span'),b=document.createElement('span');
+    a.className='btnLabel';b.className='btnValue';a.textContent=label;b.textContent=value;
+    el.append(a,b);
+  }
+  function apply(){
+    splitButton(document.getElementById('chartSigBtn'),'SIGNAL');
+    splitButton(document.getElementById('chartComboBtn'),'COMBO');
+    splitButton(document.getElementById('chartTrendBtn'),'TREND');
+    splitButton(document.getElementById('chartDeltaBtn'),'DELTA');
+    splitButton(document.getElementById('chartDivBtn'),'DIV');
+    splitButton(document.getElementById('chartOfBtn'),'OF');
+    splitButton(document.getElementById('chartRsiBtn'),'RSI');
+    splitButton(document.getElementById('chartEmaBtn'),'EMA');
+    splitButton(document.getElementById('chartEntryBtn'),'ENTRY');
+    splitButton(document.getElementById('chartSlBtn'),'SL');
+    splitButton(document.getElementById('chartTp1Btn'),'TP1');
+    splitButton(document.getElementById('chartTp2Btn'),'TP2');
+    splitButton(document.getElementById('chartTp3Btn'),'TP3');
+    splitButton(document.getElementById('chartHighSetupBtn'),'HIGH QUALITY SETUP');
+  }
+  document.addEventListener('DOMContentLoaded',()=>{apply();setInterval(apply,700)});
+  setTimeout(apply,300);
+})();
+</script>
