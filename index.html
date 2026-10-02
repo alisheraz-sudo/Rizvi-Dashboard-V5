@@ -668,12 +668,21 @@ document.addEventListener('DOMContentLoaded',()=>{
       setSmartStatus('REFERENCE • BTC/USD',true);update();
     }catch(e){window.state.price=null;window.state.history=[];window.RIZVI_REAL_FEED={provider:'BROKER',symbol:sym,status:'BROKER FEED PENDING',price:null,stale:true};setSmartStatus('WAIT • BROKER FEED',false);update()}
   }
-  window.addEventListener('rizvi:ctrader',()=>setTimeout(fetchReferenceAsset,200));
+  window.addEventListener('rizvi:ctrader',()=>setTimeout(fetchReferenceAsset,100));
+  window.addEventListener('focus',()=>setTimeout(fetchReferenceAsset,100));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(fetchReferenceAsset,100)});
   document.addEventListener('DOMContentLoaded',()=>{
     const sel=q('symbolSelect');
-    if(sel)sel.addEventListener('change',()=>setTimeout(fetchReferenceAsset,300));
-    setTimeout(fetchReferenceAsset,1200);
-    setInterval(fetchReferenceAsset,15000);
+    if(sel)sel.addEventListener('change',()=>{
+      const sym=sel.value;
+      if(window.state){window.state.price=null;window.state.history=[];window.state.ohlc=[]}
+      if(window.RIZVI_REAL_FEED)window.RIZVI_REAL_FEED={provider:sym==='BTC/USD'?'XAUS reference':'BROKER',symbol:sym,status:sym==='BTC/USD'?'CONNECTING REFERENCE':'BROKER FEED PENDING',price:null,stale:true};
+      setSmartStatus(sym==='BTC/USD'?'CONNECTING BTC/USD':'WAIT • BROKER FEED',false);
+      if(typeof update==='function')update();
+      setTimeout(fetchReferenceAsset,100);
+    });
+    setTimeout(fetchReferenceAsset,700);
+    setInterval(fetchReferenceAsset,5000);
   });
 })();
 <script>
