@@ -1,0 +1,152 @@
+name: iOS Private Ad Hoc Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ad-hoc-ios:
+    runs-on: macos-latest
+    env:
+      BUNDLE_ID: com.rizvi.dashboard
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare Capacitor web assets
+        run: |
+          rm -rf www
+          mkdir -p www
+          cp index.html www/index.html
+          cp ctrader-adapter.js www/ctrader-adapter.js
+
+      - name: Generate native iOS project
+        run: npx cap add ios
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Register cTrader OAuth callback URL scheme
+        run: |
+          test -f ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.rizvi.dashboard" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.rizvi.dashboard" ios/App/App/Info.plist || true
+
+      - name: Verify iOS configuration
+        run: |
+          test -f ios/App/App.xcworkspace/contents.xcworkspacedata
+          plutil -lint ios/App/App/Info.plist
+          grep -q "com.rizvi.dashboard" ios/App/App/Info.plist
+
+      - name: Verify signing secrets
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          test -n "$CERTIFICATE_BASE64"
+          test -n "$P12_PASSWORD"
+          test -n "$PROFILE_BASE64"
+          test -n "$TEAM_ID"
+          test -n "$KEYCHAIN_PASSWORD"
+
+      - name: Install Apple Distribution certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/rizvi-signing.keychain-db"
+          CERT_PATH="$RUNNER_TEMP/signing.p12"
+          echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | tee "$RUNNER_TEMP/signing-identities.txt"
+          grep -q "Apple Distribution" "$RUNNER_TEMP/signing-identities.txt"
+
+      - name: Install Ad Hoc provisioning profile
+        env:
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/rizvi.mobileprovision"
+          echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$PROFILE_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" "$PROFILE_PLIST")
+          APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$PROFILE_PLIST")
+          EXPECTED_APP_ID="$TEAM_ID.$BUNDLE_ID"
+          test "$APP_ID" = "$EXPECTED_APP_ID"
+          test -n "$PROFILE_UUID"
+          test -n "$PROFILE_NAME"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+
+      - name: Build signed Ad Hoc archive
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphoneos -configuration Release -archivePath build/RizviDashboard.xcarchive DEVELOPMENT_TEAM="$TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" archive
+
+      - name: Export Ad Hoc IPA
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>ad-hoc</string>
+            <key>teamID</key>
+            <string>$TEAM_ID</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.rizvi.dashboard</key>
+              <string>$PROFILE_NAME</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/RizviDashboard.xcarchive -exportPath build/export -exportOptionsPlist build/ExportOptions.plist
+
+      - name: Verify Ad Hoc IPA
+        run: |
+          IPA=$(find build/export -maxdepth 1 -type f -name '*.ipa' | head -n 1)
+          test -n "$IPA"
+          unzip -q "$IPA" -d build/ipa-check
+          APP_PATH=$(find build/ipa-check/Payload -maxdepth 1 -type d -name '*.app' | head -n 1)
+          test -n "$APP_PATH"
+          xcrun codesign --verify --deep --strict "$APP_PATH"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Info.plist" | grep -qx "$BUNDLE_ID"
+          shasum -a 256 "$IPA" | tee build/Rizvi-Dashboard-V5-iPhone-AdHoc-IPA.sha256
+
+      - name: Upload private iPhone IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rizvi-Dashboard-V5-iPhone-AdHoc-IPA
+          path: |
+            build/export/*.ipa
+            build/Rizvi-Dashboard-V5-iPhone-AdHoc-IPA.sha256
