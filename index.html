@@ -2118,7 +2118,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     locked.add(el);
     let currentText=protoText.get.call(el)||'', currentHtml=protoHtml.get.call(el)||'', currentClass=protoClass.get.call(el)||'';
     Object.defineProperty(el,'textContent',{configurable:true,get(){return currentText},set(v){return}});
-    Object.defineProperty(el,'innerHTML',{configurable:true,get(){return currentHtml},set(v){return}});\n    Object.defineProperty(el,'className',{configurable:true,get(){return currentClass},set(v){return}});
+    Object.defineProperty(el,'innerHTML',{configurable:true,get(){return currentHtml},set(v){return}});
+    Object.defineProperty(el,'className',{configurable:true,get(){return currentClass},set(v){return}});
     shown.set(el,{text:currentText,html:currentHtml,className:currentClass});
   }
   function unlockSet(){ids.forEach(id=>lock(document.getElementById(id)));lock(document.getElementById('chartHighSetupBtn'))}
@@ -2126,7 +2127,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     if(!el)return;
     lock(el);
     const html='<span class="btnLabel">'+label+'</span><span class="btnValue">'+value+'</span>';
-    el.className=(level?'levelBtn ':'setupBtn ')+(cls||'wait');
+    const nextClass=(level?'levelBtn ':'setupBtn ')+(cls||'wait');
+    protoClass.set.call(el,nextClass);
     protoHtml.set.call(el,html);
     const s=shown.get(el); if(s){s.html=html;s.text=label+' '+value;s.className=nextClass}
   }
@@ -2172,9 +2174,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     if(h){
       lock(h);
       const text=(s.q==='HIGH'&&s.dir!=='WAIT')?'HIGH QUALITY SETUP — '+s.dir:'TRADE ACTION — '+s.dir;
-      h.className='setupHighBox '+s.cls;
+      protoClass.set.call(h,'setupHighBox '+s.cls);
       protoText.set.call(h,text);
-      const z=shown.get(h);if(z){z.text=text;z.html=protoHtml.get.call(h)}
+      const z=shown.get(h);if(z){z.text=text;z.html=protoHtml.get.call(h);z.className='setupHighBox '+s.cls}
     }
     displayed=s;lastDraw=Date.now();
   }
