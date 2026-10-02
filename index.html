@@ -141,15 +141,16 @@ window.renderV5LiveSignal=function(){
   const feed=window.RIZVI_REAL_FEED||{};
   const brokerConnected=!!(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized);
   const realFeedOK=!!(feed.price&&feed.stale===false&&feed.status==='REAL SPOT');
-  const liveOK=brokerConnected||realFeedOK;
+  const brokerPriceOK=brokerConnected&&Number.isFinite(st.price)&&(!feed.stale||feed.status==='BROKER');
+  const liveOK=realFeedOK||brokerPriceOK;
   const rawBars=(st.ohlc&&st.ohlc.length?st.ohlc.slice(-520):[]);
   const bars=liveAggregate(rawBars,st.tf).slice(-260);
   if(bars.length<30){
     const ss=window.signalState||{};
-    ss.status='WAIT • FEED';ss.direction='WAIT';ss.reason='Broker OHLC candles required';
+    ss.status='WAIT • FEED';ss.direction='WAIT';ss.reason='Fresh real OHLC candles required';
     window.signalState=ss;
     const ql=$('qualityLabel');if(ql)ql.textContent='WAIT';
-    const sn=$('signalNotice');if(sn)sn.textContent='Broker OHLC candle feed required. No synthetic candles.';
+    const sn=$('signalNotice');if(sn)sn.textContent='Fresh real OHLC candles required. No synthetic candles.';
     return;
   }
   const sig=window.V5SignalEngine(bars,bars.length-1);if(!sig)return;
