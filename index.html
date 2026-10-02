@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(high){high.className='setupHighBox '+cls;high.textContent=(quality==='HIGH'&&dir!=='WAIT'?'HIGH QUALITY SETUP — ':'TRADE ACTION — ')+comboText(sig)}
     const entry=q('chartEntryBtn');
     if(entry){
-      const price=sig&&dir!=='WAIT'?(sig.entry??st.price):null;
+      const price=sig&&dir!=='WAIT'?((window.signalState&&window.signalState.entry)??st.price):null;
       const d=(window.SYMBOLS&&window.SYMBOLS[st.symbol]&&window.SYMBOLS[st.symbol].decimals)||2;
       entry.textContent=dir==='WAIT'?'ENTRY —':(quality==='HIGH'?'HIGH ENTRY ':'ENTRY ')+Number(price).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
       entry.className='levelBtn entryLvl '+(dir==='WAIT'?'wait':cls);
