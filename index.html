@@ -1941,3 +1941,55 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   setTimeout(force,300);
 })();
 </script>
+
+
+<!-- RIZVI SLOW ACTION DISPLAY V21 -->
+<style id="rizvi-slow-action-display-v21">
+.chartSetupBox .setupBtn,.chartSetupBox .levelBtn,.chartSetupBox .setupHighBox{
+  transition:background-color .45s ease,border-color .45s ease,color .45s ease,opacity .45s ease!important;
+}
+.chartSetupBox .btnValue{transition:opacity .35s ease!important}
+</style>
+<script id="rizvi-slow-action-display-v21-script">
+(function(){
+  const last={}, pending={};
+  const ids=['chartSigBtn','chartComboBtn','chartTrendBtn','chartDeltaBtn','chartDivBtn','chartOfBtn','chartRsiBtn','chartEmaBtn','chartEntryBtn','chartSlBtn','chartTp1Btn','chartTp2Btn','chartTp3Btn'];
+  function keyFor(e){return e.id}
+  function hold(id){
+    const e=document.getElementById(id); if(!e)return;
+    const label=e.querySelector('.btnLabel'), value=e.querySelector('.btnValue');
+    if(!label||!value)return;
+    const k=keyFor(e), now=Date.now(), current=label.textContent+'|'+value.textContent;
+    if(!last[k]){last[k]={text:current,time:now};return}
+    if(last[k].text!==current){
+      if(now-last[k].time<2200){
+        if(!pending[k] || pending[k].text!==current){
+          pending[k]={text:current,at:now};
+          const old=e.cloneNode(true);
+          e.innerHTML='<span class="btnLabel">'+last[k].text.split('|')[0]+'</span><span class="btnValue">'+last[k].text.split('|').slice(1).join('|')+'</span>';
+          setTimeout(()=>{
+            if(pending[k]&&pending[k].text===current){
+              e.innerHTML='<span class="btnLabel">'+current.split('|')[0]+'</span><span class="btnValue">'+current.split('|').slice(1).join('|')+'</span>';
+              last[k]={text:current,time:Date.now()}; delete pending[k];
+            }
+          },2200);
+          return;
+        }
+      }else{
+        last[k]={text:current,time:now};
+      }
+    }
+  }
+  function watch(){
+    ids.forEach(hold);
+    const h=document.getElementById('chartHighSetupBtn');
+    if(h){
+      const now=Date.now(), t=h.textContent;
+      if(!last.high){last.high={text:t,time:now}}
+      else if(last.high.text!==t && now-last.high.time<3000){h.textContent=last.high.text}
+      else if(last.high.text!==t){last.high={text:t,time:now}}
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(watch,800);setInterval(watch,300)});
+})();
+</script>
