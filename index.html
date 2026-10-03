@@ -71,7 +71,7 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
 /* RIZVI V45 — TradingView Lightweight Charts */
 #chartArea{overflow:hidden!important}
 #chartArea > :not(#rizviTvChart){display:none!important}
-#rizviTvChart{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;z-index:40!important;touch-action:none}
+#rizviTvChart{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;min-width:1px!important;min-height:1px!important;z-index:40!important;touch-action:none}
 #rizviTvChart .rizviTvAttribution{position:absolute;left:8px;bottom:4px;z-index:10;font:10px/1.2 system-ui,sans-serif;opacity:.55;pointer-events:auto}
 #rizviTvChart .rizviTvAttribution a{color:#8da4b8;text-decoration:none}
 @media (max-width:700px){
@@ -1189,7 +1189,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(window.__RIZVI_V44_BTC)return; window.__RIZVI_V44_BTC=true;
   const area=()=>document.getElementById('chartArea');
   const n=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
-  let busy=false,tickBusy=false,bars=[],lastTick=NaN;
+  let busy=false,tickBusy=false,bars=[],lastTick=NaN,provider='';
 
   function isBTC(){return window.state?.symbol==='BTC/USD'}
   function tfMin(tf){return ({'1M':1,'5M':5,'15M':15,'30M':30,'1H':60})[tf]||1}
@@ -1198,7 +1198,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const ms=mins*60000,out=[];
     for(const b of rows){
       const bucket=Math.floor(b.t/ms)*ms,last=out[out.length-1];
-      if(!last||last.t!==bucket) out.push({t:bucket,o:b.o,h:b.h,l:b.l,c:b.c});
+      if(!last||last.t!==bucket)out.push({t:bucket,o:b.o,h:b.h,l:b.l,c:b.c});
       else {last.h=Math.max(last.h,b.h);last.l=Math.min(last.l,b.l);last.c=b.c}
     }
     return out.slice(-260);
@@ -1221,7 +1221,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const a=area();if(!a||!bars.length)return;
     const rows=aggregate(bars,tfMin(window.state.tf));
     if(!rows.length)return;
-    const cur=n(window.state.price) || n(rows.at(-1).c);
+    const cur=Number.isFinite(n(window.state.price))?n(window.state.price):n(rows.at(-1).c);
     const hi0=Math.max(cur,...rows.map(b=>b.h)),lo0=Math.min(cur,...rows.map(b=>b.l));
     const span0=Math.max(hi0-lo0,0.01),pad=Math.max(span0*.06,Math.max(cur*.0008,10)),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
     a.querySelectorAll('.rizviBTCCandle,.rizviBTCWick,.rizviBTCLine,.rizviBTCPrice').forEach(e=>e.remove());
@@ -1229,8 +1229,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       const x=rows.length===1?50:(i/(rows.length-1))*93+2.5;
       const wt=(hi-b.h)/span*100,wh=Math.max(.7,(b.h-b.l)/span*100);
       const bt=(hi-Math.max(b.o,b.c))/span*100,bh=Math.max(.7,Math.abs(b.c-b.o)/span*100),up=b.c>=b.o;
-      const w=document.createElement('i');w.className='rizviBTCWick';w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;background:'+(up?'#2ed39a':'#ef6b72')+';';a.appendChild(w);
-      const body=document.createElement('span');body.className='rizviBTCCandle';body.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:6px;background:'+(up?'#20c58a':'#e85f68')+';';a.appendChild(body);
+      const w=document.createElement('i');w.className='rizviBTCWick';w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;background:'+(up?'#2ed39a':'#ef6b72')+';';
+      const body=document.createElement('span');body.className='rizviBTCCandle';body.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:6px;background:'+(up?'#20c58a':'#e85f68')+';';
+      a.append(w,body);
     });
     const p=Math.max(1,Math.min(99,(hi-cur)/span*100));
     const line=document.createElement('div');line.className='rizviBTCLine';line.style.top=p+'%';a.appendChild(line);
@@ -1242,52 +1243,96 @@ document.addEventListener('DOMContentLoaded',()=>{
     const hh=document.getElementById('hourHigh'),hl=document.getElementById('hourLow');
     if(hh)hh.textContent='1H H '+fmt(Math.max(...rows.slice(-Math.max(1,60/tfMin(window.state.tf))).map(b=>b.h)));
     if(hl)hl.textContent='L '+fmt(Math.min(...rows.slice(-Math.max(1,60/tfMin(window.state.tf))).map(b=>b.l)));
-    const note=document.getElementById('indicatorNote');if(note)note.textContent='BTC/USD REAL 1M OHLC • live open candle • Binance public market feed';
+    const note=document.getElementById('indicatorNote');if(note)note.textContent='BTC/USD REAL 1M OHLC • live open candle • '+provider+' feed';
   }
-  function acceptRows(data){
-    const clean=(Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])}))
-      .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
-    if(clean.length<20)throw Error('BTC OHLC insufficient');
+  function acceptRows(data,source){
+    let clean=[];
+    if(source==='Coinbase'){
+      clean=(Array.isArray(data)?data:[]).map(x=>({t:Number(x[0])*1000,l:n(x[1]),h:n(x[2]),o:n(x[3]),c:n(x[4])}))
+        .map(x=>({t:x.t,o:x.o,h:x.h,l:x.l,c:x.c}))
+        .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+    }else if(source==='Kraken'){
+      const rows=Array.isArray(data?.result?.XXBTZUSD)?data.result.XXBTZUSD:[];
+      clean=rows.map(x=>({t:Number(x[0])*1000,o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])}))
+        .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+    }else{
+      clean=(Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])}))
+        .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+    }
+    if(clean.length<20)throw Error(source+' OHLC insufficient');
     bars=clean.slice(-520);
     const last=bars.at(-1);
     if(Number.isFinite(lastTick)&&last){last.c=lastTick;last.h=Math.max(last.h,lastTick);last.l=Math.min(last.l,lastTick)}
     window.state.ohlc=bars.map(b=>({t:b.t,o:b.o,h:b.h,l:b.l,c:b.c}));
     window.state.history=window.state.ohlc.map(b=>b.c).slice(-260);
-    window.RIZVI_CANDLE_SOURCE='Binance public BTCUSDT 1-minute OHLC';
+    window.RIZVI_CANDLE_SOURCE=source+' public BTC/USD 1-minute OHLC';
     window.RIZVI_CANDLE_TIMEFRAME='1m';
     window.RIZVI_CANDLE_COUNT=bars.length;
+    provider=source;
+  }
+  async function getJson(url){
+    const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),7000);
+    try{
+      const r=await fetch(url,{cache:'no-store',signal:ctl.signal});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      return await r.json();
+    }finally{clearTimeout(tm)}
   }
   async function loadBars(){
     if(!isBTC()||busy)return;busy=true;
+    const sources=[
+      ['Coinbase','https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60'],
+      ['Binance','https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000&_='+Date.now()],
+      ['Kraken','https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1']
+    ];
+    let lastErr='No BTC OHLC source available';
     try{
-      const r=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000&_='+Date.now(),{cache:'no-store'});
-      if(!r.ok)throw Error('HTTP '+r.status);
-      acceptRows(await r.json());
-      setFeed('REAL BTC/USD',true);
-      if(typeof window.update==='function')window.update();
-      render();
+      for(const [name,url] of sources){
+        try{
+          const data=await getJson(url);acceptRows(data,name);
+          setFeed('REAL BTC/USD • '+name,true);
+          window.RIZVI_REAL_FEED={...(window.RIZVI_REAL_FEED||{}),provider:name,symbol:'BTC/USD',status:'REAL 1M OHLC',price:n(window.state.price),stale:false,updatedAt:new Date().toISOString()};
+          if(typeof window.update==='function')window.update();
+          render();return;
+        }catch(e){lastErr=String(e?.message||e)}
+      }
+      throw Error(lastErr);
     }catch(e){
       setFeed('BTC FEED ERROR',false);
-      window.RIZVI_REAL_FEED={provider:'Binance',symbol:'BTC/USD',status:'FEED ERROR',price:null,stale:true};
+      window.RIZVI_REAL_FEED={provider:'BTC public feeds',symbol:'BTC/USD',status:'FEED ERROR',price:null,stale:true,lastError:String(e?.message||e)};
     }finally{busy=false}
   }
   async function loadTick(){
     if(!isBTC()||tickBusy)return;tickBusy=true;
+    const sources=[
+      ['Coinbase','https://api.exchange.coinbase.com/products/BTC-USD/ticker'],
+      ['Binance','https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT&_='+Date.now()],
+      ['Kraken','https://api.kraken.com/0/public/Ticker?pair=XBTUSD']
+    ];
     try{
-      const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT&_='+Date.now(),{cache:'no-store'});
-      if(!r.ok)throw Error('HTTP '+r.status);
-      const d=await r.json(),px=n(d.price);if(!Number.isFinite(px))throw Error('Invalid BTC price');
-      const prev=n(window.state.price);lastTick=px;window.state.price=px;
+      let px=NaN,source=provider||'Coinbase';
+      for(const [name,url] of sources){
+        try{
+          const d=await getJson(url);
+          const candidate=name==='Coinbase'?n(d?.price):name==='Binance'?n(d?.price):n(d?.result?.XXBTZUSD?.c?.[0]);
+          if(Number.isFinite(candidate)){px=candidate;source=name;break}
+        }catch(e){}
+      }
+      if(!Number.isFinite(px))throw Error('BTC ticker unavailable');
+      const prev=n(window.state.price);lastTick=px;window.state.price=px;provider=source;
       const last=bars.at(-1);
       if(last){last.c=px;last.h=Math.max(last.h,px);last.l=Math.min(last.l,px)}
-      if(window.state.ohlc.length){const b=window.state.ohlc.at(-1);b.c=px;b.h=Math.max(b.h,px);b.l=Math.min(b.l,px);window.state.history[window.state.history.length-1]=px}
+      if(Array.isArray(window.state.ohlc)&&window.state.ohlc.length){
+        const b=window.state.ohlc.at(-1);b.c=px;b.h=Math.max(b.h,px);b.l=Math.min(b.l,px);
+        if(Array.isArray(window.state.history)&&window.state.history.length)window.state.history[window.state.history.length-1]=px;
+      }
       const dlt=px-(Number.isFinite(prev)?prev:px),pct=prev?(dlt/prev*100):0,de=document.querySelector('.delta');
       if(de){de.textContent=(dlt>=0?'+':'')+dlt.toFixed(2)+' ('+(pct>=0?'+':'')+pct.toFixed(3)+'%)';de.style.color=dlt>=0?'#53d99a':'#ed697b'}
-      window.RIZVI_REAL_FEED={provider:'Binance',symbol:'BTC/USD',status:'REAL SPOT/TICK',price:px,previous:prev,updatedAt:new Date().toISOString(),stale:false};
-      setFeed('REAL BTC/USD',true);
+      window.RIZVI_REAL_FEED={provider:source,symbol:'BTC/USD',status:'REAL SPOT/TICK',price:px,previous:prev,updatedAt:new Date().toISOString(),stale:false};
+      setFeed('REAL BTC/USD • '+source,true);
       if(typeof window.update==='function')window.update();
       render();
-    }catch(e){setFeed('BTC FEED ERROR',false)}
+    }catch(e){ if(!bars.length)setFeed('BTC FEED ERROR',false) }
     finally{tickBusy=false}
   }
   function resetUIForXAU(){
@@ -1631,7 +1676,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function setSmartStatus(text,ok){const e=q('feedStatus');if(e){e.textContent='● '+text;e.style.color=ok?'#62dda7':'#d7ae57'}}
   async function fetchReferenceAsset(){
     const sym=window.state&&window.state.symbol;
-    if(!sym||sym==='XAU/USD'||(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized))return;
+    if(!sym||sym==='XAU/USD'||sym==='BTC/USD'||(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized))return;
     if(sym!=='BTC/USD'){window.RIZVI_REAL_FEED={provider:'BROKER',symbol:sym,status:'BROKER FEED PENDING',price:null,stale:true};setSmartStatus('WAIT • BROKER FEED',false);return}
     try{
       const r=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'});
