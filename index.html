@@ -161,4 +161,20 @@
  }
  setInterval(bind,2000);
 })();
+</script><script>
+(function(){
+ const symbols={
+  BTCUSD:{decimals:2,source:'coinbase'},
+  'XAU/USD':{decimals:2,source:'xau'},
+  USOIL:{decimals:2,source:'ctrader'}
+ };
+ window.RIZVI_SYMBOLS=symbols;
+ window.RIZVI_CURRENT_SYMBOL=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+ window.RIZVI_SET_SYMBOL=function(sym){
+  if(!symbols[sym])return false;
+  window.RIZVI_CURRENT_SYMBOL=sym;
+  document.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));
+  return true;
+ };
+})();
 </script></body></html>
