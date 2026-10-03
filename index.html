@@ -195,4 +195,22 @@
  }
  window.RIZVI_REFRESH_GOLD=gold; gold(); setInterval(gold,30000);
 })();
+</script><script>
+(function(){
+ async function goldBars(){
+  try{
+   const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+   const rows=Array.isArray(d)?d:(d?.data||d?.prices||[]);
+   const bars=rows.map(x=>{
+    if(Array.isArray(x)) return {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]};
+    return {t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)};
+   }).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
+   if(!bars.length)return;
+   window.RIZVI_RAW_BARS=bars;window.RIZVI_CANDLE_SOURCE='XAUS';window.RIZVI_CANDLE_SYMBOL='XAU/USD';
+   window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
+   window.dispatchEvent(new CustomEvent('rizvi:gold-bars-update',{detail:{bars}}));
+  }catch(e){}
+ }
+ window.RIZVI_REFRESH_GOLD_BARS=goldBars; goldBars(); setInterval(goldBars,60000);
+})();
 </script></body></html>
