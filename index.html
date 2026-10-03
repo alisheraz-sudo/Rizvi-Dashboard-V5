@@ -4579,11 +4579,15 @@ button{pointer-events:auto!important}
      if(pendingCount>=3 && stable!==x.sig){stable=x.sig;stableQuality=x.q;lastChange=Date.now()}
    }
    const buy=stable==='BUY',sell=stable==='SELL';
-   h.className='setupHighBox '+(buy?'rzFinalBuy':sell?'rzFinalSell':'rzFinalWait');
-   h.textContent=(buy||sell)?'HIGH QUALITY SETUP — '+stable:'TRADE ACTION — WAIT';
-   h.setAttribute('data-direction',stable);
-   h.setAttribute('data-quality',(buy||sell)?'HIGH':'WAIT');
-   h.title=(buy||sell)?'Confirmed high-quality setup; stabilized against live-tick fluctuation.':'Waiting for a confirmed high-quality setup.';
+   const highActive=(buy||sell)&&stableQuality==='HIGH';
+   h.className='setupHighBox '+(highActive?(buy?'rzFinalBuy':'rzFinalSell'):'rzFinalWait');
+   h.textContent='HIGH QUALITY SETUP';
+   h.setAttribute('data-direction',highActive?stable:'WAIT');
+   h.setAttribute('data-quality',highActive?'HIGH':'WAIT');
+   h.setAttribute('aria-disabled',highActive?'false':'true');
+   h.title=highActive
+     ? ('High Quality Setup confirmed — '+stable)
+     : 'Inactive: waiting for a confirmed High Quality Setup.';
  }
  document.addEventListener('DOMContentLoaded',()=>{apply();setInterval(apply,500)});
  setTimeout(apply,600);
@@ -4626,5 +4630,30 @@ button{pointer-events:auto!important}
   document.addEventListener('DOMContentLoaded',clean);
   setTimeout(clean,300);
   setInterval(clean,500);
+})();
+</script><!-- RIZVI HIGH QUALITY SETUP ACTIVE-ONLY V48 -->
+<style id="rizvi-high-quality-active-only-v48">
+#chartSetupBox #chartHighSetupBtn.rzFinalWait{
+  opacity:.62!important;
+  filter:saturate(.55)!important;
+  cursor:default!important;
+}
+#chartSetupBox #chartHighSetupBtn.rzFinalBuy,
+#chartSetupBox #chartHighSetupBtn.rzFinalSell{
+  opacity:1!important;
+  filter:none!important;
+  cursor:pointer!important;
+}
+</style>
+<script id="rizvi-high-quality-active-only-v48-script">
+(function(){
+ function enforce(){
+  const h=document.getElementById('chartHighSetupBtn');if(!h)return;
+  h.textContent='HIGH QUALITY SETUP';
+  h.querySelectorAll('.btnLabel,.btnValue').forEach(x=>x.remove());
+ }
+ document.addEventListener('DOMContentLoaded',enforce);
+ setTimeout(enforce,250);
+ setInterval(enforce,500);
 })();
 </script>
