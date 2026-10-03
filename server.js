@@ -65,7 +65,7 @@ function ofReply(res,status,obj){
   });
 }
 
-const server=http.createServer((req,res)=>{
+const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
 
   if(req.method==='OPTIONS')return ofReply(res,204,{ok:true});
