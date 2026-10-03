@@ -875,4 +875,36 @@
   setInterval(bindQualification,2000);
   bindQualification();
 })();
+</script><script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindRange(lv){
+    if(!lv)return;
+    const map={Entry:lv.entry,SL:lv.sl,TP1:lv.tp1,TP2:lv.tp2,TP3:lv.tp3};
+    [...document.querySelectorAll('.rangeRow')].forEach(row=>{
+      const k=row.querySelector('span')?.textContent?.trim();
+      if(k&&map[k]!=null){const b=row.querySelector('b');if(b)b.textContent=fmt(map[k]);}
+    });
+  }
+  function bindQualification(q){
+    if(!q)return;
+    const signal=q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:(q.signalDirection||'BUY');
+    window.RIZVI_SIGNAL_DIRECTION=signal;
+    const head=document.querySelector('.signalHead div:first-child b');if(head)head.textContent=signal;
+    const big=document.querySelector('.right .card .big span:first-child');if(big)big.textContent=signal;
+    const quality=Math.max(0,Math.min(100,Number(q.patternConfidence)||0));
+    const qualityNode=document.querySelector('.signalHead div:nth-child(2) b');if(qualityNode)qualityNode.textContent=quality+'%';
+    const exec=document.querySelector('.right .gborder .row b');
+    if(exec)exec.innerHTML=quality+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'ENGINE QUALIFIED':'WAIT')+'</em>';
+    const ready=document.querySelector('.right .gborder .ready');
+    if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';}
+    if(window.RIZVI_LIVE_PRICE)bindRange(window.RIZVI_SIGNAL_LEVELS?.(window.RIZVI_LIVE_PRICE,signal));
+  }
+  window.addEventListener('rizvi:price-update',e=>{
+    const p=Number(e.detail?.price);
+    if(Number.isFinite(p))bindRange(window.RIZVI_SIGNAL_LEVELS?.(p,window.RIZVI_SIGNAL_DIRECTION||e.detail?.direction||'BUY'));
+  });
+  window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e.detail));
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
+})();
 </script></body></html>
