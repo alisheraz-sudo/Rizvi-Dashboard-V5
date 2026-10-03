@@ -1061,4 +1061,23 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>apply(e.detail));
   setInterval(()=>apply(window.RIZVI_SIGNAL_QUALIFICATION),2000);
 })();
+</script><script>
+(function(){
+  const operational={price:false,candles:false,marketRange:false,liquidity:false,signal:false,symbol:false,updatedAt:null};
+  function sync(key,value){
+    operational[key]=value!==false;
+    operational.updatedAt=Date.now();
+    window.RIZVI_OPERATIONAL_HEALTH={...operational};
+    window.RIZVI_OPERATIONAL_HEALTH.ready=operational.price&&operational.candles&&operational.marketRange&&operational.liquidity&&operational.signal;
+  }
+  document.addEventListener('rizvi:symbol-change',e=>{operational.symbol=!!(e.detail?.symbol||window.RIZVI_CURRENT_SYMBOL);sync('symbol',true);});
+  document.addEventListener('rizvi:price-update',e=>sync('price',Number.isFinite(Number(e.detail?.price))));
+  document.addEventListener('rizvi:candle-update',e=>sync('candles',Number(e.detail?.bars)>0));
+  window.addEventListener('rizvi:chart-source',e=>sync('candles',Array.isArray(e.detail?.bars)&&e.detail.bars.length>0));
+  window.addEventListener('rizvi:market-range-update',e=>sync('marketRange',e.detail?.dayHigh!=null&&e.detail?.dayLow!=null));
+  window.addEventListener('rizvi:liquidity-update',e=>sync('liquidity',!!e.detail));
+  window.addEventListener('rizvi:signal-qualification-update',e=>sync('signal',!!e.detail));
+  window.RIZVI_OPERATIONAL_CHECK=()=>({...window.RIZVI_OPERATIONAL_HEALTH});
+  setTimeout(()=>{operational.symbol=!!window.RIZVI_CURRENT_SYMBOL;window.RIZVI_OPERATIONAL_HEALTH={...operational,ready:operational.price&&operational.candles&&operational.marketRange&&operational.liquidity&&operational.signal};},1000);
+})();
 </script></body></html>
