@@ -2073,34 +2073,44 @@ html body .miniMarketChart{display:none!important}
 </script><script id="rz-htf-liquidity-engine">
 (function(){
  if(window.__RZ_HTF_ENGINE)return; window.__RZ_HTF_ENGINE=true;
- const q=id=>document.getElementById(id), n=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
- const mins={15M:15,1H:60,4H:240,1D:1440}; let busy=false,cache={};
- function fmt(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+ const q=id=>document.getElementById(id), N=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
+ const cache={}, TF={m15:{api:'15m',mins:15},h1:{api:'1h',mins:60},h4:{api:'4h',mins:240},d1:{api:'1d',mins:1440}};
+ let busy=false;
+ const fmt=v=>Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
  async function json(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
- function rows(data){return (Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])})).filter(x=>Number.isFinite(x.t)&&[x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t)}
- async function get(tf,limit){const key=tf+limit;if(cache[key]&&Date.now()-cache[key].at<30000)return cache[key].rows;const d=await json('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval='+tf.toLowerCase()+'&limit='+limit+'&_='+Date.now());const r=rows(d);if(r.length<5)throw Error(tf+' insufficient');cache[key]={at:Date.now(),rows:r};return r}
- function level(r){const prev=r.slice(0,-1).at(-1);return prev?{h:prev.h,l:prev.l,t:prev.t}:null}
- function countSweeps(r,levels){let hi=0,lo=0;for(const b of r){if(b.h>levels.h&&b.c<=levels.h)hi++;if(b.l<levels.l&&b.c>=levels.l)lo++}return {hi,lo}}
+ function rows(data){return (Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:N(x[1]),h:N(x[2]),l:N(x[3]),c:N(x[4])})).filter(x=>Number.isFinite(x.t)&&[x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t)}
+ async function get(key,limit){const k=key+limit;if(cache[k]&&Date.now()-cache[k].at<30000)return cache[k].rows;const d=await json('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval='+TF[key].api+'&limit='+limit+'&_='+Date.now());const r=rows(d);if(r.length<8)throw Error(key+' insufficient');cache[k]={at:Date.now(),rows:r};return r}
+ function prevCompleted(r){return r.length>1?r[r.length-2]:null}
+ function level(r){const x=prevCompleted(r);return x?{h:x.h,l:x.l,t:x.t}:null}
+ function closedLast24(r){return r.filter((x,i)=>i<r.length-1&&x.t>=Date.now()-86400000)}
+ function sweepEvents(r,L,key){const out=[];if(!L)return out;for(const b of closedLast24(r)){const body=Math.abs(b.c-b.o),range=b.h-b.l,up=b.h-Math.max(b.o,b.c),dn=Math.min(b.o,b.c)-b.l;if(b.h>L.h&&b.c<=L.h)out.push({t:b.t,type:'SWEEP_HIGH',tf:key,level:L.h,rejection:up>=body&&up>=range*.35});if(b.l<L.l&&b.c>=L.l)out.push({t:b.t,type:'SWEEP_LOW',tf:key,level:L.l,rejection:dn>=body&&dn>=range*.35})}return out}
+ function candleEvent(a,b,L,key){if(!a||!b||!L)return null;const range=b.h-b.l;if(!range)return null;const body=Math.abs(b.c-b.o),up=b.h-Math.max(b.o,b.c),dn=Math.min(b.o,b.c)-b.l,disp=body/range,closePos=(b.c-b.l)/range;const brokeUp=b.c>L.h,brokeDn=b.c<L.l, falseUp=b.h>L.h&&b.c<=L.h, falseDn=b.l<L.l&&b.c>=L.l;let type='NONE';if(falseUp||falseDn)type='FALSE BREAKOUT';else if(brokeUp||brokeDn)type='BREAKOUT';else if((a.c>L.h&&b.l<=L.h&&b.c>L.h)||(a.c<L.l&&b.h>=L.l&&b.c<L.l))type='RETEST';return {t:b.t,type,tf:key,bodyRatio:disp,closePos,upperWick:up/range,lowerWick:dn/range,direction:brokeUp?'BUY':brokeDn?'SELL':'WAIT'} }
+ function structure(r){const b=r[r.length-2],a=r[r.length-3];if(!a||!b)return {label:'WAIT',detail:'insufficient'};const range=b.h-b.l,body=Math.abs(b.c-b.o),closePos=range?(b.c-b.l)/range:.5;const bull=b.c>b.o,bear=b.c<b.o;let label='NEUTRAL';if(body/range>=.65&&closePos>=.7&&bull)label='BULL DISPLACEMENT';else if(body/range>=.65&&closePos<=.3&&bear)label='BEAR DISPLACEMENT';else if((b.h-Math.max(b.o,b.c))/range>=.4&&closePos<.55)label='UPPER REJECTION';else if((Math.min(b.o,b.c)-b.l)/range>=.4&&closePos>.45)label='LOWER REJECTION';return {label,bodyRatio:body/range,closePos}}
+ function renderLevel(id,L){const e=q(id);if(e)e.textContent=L?fmt(L.h)+' / '+fmt(L.l):'— / —'}
  async function refresh(){
    if(window.state?.symbol!=='BTC/USD'||busy)return;busy=true;
    try{
-    const [m15,h1,h4,d1]=await Promise.all([get('15m',300),get('1h',100),get('4h',60),get('1d',30)]);
+    const [m15,h1,h4,d1]=await Promise.all([get('m15',300),get('h1',100),get('h4',60),get('d1',30)]);
     const L={m15:level(m15),h1:level(h1),h4:level(h4),d1:level(d1)};
-    const f=(id,x)=>{const e=q(id);if(e)e.textContent=x?fmt(x.h)+' / '+fmt(x.l):'— / —'};
-    f('rzHtf15M',L.m15);f('rzHtf1H',L.h1);f('rzHtf4H',L.h4);f('rzHtf1D',L.d1);
-    const last24=m15.filter(x=>x.t>=Date.now()-86400000);
-    const base=L.m15||{h:Math.max(...last24.map(x=>x.h)),l:Math.min(...last24.map(x=>x.l))};
-    const sw=countSweeps(last24,base);
-    q('rzSweepHigh').textContent=sw.hi;q('rzSweepLow').textContent=sw.lo;
-    const px=n(window.state?.price),near=(x)=>Number.isFinite(px)&&x&&Math.abs(px-x.h)<=Math.max(px*.0008,1)||Number.isFinite(px)&&x&&Math.abs(px-x.l)<=Math.max(px*.0008,1);
-    const broken=(x)=>Number.isFinite(px)&&x&&(px>x.h||px<x.l);
-    let watch='WAIT';
-    const nearAny=[L.d1,L.h4,L.h1,L.m15].some(near),brokenAny=[L.d1,L.h4,L.h1,L.m15].some(broken);
-    if(brokenAny)watch='BREAKOUT TEST'; else if(nearAny)watch='WATCH';
-    q('rzBreakoutWatch').textContent=watch;
-    q('rzHtfStatus').textContent='REAL HTF DATA • BINANCE';
-    window.RIZVI_HTF_LEVELS={source:'Binance public BTCUSDT',updatedAt:new Date().toISOString(),levels:L,sweeps24h:sw,breakoutWatch:watch};
-   }catch(e){q('rzHtfStatus').textContent='WAIT • HTF DATA ERROR'}
+    renderLevel('rzHtf15M',L.m15);renderLevel('rzHtf1H',L.h1);renderLevel('rzHtf4H',L.h4);renderLevel('rzHtf1D',L.d1);
+    const all=[];for(const [k,r] of Object.entries({m15,h1,h4,d1}))all.push(...sweepEvents(r,L[k],k));
+    all.sort((a,b)=>b.t-a.t);
+    const hi=all.filter(x=>x.type==='SWEEP_HIGH').length,lo=all.filter(x=>x.type==='SWEEP_LOW').length;
+    q('rzSweepHigh').textContent=hi;q('rzSweepLow').textContent=lo;
+    const price=N(window.state?.price), levels=[['1D',L.d1],['4H',L.h4],['1H',L.h1],['15M',L.m15]].flatMap(([tf,x])=>x?[{tf,side:'HIGH',p:x.h},{tf,side:'LOW',p:x.l}]:[]);
+    const near=levels.filter(x=>Number.isFinite(price)&&Math.abs(price-x.p)<=Math.max(Math.abs(price)*.0008,1));
+    const crossed=levels.filter(x=>Number.isFinite(price)&&((x.side==='HIGH'&&price>x.p)||(x.side==='LOW'&&price<x.p)));
+    let watch='WAIT';if(crossed.length)watch='BREAKOUT TEST';else if(near.length)watch='WATCH';
+    q('rzBreakoutWatch').textContent=watch;q('rzHtfStatus').textContent='REAL HTF DATA • BINANCE';
+    const structures={m15:structure(m15),h1:structure(h1)};
+    const events=[];
+    for(const [k,r] of Object.entries({m15,h1,h4,d1})){const Lk=L[k];const a=r[r.length-3],b=r[r.length-2],ev=candleEvent(a,b,Lk,k);if(ev&&ev.type!=='NONE')events.push(ev)}
+    const latestSweep=all[0]||null,latestEvent=events.sort((a,b)=>b.t-a.t)[0]||null;
+    const liqState=latestEvent?latestEvent.type:(latestSweep?'SWEEP':'WAIT');
+    const result={source:'Binance public BTCUSDT',updatedAt:new Date().toISOString(),levels:L,sweeps24h:{high:hi,low:lo,total:hi+lo},events:all.slice(0,100),latestSweep,latestEvent,structure:structures,breakoutWatch:watch,liquidityState:liqState};
+    window.RIZVI_HTF_LEVELS=result;window.RIZVI_LIQUIDITY_EVENTS=all.slice(0,100);
+    window.dispatchEvent(new CustomEvent('rizvi:htf-update',{detail:result}));
+   }catch(e){q('rzHtfStatus').textContent='WAIT • HTF DATA ERROR';window.RIZVI_HTF_ERROR=String(e.message||e)}
    finally{busy=false}
  }
  document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,30000)});
