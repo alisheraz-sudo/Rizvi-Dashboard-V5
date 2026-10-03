@@ -4849,9 +4849,10 @@ button{pointer-events:auto!important}
       box.style.setProperty('display','none','important');return;
     }
     const yEntry=series.priceToCoordinate(entry),ySl=series.priceToCoordinate(sl),yTp1=series.priceToCoordinate(tp1),yTp2=series.priceToCoordinate(tp2),yTp3=series.priceToCoordinate(tp3);
-    if(![yEntry,ySl,yTp1,yTp2,yTp3].every(Number.isFinite)){box.style.display='none';return}
-    const w=box.clientWidth,h=box.clientHeight;
-    if(w<20||h<20){box.style.display='none';return}
+    if(![yEntry,ySl,yTp1,yTp2,yTp3].every(Number.isFinite)){box.style.setProperty('display','none','important');return}
+    box.style.setProperty('display','block','important');
+    const w=hst.clientWidth,h=hst.clientHeight;
+    if(w<20||h<20){box.style.setProperty('display','none','important');return}
     let x=55;
     const key=document.getElementById('chartHighSetupBtn')?.getAttribute('data-candle');
     if(key){
@@ -4867,10 +4868,10 @@ button{pointer-events:auto!important}
     const l2=document.querySelector('#rizviTvTradeRange .rzTpLine.tp2');
     const l3=document.querySelector('#rizviTvTradeRange .rzTpLine.tp3');
     if(dir==='BUY'){
-      tp.style.left=x+'px';tp.style.top=Math.min(yTp,yEntry)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yEntry-yTp)+'px';
+      tp.style.left=x+'px';tp.style.top=Math.min(yTp3,yEntry)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yEntry-yTp3)+'px';
       slb.style.left=x+'px';slb.style.top=Math.min(yEntry,ySl)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(ySl-yEntry)+'px';
     }else{
-      tp.style.left=x+'px';tp.style.top=Math.min(yEntry,yTp)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yTp-yEntry)+'px';
+      tp.style.left=x+'px';tp.style.top=Math.min(yEntry,yTp3)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yTp3-yEntry)+'px';
       slb.style.left=x+'px';slb.style.top=Math.min(ySl,yEntry)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(yEntry-ySl)+'px';
     }
     en.style.left=x+'px';en.style.width=(right-x)+'px';en.style.top=yEntry+'px';
