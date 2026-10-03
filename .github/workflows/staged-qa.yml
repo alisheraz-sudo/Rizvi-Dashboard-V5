@@ -1,0 +1,40 @@
+name: Staged V62 QA
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [new-layout-v62]
+
+jobs:
+  javascript-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate JavaScript files
+        run: |
+          node --check server.js
+          node --check orderflow-server.js
+          node --check ctrader-adapter.js
+          node --check orderflow-book.js
+          node --check orderflow-breakout.js
+      - name: Validate inline scripts in index.html
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
+            .map((m, i) => ({i: i + 1, code: m[1]}));
+          if (!scripts.length) throw new Error('No inline scripts found');
+          for (const s of scripts) {
+            try { new Function(s.code); }
+            catch (e) {
+              console.error('Inline script #' + s.i + ' failed:', e.message);
+              process.exit(1);
+            }
+          }
+          console.log('Validated ' + scripts.length + ' inline scripts.');
+          NODE
