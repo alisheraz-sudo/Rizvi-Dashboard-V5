@@ -4829,14 +4829,14 @@ button{pointer-events:auto!important}
     // Test mode uses the currently visible BTC/USD price when available;
     // otherwise use the last screenshot-range price so the test remains drawable.
     const testEntry=Number.isFinite(liveEntry)?liveEntry:(Number.isFinite(base)?base:84802.04);
-    const testDir='BUY';
+    const testDir='SELL';
     const ss=testMode?{
       direction:testDir,
       entry:testEntry,
-      sl:testEntry-40,
-      tp1:testEntry+20,
-      tp2:testEntry+40,
-      tp3:testEntry+60
+      sl:testEntry+40,
+      tp1:testEntry-20,
+      tp2:testEntry-40,
+      tp3:testEntry-60
     }:live;
     const dir=String(ss.direction||'WAIT').toUpperCase();
     const hq=document.getElementById('chartHighSetupBtn');
@@ -4846,12 +4846,19 @@ button{pointer-events:auto!important}
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
     if(testMode){
-      // Test mode: remove every legacy wide zone so only the new slim trade
-      // marker remains. Some older UI layers can recreate these nodes.
+      // Test mode: remove every legacy wide zone and every full-width
+      // Lightweight-Charts price line. Only the slim connected trade range
+      // (SL / Entry / TP1-TP3) should remain visible.
       document.querySelectorAll('#tradeZone,.tradeZone,#slZone,.slZone').forEach(el=>{
         el.style.setProperty('display','none','important');
         el.style.setProperty('visibility','hidden','important');
       });
+      try{
+        Object.values(window.RIZVI_TV_LEVEL_LINES||{}).forEach(line=>{
+          try{series?.removePriceLine?.(line)}catch(e){}
+        });
+        window.RIZVI_TV_LEVEL_LINES={};
+      }catch(e){}
     }
     if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp1,tp2,tp3].every(Number.isFinite)||!series||!chart){
       box.style.setProperty('display','none','important');return;
