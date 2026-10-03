@@ -114,6 +114,7 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
 <section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">XAU/USD</span><span class="sub"> • 1m</span> <span class="sub" id="chartOHLC"> O —&nbsp; H —&nbsp; L —&nbsp; C —</span></div><div class="tf" role="tablist" aria-label="Chart timeframe"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="5M" role="tab" aria-selected="false">5M</span><span data-tf="15M" role="tab" aria-selected="false">15M</span><span data-tf="30M" role="tab" aria-selected="false">30M</span><span data-tf="1H" role="tab" aria-selected="false">1H</span></div></div><div class="grid"></div><div style="position:absolute;left:8px;top:61px;bottom:112px;width:28px;display:flex;flex-direction:column;gap:13px;align-items:center;color:#7290aa;font-size:15px;z-index:5">✣<br>⌁<br>♢<br>⌁<br>⌕<br>⌗<br>⌘</div><div id="chartSignalBadge" style="position:absolute;left:48px;top:62px;background:#0b3b31;border:1px solid #18a878;color:#4fe1a3;padding:8px 12px;border-radius:5px;font-size:12px;z-index:5">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:70px;top:62px;z-index:5;display:flex;gap:10px;font-size:11px"><span id="hourHigh" style="color:#4fe1a3">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div id="chartLevelMini" class="chartLevelMini" aria-label="Entry SL TP levels"><span class="miniLevel entry"><b>ENTRY</b><em id="miniEntry">—</em></span><span class="miniLevel sl"><b>SL</b><em id="miniSl">—</em></span><span class="miniLevel tp"><b>TP1</b><em id="miniTp1">—</em></span><span class="miniLevel tp"><b>TP2</b><em id="miniTp2">—</em></span><span class="miniLevel tp"><b>TP3</b><em id="miniTp3">—</em></span></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span><span id="axis10">—</span><span id="axis11">—</span><span id="axis12">—</span><span id="axis13">—</span><span id="axis14">—</span><span id="axis15">—</span><span id="axis16">—</span><span id="axis17">—</span><span id="axis18">—</span><span id="axis19">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="chartSetupBox" id="chartSetupBox">
+<div class="setupHighRow" id="setupHighRowStatic"><div id="chartHighSetupBtn" class="setupHighBox wait">HIGH QUALITY SETUP</div></div>
 <div class="setupSignals">
 <button id="chartSigBtn" class="setupBtn">SIGNAL —</button><button id="chartComboBtn" class="setupBtn">COMBO —</button><button id="chartTrendBtn" class="setupBtn">TREND —</button><button id="chartDeltaBtn" class="setupBtn">DELTA —</button><button id="chartDivBtn" class="setupBtn">DIV —</button><button id="chartOfBtn" class="setupBtn">OF —</button><button id="chartRsiBtn" class="setupBtn">RSI —</button>
 </div><div class="setupLevels">
@@ -3603,5 +3604,120 @@ button{pointer-events:auto!important}
     box.classList.toggle('isWait',!active);box.dataset.direction=active?dir:'WAIT';
   }
   document.addEventListener('DOMContentLoaded',update);setInterval(update,700);
+})();
+</script>
+
+<!-- RIZVI FINAL CHART + ACTION LAYOUT RESET -->
+<style id="rizvi-final-chart-action-reset">
+/* One authoritative layout layer: the action panel no longer changes the chart geometry. */
+.chart{
+  height:620px!important;
+  position:relative!important;
+  overflow:hidden!important;
+}
+.chartarea{
+  left:0!important;right:0!important;top:48px!important;
+  bottom:190px!important;
+  overflow:hidden!important;
+  border:0!important;
+}
+#chartArea > #rizviTvChart{
+  left:0!important;right:0!important;top:0!important;bottom:0!important;
+  width:100%!important;height:100%!important;
+}
+.chartSetupBox{
+  left:10px!important;right:10px!important;bottom:8px!important;
+  height:176px!important;padding:7px 8px!important;
+  box-sizing:border-box!important;overflow:hidden!important;
+  z-index:100!important;border-radius:9px!important;
+}
+#setupHighRowStatic,.setupHighRow{
+  display:block!important;width:100%!important;height:30px!important;
+  margin:0 0 6px!important;min-height:30px!important;
+}
+#chartHighSetupBtn.setupHighBox{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;height:30px!important;min-height:30px!important;
+  padding:0 8px!important;box-sizing:border-box!important;
+  font-size:11px!important;line-height:1!important;border-radius:6px!important;
+  overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;
+}
+.setupSignals{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;margin:0!important;overflow:hidden!important;
+}
+.setupBtn{
+  width:100%!important;min-width:0!important;height:27px!important;min-height:27px!important;
+  padding:0 4px!important;box-sizing:border-box!important;font-size:9px!important;
+  line-height:1!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.setupLevels{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:5px!important;margin:6px 0 0!important;overflow:hidden!important;
+}
+.levelBtn{
+  width:100%!important;min-width:0!important;height:31px!important;min-height:31px!important;
+  padding:0 4px!important;box-sizing:border-box!important;font-size:9px!important;
+  line-height:1!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.chartLevelMini{z-index:110!important;pointer-events:none!important}
+
+/* Landscape: remove the old 142px/viewport-height rules that were shrinking the chart. */
+@media screen and (orientation:landscape) and (max-width:950px){
+  .chart{height:560px!important;max-height:none!important;min-height:0!important}
+  .chartarea{top:48px!important;bottom:190px!important}
+  .grid,.axis{bottom:190px!important}
+  .chartSetupBox{height:176px!important;bottom:8px!important}
+  #setupHighRowStatic,.setupHighRow{height:30px!important;min-height:30px!important}
+  #chartHighSetupBtn.setupHighBox{height:30px!important;min-height:30px!important;font-size:10px!important}
+  .setupBtn{height:27px!important;min-height:27px!important;font-size:8.5px!important}
+  .levelBtn{height:31px!important;min-height:31px!important;font-size:8.5px!important}
+}
+
+/* Portrait/mobile: keep the full button matrix inside its own panel. */
+@media screen and (max-width:700px) and (orientation:portrait){
+  .chart{height:650px!important;max-height:none!important}
+  .chartarea{top:48px!important;bottom:224px!important}
+  .grid,.axis{bottom:224px!important}
+  .chartSetupBox{height:210px!important;bottom:8px!important}
+  .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+  .setupBtn{height:27px!important;min-height:27px!important;font-size:9px!important}
+  .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;margin-top:6px!important}
+  .levelBtn{height:31px!important;min-height:31px!important;font-size:8px!important}
+}
+@media screen and (max-width:430px) and (orientation:portrait){
+  .chart{height:650px!important}
+  .chartarea{bottom:230px!important}
+  .grid,.axis{bottom:230px!important}
+  .chartSetupBox{height:216px!important}
+}
+</style>
+<script id="rizvi-final-chart-action-reset-script">
+(function(){
+  if(window.__RIZVI_FINAL_LAYOUT_RESET)return;
+  window.__RIZVI_FINAL_LAYOUT_RESET=true;
+  function ensureHighRow(){
+    const box=document.getElementById('chartSetupBox');if(!box)return;
+    let row=document.getElementById('setupHighRowStatic');
+    let high=document.getElementById('chartHighSetupBtn');
+    if(!row){
+      row=document.createElement('div');row.id='setupHighRowStatic';row.className='setupHighRow';
+      box.insertBefore(row,box.firstElementChild);
+    }
+    if(high && high.parentElement!==row) row.appendChild(high);
+    if(!high){
+      high=document.createElement('div');high.id='chartHighSetupBtn';high.className='setupHighBox wait';high.textContent='HIGH QUALITY SETUP';row.appendChild(high);
+    }
+  }
+  function lockChartGeometry(){
+    const chart=document.querySelector('.chart');
+    const area=document.getElementById('chartArea');
+    if(chart){chart.style.overflow='hidden'}
+    if(area){area.style.overflow='hidden'}
+    ensureHighRow();
+  }
+  document.addEventListener('DOMContentLoaded',lockChartGeometry);
+  setTimeout(lockChartGeometry,300);
+  setTimeout(lockChartGeometry,1000);
 })();
 </script>
