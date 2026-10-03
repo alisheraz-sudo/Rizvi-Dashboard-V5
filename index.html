@@ -4770,7 +4770,7 @@ button{pointer-events:auto!important}
   position:absolute!important;
   left:0!important;top:0!important;
   width:100%!important;height:100%!important;
-  z-index:18!important;pointer-events:none!important;
+  z-index:1000!important;pointer-events:none!important;
   display:none;overflow:hidden!important;
 }
 #rizviTvTradeRange .rzRangePart{
@@ -4846,10 +4846,12 @@ button{pointer-events:auto!important}
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
     if(testMode){
-      const oldTp=document.getElementById('tradeZone');
-      const oldSl=document.getElementById('slZone');
-      if(oldTp)oldTp.style.setProperty('display','none','important');
-      if(oldSl)oldSl.style.setProperty('display','none','important');
+      // Test mode: remove every legacy wide zone so only the new slim trade
+      // marker remains. Some older UI layers can recreate these nodes.
+      document.querySelectorAll('#tradeZone,.tradeZone,#slZone,.slZone').forEach(el=>{
+        el.style.setProperty('display','none','important');
+        el.style.setProperty('visibility','hidden','important');
+      });
     }
     if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp1,tp2,tp3].every(Number.isFinite)||!series||!chart){
       box.style.setProperty('display','none','important');return;
