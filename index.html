@@ -1080,4 +1080,35 @@
   window.RIZVI_OPERATIONAL_CHECK=()=>({...window.RIZVI_OPERATIONAL_HEALTH});
   setTimeout(()=>{operational.symbol=!!window.RIZVI_CURRENT_SYMBOL;window.RIZVI_OPERATIONAL_HEALTH={...operational,ready:operational.price&&operational.candles&&operational.marketRange&&operational.liquidity&&operational.signal};},1000);
 })();
+</script><script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bind(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    const li=window.RIZVI_LIQUIDITY_ENGINE;
+    if(!q)return;
+    const signal=document.querySelector('.right .card:nth-child(1) .big span:first-child');
+    const signalScore=document.querySelector('.right .card:nth-child(1) .big span:nth-child(2)');
+    const quality=document.querySelector('.right .card:nth-child(2) .row b');
+    const ready=document.querySelector('.right .card:nth-child(2) .ready');
+    const head=document.querySelector('.signalHead div:first-child b');
+    const qualityHead=document.querySelector('.signalHead div:nth-child(2) b');
+    const direction=q.marketDirection==='NEUTRAL'?q.signalDirection:q.marketDirection;
+    if(signal)signal.textContent=direction;
+    if(head)head.textContent=direction;
+    if(signalScore)signalScore.firstChild.textContent=(q.patternConfidence||0)+'% ';
+    if(quality)quality.innerHTML=(q.patternConfidence||0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(qualityHead)qualityHead.textContent=(q.patternConfidence||0)+'%';
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#7b5b12';
+      ready.style.borderColor=q.status==='QUALIFIED_CONTEXT'?'#11e091':'#ffc43d';
+    }
+    const note=document.querySelector('.right .card:nth-child(1) .note');
+    if(note&&li)note.innerHTML='ⓘ Liquidity: '+(q.liquidityScore||0)+' / 100.<br>Multi-timeframe: '+(q.multiTimeframe?'Confirmed':'Waiting')+'.';
+  }
+  window.addEventListener('rizvi:signal-qualification-update',bind);
+  window.addEventListener('rizvi:liquidity-update',()=>setTimeout(bind,0));
+  setInterval(bind,2000);
+})();
 </script></body></html>
