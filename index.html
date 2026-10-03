@@ -1151,4 +1151,36 @@
   }
   setInterval(render,1000);render();
 })();
-</script></script></body></html>
+</script></script><script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindLive(){
+    const q=document.getElementById('quotePrice'), cc=document.getElementById('chartClose'), tag=document.getElementById('chartPriceTag');
+    const sym=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+    const p=sym==='XAU/USD'?window.RIZVI_LIVE_PRICES?.['XAU/USD']:window.RIZVI_LIVE_PRICE;
+    if(Number.isFinite(Number(p))){const s=fmt(p);if(q)q.textContent=s;if(cc)cc.textContent=s;if(tag)tag.textContent=s;}
+    const r=window.RIZVI_MARKET_RANGE;
+    if(r&&r.symbol===sym){
+      const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+      Object.keys(map).forEach(k=>{const el=document.getElementById(k);if(el)el.textContent=fmt(r[map[k]]);});
+    }
+  }
+  function bindQualification(e){
+    const x=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!x)return;
+    const q=document.querySelector('.right .card:nth-child(2) .row b');
+    const ready=document.querySelector('.right .card:nth-child(2) .ready');
+    const note=document.querySelector('.right .card:nth-child(2) .note');
+    const score=Number(x.liquidityScore);
+    if(q&&Number.isFinite(score))q.innerHTML=score+'% <em class="badge">'+(score>=70?'HIGH QUALITY':'WAIT')+'</em>';
+    if(ready)ready.textContent=x.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    if(note)note.textContent='Liquidity '+(x.confirmedSweep?'sweep confirmed':'sweep pending')+' · '+(x.confirmedBreakout?'breakout confirmed':'breakout pending')+' · '+(x.multiTimeframe?'multi-timeframe aligned':'single-timeframe context');
+  }
+  window.addEventListener('rizvi:signal-qualification-update',bindQualification);
+  window.addEventListener('rizvi:market-range-update',bindLive);
+  window.addEventListener('rizvi:price-update',bindLive);
+  setInterval(bindLive,2000);
+  setInterval(()=>bindQualification(),2000);
+  bindLive();bindQualification();
+})();
+</script></body></html>
