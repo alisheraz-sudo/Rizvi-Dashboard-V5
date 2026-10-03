@@ -4845,6 +4845,12 @@ button{pointer-events:auto!important}
     const entry=N(ss.entry),sl=N(ss.sl),tp1=N(ss.tp1),tp2=N(ss.tp2),tp3=N(ss.tp3);
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
+    if(testMode){
+      const oldTp=document.getElementById('tradeZone');
+      const oldSl=document.getElementById('slZone');
+      if(oldTp)oldTp.style.setProperty('display','none','important');
+      if(oldSl)oldSl.style.setProperty('display','none','important');
+    }
     if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp1,tp2,tp3].every(Number.isFinite)||!series||!chart){
       box.style.setProperty('display','none','important');return;
     }
@@ -4854,13 +4860,26 @@ button{pointer-events:auto!important}
     const w=hst.clientWidth,h=hst.clientHeight;
     if(w<20||h<20){box.style.setProperty('display','none','important');return}
     let x=55;
-    const key=document.getElementById('chartHighSetupBtn')?.getAttribute('data-candle');
-    if(key){
-      const t=N(key);
-      const tc=chart.timeScale().timeToCoordinate(t>2e10?Math.floor(t/1000):t);
-      if(Number.isFinite(tc))x=Math.max(24,Math.min(w-90,tc));
+    if(testMode){
+      const lastBar=window.state?.ohlc?.at?.(-1);
+      const lastTime=N(lastBar?.t);
+      const tc=Number.isFinite(lastTime)?chart.timeScale().timeToCoordinate(lastTime>2e10?Math.floor(lastTime/1000):lastTime):NaN;
+      if(Number.isFinite(tc))x=Math.max(8,Math.min(w-140,tc));
+      else x=Math.max(8,Math.floor(w*0.55));
+    }else{
+      const key=document.getElementById('chartHighSetupBtn')?.getAttribute('data-candle');
+      if(key){
+        const t=N(key);
+        const tc=chart.timeScale().timeToCoordinate(t>2e10?Math.floor(t/1000):t);
+        if(Number.isFinite(tc))x=Math.max(8,Math.min(w-140,tc));
+      }
     }
-    const right=Math.max(x+70,w-12);
+    let scaleW=140;
+    try{
+      const pw=chart.priceScale('right')?.width?.();
+      if(Number.isFinite(pw)&&pw>40)scaleW=pw;
+    }catch(e){}
+    const right=Math.max(x+70,w-scaleW-6);
     const tp=document.querySelector('#rizviTvTradeRange .rzRangeTp');
     const slb=document.querySelector('#rizviTvTradeRange .rzRangeSl');
     const en=document.querySelector('#rizviTvTradeRange .rzRangeEntry');
