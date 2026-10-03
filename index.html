@@ -569,4 +569,38 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>render(e.detail));
   if(window.RIZVI_SIGNAL_QUALIFICATION) render(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
-</script></body></html>
+<script>
+(function(){
+  function bindQualification(e){
+    const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const right=document.querySelector('.right');
+    if(!right)return;
+    const signal=right.querySelector('.card:nth-child(1)');
+    const execution=right.querySelector('.card.gborder');
+    const direction=signal?.querySelector('.big span:first-child');
+    const quality=signal?.querySelector('.big span:nth-child(2)');
+    const execQuality=execution?.querySelector('.row b');
+    const ready=execution?.querySelector('.ready');
+    if(direction&&q.signalDirection)direction.textContent=q.signalDirection;
+    if(quality){
+      const badge=quality.querySelector('.badge');
+      const pct=Math.round(q.patternConfidence);
+      if(quality.firstChild)quality.firstChild.textContent=pct+'% ';
+      if(badge)badge.textContent=q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'MEDIUM';
+    }
+    if(execQuality){
+      const badge=execQuality.querySelector('.badge');
+      const pct=Math.round(q.liquidityScore);
+      if(execQuality.firstChild)execQuality.firstChild.textContent=pct+'% ';
+      if(badge)badge.textContent=q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT';
+    }
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    }
+    window.RIZVI_VISIBLE_QUALIFICATION=q;
+  }
+  window.addEventListener('rizvi:signal-qualification-update',bindQualification);
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
+})();
+</script></script></body></html>
