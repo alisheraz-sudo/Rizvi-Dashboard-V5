@@ -390,4 +390,38 @@
   refresh(); setInterval(refresh,30000);
   document.addEventListener('rizvi:symbol-change',refresh);
 })();
-</script></script></body></html>
+</script></script><script>
+(function(){
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function qualify(e){
+    if(!e)return;
+    const sweeps=e.sweeps||[],breakouts=e.breakouts||[],grabs=e.grabs||[];
+    const tfs=new Set([...sweeps,...breakouts].map(x=>x.timeframe));
+    let score=0, bullish=0, bearish=0;
+    if(sweeps.length){score+=25; sweeps.forEach(x=>x.side==='LOW'?bullish++:bearish++);}
+    if(breakouts.length){score+=25; breakouts.forEach(x=>x.side==='UP'?bullish++:bearish++);}
+    if(grabs.length)score+=10;
+    if(tfs.size>=2)score+=15;
+    if(tfs.size>=3)score+=10;
+    const latest=e.latestBar||{};
+    const range=Math.max(0,(latest.h||0)-(latest.l||0));
+    const follow=range>0 && breakouts.some(x=>(x.side==='UP'&&latest.c>x.price+range*.10)||(x.side==='DOWN'&&latest.c<x.price-range*.10));
+    if(follow)score+=15;
+    const direction=bullish>bearish?'BUY':bearish>bullish?'SELL':'NEUTRAL';
+    const signalText=document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
+    const aligned=direction==='NEUTRAL'||direction===signalText;
+    if(!aligned)score-=15;
+    const liquidityScore=clamp(Math.round(score),0,100);
+    const patternConfidence=clamp(Math.round(50+score*.5),0,100);
+    window.RIZVI_SIGNAL_QUALIFICATION={
+      symbol:e.symbol,updatedAt:Date.now(),signalDirection:signalText,
+      liquidityScore,patternConfidence,marketDirection:direction,
+      aligned,confirmedSweep:sweeps.length>0,confirmedBreakout:follow,
+      multiTimeframe:tfs.size>=2,status:liquidityScore>=70?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
+    };
+    window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
+  }
+  window.addEventListener('rizvi:liquidity-update',e=>qualify(e.detail));
+  if(window.RIZVI_LIQUIDITY_ENGINE)qualify(window.RIZVI_LIQUIDITY_ENGINE);
+})();
+</script></body></html>
