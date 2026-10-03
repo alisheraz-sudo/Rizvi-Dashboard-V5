@@ -1164,6 +1164,139 @@ document.addEventListener('DOMContentLoaded',()=>{
  if(document.readyState!=='loading')start();
 })();
 </script>
+
+<!-- RIZVI V44.1 BTC/USD REAL CANDLE MODULE -->
+<style id="rizvi-v44-btc-candles">
+#chartArea .rizviBTCCandle{position:absolute!important;z-index:82!important;transform:translateX(-50%)!important;min-height:1px!important;border-radius:1px!important}
+#chartArea .rizviBTCWick{position:absolute!important;z-index:81!important;width:2px!important;transform:translateX(-50%)!important}
+#chartArea .rizviBTCPrice{position:absolute!important;right:-2px!important;transform:translateY(-50%)!important;background:#126344!important;color:#e5fff5!important;border:1px solid #3ac18d!important;border-radius:5px!important;padding:4px 7px!important;font-size:11px!important;font-weight:900!important;z-index:96!important;pointer-events:none!important}
+#chartArea .rizviBTCLine{position:absolute!important;left:0!important;right:0!important;border-top:1px solid #62e6b0!important;z-index:95!important;pointer-events:none!important}
+</style>
+<script id="rizvi-v44-btc-candles-script">
+(function(){
+  if(window.__RIZVI_V44_BTC)return; window.__RIZVI_V44_BTC=true;
+  const area=()=>document.getElementById('chartArea');
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
+  let busy=false,tickBusy=false,bars=[],lastTick=NaN;
+
+  function isBTC(){return window.state?.symbol==='BTC/USD'}
+  function tfMin(tf){return ({'1M':1,'5M':5,'15M':15,'30M':30,'1H':60})[tf]||1}
+  function aggregate(rows,mins){
+    if(mins===1)return rows.slice(-520);
+    const ms=mins*60000,out=[];
+    for(const b of rows){
+      const bucket=Math.floor(b.t/ms)*ms,last=out[out.length-1];
+      if(!last||last.t!==bucket) out.push({t:bucket,o:b.o,h:b.h,l:b.l,c:b.c});
+      else {last.h=Math.max(last.h,b.h);last.l=Math.min(last.l,b.l);last.c=b.c}
+    }
+    return out.slice(-260);
+  }
+  function setFeed(text,ok){
+    const e=document.getElementById('feedStatus');
+    if(e){e.textContent='● '+text;e.style.color=ok?'#62dda7':'#d7ae57'}
+  }
+  function updateLabels(){
+    if(!isBTC())return;
+    const s=document.getElementById('symbolTitle'),cs=document.getElementById('chartSymbol'),sub=document.querySelector('.gold');
+    const coin=document.querySelector('.coin');
+    if(s)s.textContent='BTC/USD';
+    if(cs)cs.textContent='BTC/USD';
+    if(sub)sub.textContent='Bitcoin';
+    if(coin){coin.textContent='₿';coin.style.color='#f3a83b'}
+  }
+  function render(){
+    if(!isBTC())return;
+    const a=area();if(!a||!bars.length)return;
+    const rows=aggregate(bars,tfMin(window.state.tf));
+    if(!rows.length)return;
+    const cur=n(window.state.price) || n(rows.at(-1).c);
+    const hi0=Math.max(cur,...rows.map(b=>b.h)),lo0=Math.min(cur,...rows.map(b=>b.l));
+    const span0=Math.max(hi0-lo0,0.01),pad=Math.max(span0*.06,Math.max(cur*.0008,10)),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+    a.querySelectorAll('.rizviBTCCandle,.rizviBTCWick,.rizviBTCLine,.rizviBTCPrice').forEach(e=>e.remove());
+    rows.forEach((b,i)=>{
+      const x=rows.length===1?50:(i/(rows.length-1))*93+2.5;
+      const wt=(hi-b.h)/span*100,wh=Math.max(.7,(b.h-b.l)/span*100);
+      const bt=(hi-Math.max(b.o,b.c))/span*100,bh=Math.max(.7,Math.abs(b.c-b.o)/span*100),up=b.c>=b.o;
+      const w=document.createElement('i');w.className='rizviBTCWick';w.style.cssText='left:'+x+'%;top:'+wt+'%;height:'+wh+'%;background:'+(up?'#2ed39a':'#ef6b72')+';';a.appendChild(w);
+      const body=document.createElement('span');body.className='rizviBTCCandle';body.style.cssText='left:'+x+'%;top:'+bt+'%;height:'+bh+'%;width:6px;background:'+(up?'#20c58a':'#e85f68')+';';a.appendChild(body);
+    });
+    const p=Math.max(1,Math.min(99,(hi-cur)/span*100));
+    const line=document.createElement('div');line.className='rizviBTCLine';line.style.top=p+'%';a.appendChild(line);
+    const tag=document.createElement('div');tag.className='rizviBTCPrice';tag.style.top=p+'%';tag.textContent=cur.toFixed(2);a.appendChild(tag);
+    const fmt=v=>Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    for(let i=0;i<=18;i++){const e=document.getElementById('axis'+i);if(e)e.textContent=fmt(hi-span*i/18)}
+    const last=rows.at(-1),oh=document.getElementById('chartOHLC');
+    if(oh)oh.textContent=' O '+fmt(last.o)+'  H '+fmt(last.h)+'  L '+fmt(last.l)+'  C '+fmt(cur);
+    const hh=document.getElementById('hourHigh'),hl=document.getElementById('hourLow');
+    if(hh)hh.textContent='1H H '+fmt(Math.max(...rows.slice(-Math.max(1,60/tfMin(window.state.tf))).map(b=>b.h)));
+    if(hl)hl.textContent='L '+fmt(Math.min(...rows.slice(-Math.max(1,60/tfMin(window.state.tf))).map(b=>b.l)));
+    const note=document.getElementById('indicatorNote');if(note)note.textContent='BTC/USD REAL 1M OHLC • live open candle • Binance public market feed';
+  }
+  function acceptRows(data){
+    const clean=(Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])}))
+      .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+    if(clean.length<20)throw Error('BTC OHLC insufficient');
+    bars=clean.slice(-520);
+    const last=bars.at(-1);
+    if(Number.isFinite(lastTick)&&last){last.c=lastTick;last.h=Math.max(last.h,lastTick);last.l=Math.min(last.l,lastTick)}
+    window.state.ohlc=bars.map(b=>({t:b.t,o:b.o,h:b.h,l:b.l,c:b.c}));
+    window.state.history=window.state.ohlc.map(b=>b.c).slice(-260);
+    window.RIZVI_CANDLE_SOURCE='Binance public BTCUSDT 1-minute OHLC';
+    window.RIZVI_CANDLE_TIMEFRAME='1m';
+    window.RIZVI_CANDLE_COUNT=bars.length;
+  }
+  async function loadBars(){
+    if(!isBTC()||busy)return;busy=true;
+    try{
+      const r=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000&_='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      acceptRows(await r.json());
+      setFeed('REAL BTC/USD',true);
+      if(typeof window.update==='function')window.update();
+      render();
+    }catch(e){
+      setFeed('BTC FEED ERROR',false);
+      window.RIZVI_REAL_FEED={provider:'Binance',symbol:'BTC/USD',status:'FEED ERROR',price:null,stale:true};
+    }finally{busy=false}
+  }
+  async function loadTick(){
+    if(!isBTC()||tickBusy)return;tickBusy=true;
+    try{
+      const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT&_='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      const d=await r.json(),px=n(d.price);if(!Number.isFinite(px))throw Error('Invalid BTC price');
+      const prev=n(window.state.price);lastTick=px;window.state.price=px;
+      const last=bars.at(-1);
+      if(last){last.c=px;last.h=Math.max(last.h,px);last.l=Math.min(last.l,px)}
+      if(window.state.ohlc.length){const b=window.state.ohlc.at(-1);b.c=px;b.h=Math.max(b.h,px);b.l=Math.min(b.l,px);window.state.history[window.state.history.length-1]=px}
+      const dlt=px-(Number.isFinite(prev)?prev:px),pct=prev?(dlt/prev*100):0,de=document.querySelector('.delta');
+      if(de){de.textContent=(dlt>=0?'+':'')+dlt.toFixed(2)+' ('+(pct>=0?'+':'')+pct.toFixed(3)+'%)';de.style.color=dlt>=0?'#53d99a':'#ed697b'}
+      window.RIZVI_REAL_FEED={provider:'Binance',symbol:'BTC/USD',status:'REAL SPOT/TICK',price:px,previous:prev,updatedAt:new Date().toISOString(),stale:false};
+      setFeed('REAL BTC/USD',true);
+      if(typeof window.update==='function')window.update();
+      render();
+    }catch(e){setFeed('BTC FEED ERROR',false)}
+    finally{tickBusy=false}
+  }
+  function resetUIForXAU(){
+    const coin=document.querySelector('.coin');if(coin){coin.textContent='Au';coin.style.color='#f3c84e'}
+    const sub=document.querySelector('.gold');if(sub)sub.textContent='Gold Spot';
+  }
+  function startBTC(){
+    updateLabels();setFeed('CONNECTING BTC/USD',false);
+    loadBars();loadTick();
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const sel=document.getElementById('symbolSelect');
+    if(sel)sel.addEventListener('change',()=>{if(isBTC())startBTC();else resetUIForXAU()});
+    if(isBTC())startBTC();
+    setInterval(()=>{if(isBTC())loadTick()},2000);
+    setInterval(()=>{if(isBTC())loadBars()},10000);
+    setInterval(()=>{if(isBTC())render()},500);
+    document.querySelectorAll('.tf span').forEach(b=>b.addEventListener('click',()=>{if(isBTC())setTimeout(render,50)}));
+  });
+})();
+</script>
 </body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
