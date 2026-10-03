@@ -1339,6 +1339,79 @@ html body .miniMarketChart{display:none!important}
   if(document.readyState!=='loading')setInterval(clean,200);
 })();
 </script>
+
+<!-- RIZVI V44.3 XAU FINAL SINGLE RENDERER -->
+<style id="rizvi-v44-3-final-xau">
+#chartArea .candle,#chartArea .wick,#chartArea .rizviV42Line,#chartArea .rizviV42Tag,#chartArea .rizviV43Candle,#chartArea .rizviV43Wick,#chartArea .rizviV43Current,#chartArea .rizviV43Price{display:none!important}
+#chartArea .rzFinalXauCandle{position:absolute!important;width:7px!important;min-height:2px!important;transform:translateX(-50%)!important;z-index:90!important;border-radius:1px!important}
+#chartArea .rzFinalXauWick{position:absolute!important;width:2px!important;transform:translateX(-50%)!important;z-index:89!important}
+#chartArea .rzFinalXauLine{position:absolute!important;left:0!important;right:0!important;border-top:1px solid #62e6b0!important;z-index:95!important;pointer-events:none!important}
+#chartArea .rzFinalXauTag{position:absolute!important;right:-2px!important;transform:translateY(-50%)!important;background:#126344!important;color:#e5fff5!important;border:1px solid #3ac18d!important;border-radius:5px!important;padding:4px 7px!important;font-size:11px!important;font-weight:900!important;z-index:96!important}
+</style>
+<script id="rizvi-v44-3-final-xau-script">
+(function(){
+ if(window.__RIZVI_V44_3_FINAL_XAU)return;window.__RIZVI_V44_3_FINAL_XAU=true;
+ const N=v=>{const n=Number(v);return Number.isFinite(n)?n:NaN};
+ let bars=[],live=NaN,busy=false;
+ function clean(a){
+   a.querySelectorAll('.candle,.wick,.rizviV42Line,.rizviV42Tag,.rizviV43Candle,.rizviV43Wick,.rizviV43Current,.rizviV43Price,.rzFinalXauCandle,.rzFinalXauWick,.rzFinalXauLine,.rzFinalXauTag').forEach(e=>e.remove());
+ }
+ function normalizeBiquote(j){
+   const rows=Array.isArray(j?.bars)?j.bars:[];
+   return rows.map(b=>({t:Date.parse(b.openTime),o:N(b.open),h:N(b.high),l:N(b.low),c:N(b.close)}))
+    .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+ }
+ function normalizeXaus(j){
+   const pts=Array.isArray(j?.points)?j.points:[];
+   const p=pts.map(x=>({t:Date.parse(x.t??x.ts??x.time??x.timestamp),p:N(x.p??x.price??x.close??x.c)}))
+    .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
+   const out=[]; for(let i=0;i<p.length;i++){const prev=p[i-1]?.p??p[i].p;out.push({t:p[i].t,o:prev,h:Math.max(prev,p[i].p),l:Math.min(prev,p[i].p),c:p[i].p});}
+   return out;
+ }
+ async function load(){
+   if(busy||window.state?.symbol!=='XAU/USD')return; busy=true;
+   try{
+     const results=await Promise.allSettled([
+       fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=120&_='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status)),
+       fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status))
+     ]);
+     let next=[];
+     for(const q of results){if(q.status!=='fulfilled')continue; const a=normalizeBiquote(q.value); if(a.length>=20){next=a;break} const b=normalizeXaus(q.value); if(b.length>=20){next=b;break}}
+     if(next.length<20 && Array.isArray(window.state?.ohlc))next=window.state.ohlc.map(b=>({t:N(b.t),o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)})).filter(b=>[b.t,b.o,b.h,b.l,b.c].every(Number.isFinite));
+     if(next.length>=20){bars=next.slice(-120);window.state.ohlc=bars;window.state.history=bars.map(b=>b.c).slice(-260);}
+   }catch(e){} finally{busy=false}
+ }
+ async function tick(){
+   if(window.state?.symbol!=='XAU/USD')return;
+   try{
+     const r=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'});
+     const j=await r.json(); const p=N(j?.spot_usd_oz??j?.price??j?.spot??j?.last??j?.data?.price);
+     if(Number.isFinite(p)&&p>1000){live=p;window.state.price=p;}
+   }catch(e){}
+ }
+ function draw(){
+   const st=window.state,a=document.getElementById('chartArea'); if(!st||st.symbol!=='XAU/USD'||!a)return;
+   clean(a);
+   let rows=(bars.length?bars:(Array.isArray(st.ohlc)?st.ohlc:[])).slice(-60).map(b=>({o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)})).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite));
+   if(!rows.length)return;
+   const cur=Number.isFinite(live)?live:(Number.isFinite(N(st.price))?N(st.price):rows.at(-1).c);
+   const last=rows.at(-1); if(last){last.c=cur;last.h=Math.max(last.h,cur);last.l=Math.min(last.l,cur);}
+   const hi0=Math.max(cur,...rows.map(b=>b.h)),lo0=Math.min(cur,...rows.map(b=>b.l)),span0=Math.max(hi0-lo0,.01),pad=Math.max(span0*.06,.40),hi=hi0+pad,lo=lo0-pad,span=hi-lo;
+   rows.forEach((b,i)=>{
+     const x=rows.length===1?50:(i/(rows.length-1))*93+2.5, up=b.c>=b.o;
+     const w=document.createElement('i');w.className='rzFinalXauWick';w.style.cssText='left:'+x+'%;top:'+((hi-b.h)/span*100)+'%;height:'+Math.max(.8,(b.h-b.l)/span*100)+'%;background:'+(up?'#2ed39a':'#ef6b72')+';';a.appendChild(w);
+     const q=document.createElement('span');q.className='rzFinalXauCandle';q.style.cssText='left:'+x+'%;top:'+((hi-Math.max(b.o,b.c))/span*100)+'%;height:'+Math.max(1.2,Math.abs(b.c-b.o)/span*100)+'%;background:'+(up?'#20c58a':'#e85f68')+';';a.appendChild(q);
+   });
+   const p=Math.max(1,Math.min(99,(hi-cur)/span*100));
+   const line=document.createElement('div');line.className='rzFinalXauLine';line.style.top=p+'%';a.appendChild(line);
+   const tag=document.createElement('div');tag.className='rzFinalXauTag';tag.style.top=p+'%';tag.textContent=cur.toFixed(2);a.appendChild(tag);
+   for(let i=0;i<=18;i++){const e=document.getElementById('axis'+i);if(e)e.textContent=(hi-span*i/18).toFixed(2);}
+   const note=document.getElementById('indicatorNote');if(note)note.textContent='XAU/USD • LIVE 1M PRICE ACTION • SINGLE CANDLE CHART';
+ }
+ function start(){load();tick();draw();setInterval(load,10000);setInterval(tick,1000);setInterval(draw,300);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
 </body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
