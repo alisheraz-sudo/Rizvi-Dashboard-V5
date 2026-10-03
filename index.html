@@ -707,4 +707,44 @@
   setInterval(compute,5000);
   setTimeout(compute,1500);
 })();
+<script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindQualification(q){
+    if(!q)return;
+    const dir=q.marketDirection==='NEUTRAL'?(q.signalDirection||'BUY'):q.marketDirection;
+    window.RIZVI_SIGNAL_DIRECTION=dir;
+    const signalDir=document.querySelector('.signalHead div:first-child b');
+    const signalCard=document.querySelector('.right .card:first-child .big span:first-child');
+    const score=document.querySelector('.right .card:first-child .big span:nth-child(2)');
+    const quality=document.querySelector('.right .card:nth-child(2) .row b');
+    const ready=document.querySelector('.right .card:nth-child(2) .ready');
+    if(signalDir)signalDir.textContent=dir;
+    if(signalCard)signalCard.textContent=dir;
+    if(score)score.firstChild.textContent=(q.patternConfidence||0)+'% ';
+    if(quality)quality.firstChild.textContent=(q.liquidityScore||0)+'% ';
+    if(ready)ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+  }
+  function bindRange(r){
+    if(!r)return;
+    const rows=[...document.querySelectorAll('.right .card:nth-child(3) .rangeRow')];
+    const keys=['entry','sl','tp1','tp2','tp3'];
+    rows.forEach((row,i)=>{const b=row.querySelector('b');if(b&&r[keys[i]]!==undefined)b.textContent=fmt(r[keys[i]]);});
+  }
+  addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e.detail));
+  addEventListener('rizvi:price-update',e=>{
+    const p=Number(e.detail?.price);
+    if(Number.isFinite(p)&&window.RIZVI_SIGNAL_LEVELS)bindRange(window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY'));
+  });
+  addEventListener('rizvi:market-range-update',e=>{
+    const r=e.detail||{};
+    document.querySelectorAll('.marketRange .rangeRow').forEach(row=>{
+      const label=row.querySelector('span')?.textContent?.trim();
+      const key={'DAY HIGH':'dayHigh','DAY LOW':'dayLow','4H HIGH':'h4High','4H LOW':'h4Low','1H HIGH':'h1High','1H LOW':'h1Low','30M HIGH':'m30High','30M LOW':'m30Low','15M HIGH':'m15High','15M LOW':'m15Low'}[label];
+      if(key&&r[key]!==undefined){const b=row.querySelector('b');if(b)b.textContent=fmt(r[key]);}
+    });
+  });
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
+  if(window.RIZVI_MARKET_RANGE)window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:window.RIZVI_MARKET_RANGE}));
+})();
 </script></body></html>
