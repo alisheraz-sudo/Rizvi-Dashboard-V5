@@ -2276,7 +2276,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     splitButton(document.getElementById('chartTp1Btn'),'TP1');
     splitButton(document.getElementById('chartTp2Btn'),'TP2');
     splitButton(document.getElementById('chartTp3Btn'),'TP3');
-    splitButton(document.getElementById('chartHighSetupBtn'),'HIGH QUALITY SETUP');
+    /* High Quality Setup is intentionally NOT split into label/value columns. */
   }
   document.addEventListener('DOMContentLoaded',()=>{apply();setInterval(apply,700)});
   setTimeout(apply,300);
@@ -4587,5 +4587,44 @@ button{pointer-events:auto!important}
  }
  document.addEventListener('DOMContentLoaded',()=>{apply();setInterval(apply,500)});
  setTimeout(apply,600);
+})();
+</script><!-- RIZVI TRADE ACTION SINGLE TEXT FIX V47 -->
+<style id="rizvi-trade-action-single-text-v47">
+#chartSetupBox #chartHighSetupBtn{
+  display:flex!important;
+  grid-template-columns:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  width:100%!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+#chartSetupBox #chartHighSetupBtn .btnLabel{display:none!important}
+#chartSetupBox #chartHighSetupBtn .btnValue{
+  display:inline!important;
+  width:auto!important;
+  height:auto!important;
+  border:0!important;
+  font-size:13px!important;
+  font-weight:950!important;
+  text-align:center!important;
+}
+</style>
+<script id="rizvi-trade-action-single-text-v47-script">
+(function(){
+  function clean(){
+    const h=document.getElementById('chartHighSetupBtn');if(!h)return;
+    const labels=h.querySelectorAll('.btnLabel');
+    labels.forEach(x=>x.remove());
+    const v=h.querySelector('.btnValue');
+    if(v){
+      const t=(v.textContent||'').trim();
+      if(t==='BUY'||t==='SELL') v.textContent='HIGH QUALITY SETUP — '+t;
+    }
+  }
+  document.addEventListener('DOMContentLoaded',clean);
+  setTimeout(clean,300);
+  setInterval(clean,500);
 })();
 </script>
