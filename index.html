@@ -1297,6 +1297,28 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 })();
 </script>
+<!-- RIZVI V44.1 BTC SINGLE-CHART LOCK -->
+<style id="rizvi-v44-btc-single-chart-lock">
+/* BTC mode: only the dedicated BTC candle layer may draw candles in the main chart. */
+#chartArea .candle,#chartArea .wick,
+#chartArea .rizviV42Line,#chartArea .rizviV42Tag,
+#chartArea .rizviV43Candle,#chartArea .rizviV43Wick,
+#chartArea .rizviV43Current,#chartArea .rizviV43Price{display:none!important}
+</style>
+<script id="rizvi-v44-btc-single-chart-lock-script">
+(function(){
+  if(window.__RIZVI_V44_BTC_SINGLE_LOCK)return;window.__RIZVI_V44_BTC_SINGLE_LOCK=true;
+  function isBTC(){return window.state?.symbol==='BTC/USD'}
+  function clean(){
+    if(!isBTC())return;
+    const a=document.getElementById('chartArea');if(!a)return;
+    a.querySelectorAll('.candle,.wick,.rizviV42Line,.rizviV42Tag,.rizviV43Candle,.rizviV43Wick,.rizviV43Current,.rizviV43Price').forEach(e=>e.remove());
+  }
+  function start(){clean();setInterval(clean,150)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
+
 </body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
