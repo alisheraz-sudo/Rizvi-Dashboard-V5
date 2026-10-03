@@ -953,4 +953,26 @@
   };
   setTimeout(()=>{health.symbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';window.RIZVI_OPERATIONAL_HEALTH={...health};},500);
 })();
-</script></body></html>
+<script>
+(function(){
+  function bindQualification(e){
+    const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const score=document.querySelector('.right .card.gborder .row b');
+    const ready=document.querySelector('.right .card.gborder .ready');
+    const signal=document.querySelector('.right .card:first-child .big span:first-child');
+    const direction=document.querySelector('.signalHead div:first-child b');
+    if(score){
+      score.innerHTML=(Number.isFinite(q.patternConfidence)?q.patternConfidence:'--')+'% <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    }
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6d5410';
+    }
+    if(signal && q.marketDirection && q.marketDirection!=='NEUTRAL') signal.textContent=q.marketDirection;
+    if(direction && q.signalDirection) direction.textContent=q.signalDirection;
+  }
+  window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e));
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
+})();
+</script></script></body></html>
