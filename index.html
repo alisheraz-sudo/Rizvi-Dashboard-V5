@@ -1580,7 +1580,7 @@ html body .miniMarketChart{display:none!important}
             }catch(e){return String(time)}
           }
         },
-        handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
+        handleScroll:{mouseWheel:false,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
         handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:{time:true,price:true}}
       });
       series=chart.addSeries(L.CandlestickSeries,{
@@ -1659,9 +1659,13 @@ html body .miniMarketChart{display:none!important}
       const tf=(window.state&&window.state.tf)||'1M', mins=TF[tf]||1;
       const data=aggregate(rows,mins); if(!data.length)return;
       const sig=tf+'|'+data.length+'|'+data[0].time+'|'+data[data.length-1].time;
-      if(force||sig!==lastSignature||tf!==lastTf){
+      const timeframeChanged=tf!==lastTf;
+      if(force||sig!==lastSignature||timeframeChanged){
         series.setData(data);
-        requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(e){}});
+        /* Fit only on first load / timeframe change. Live candle updates must NOT reset user zoom. */
+        if(force||timeframeChanged){
+          requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(e){}});
+        }
         lastSignature=sig;lastTf=tf;
       }else{
         series.update(data[data.length-1]);
@@ -3788,12 +3792,22 @@ button{pointer-events:auto!important}
   window.__RIZVI_HIGH_FINAL_RESET=true;
   const textProto=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
   const classProto=Object.getOwnPropertyDescriptor(Element.prototype,'className');
+  let hqCacheKey='',hqCache={dir:'WAIT',q:'WAIT'};
   function signal(){
     const st=window.state||{}, feed=window.RIZVI_REAL_FEED||{};
-    const bars=Array.isArray(st.ohlc)&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
-    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
-    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
-    const q=sig&&String(sig.quality||'').toUpperCase()||'WAIT';
+    const bars=Array.isArray(st.ohlc)&&st.ohlc.length>=31?st.ohlc.slice(-260):[];
+    /* High-quality status is evaluated on the last CLOSED candle, not the moving live candle. */
+    const closedIndex=bars.length-2;
+    const closedKey=closedIndex>=0&&bars[closedIndex]?String(bars[closedIndex].t):'';
+    if(closedKey && closedKey!==hqCacheKey){
+      const sig=window.V5SignalEngine&&closedIndex>=30?window.V5SignalEngine(bars,closedIndex):null;
+      hqCache={
+        dir:sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT',
+        q:sig&&String(sig.quality||'').toUpperCase()||'WAIT'
+      };
+      hqCacheKey=closedKey;
+    }
+    const dir=hqCache.dir, q=hqCache.q;
     const live=feed.stale===false && Number.isFinite(Number(feed.price));
     const high=q==='HIGH'&&dir!=='WAIT'&&live;
     return {dir,q,high};
@@ -3871,3 +3885,19 @@ button{pointer-events:auto!important}
   .chartarea{bottom:186px!important}.grid,.axis{bottom:186px!important}
 }
 </style>
+
+<!-- RIZVI ACTION BOX + CHART INTERACTION STABILITY V2 -->
+<style id="rizvi-chart-full-access-v2">
+/* Full chart interaction: wheel zoom + drag/pan + pinch/axis scaling.
+   The chart area remains visually inside the approved layout, but interaction is no longer constrained by auto-fit resets. */
+#rizviTvChart{touch-action:none!important;cursor:crosshair!important}
+#rizviTvChart canvas{touch-action:none!important}
+</style>
+<script id="rizvi-chart-full-access-v2-script">
+(function(){
+  if(window.__RIZVI_FULL_CHART_ACCESS_V2)return;
+  window.__RIZVI_FULL_CHART_ACCESS_V2=true;
+  /* Lightweight Charts already owns zoom/pan. This marker only documents the stable interaction layer. */
+  window.RIZVI_CHART_INTERACTION='FULL • WHEEL ZOOM • DRAG PAN • PINCH ZOOM';
+})();
+</script>
