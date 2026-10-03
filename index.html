@@ -497,6 +497,12 @@
       aligned,confirmedSweep:sweeps.length>0,confirmedBreakout:follow,
       multiTimeframe:tfs.size>=2,status:liquidityScore>=70?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
     };
+    const qualityEl=document.querySelector('.card.gborder .row b');
+    const readyEl=document.querySelector('.card.gborder .ready');
+    if(qualityEl) qualityEl.innerHTML=liquidityScore+'% &nbsp; <em class="badge">'+(liquidityScore>=70?'HIGH QUALITY':'WAIT')+'</em>';
+    if(readyEl){readyEl.textContent=liquidityScore>=70?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';readyEl.style.background=liquidityScore>=70?'#087e58':'#5a4610';}
+    const signalBig=document.querySelector('.right .card:first-child .big span:first-child');
+    if(signalBig && direction!=='NEUTRAL') signalBig.textContent=direction;
     window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
   }
   window.addEventListener('rizvi:liquidity-update',e=>qualify(e.detail));
