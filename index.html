@@ -78,6 +78,12 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
   #rizviTvChart .rizviTvAttribution{font-size:9px}
 }
 </style>
+<style id="rizvi-tv-clean-old-price-ui">
+/* XAU/USD + BTC/USD: TradingView owns the price scale/price action UI. */
+.axis,.priceTag,.priceLine{display:none!important}
+.chartarea{right:0!important}
+</style>
+<!-- RIZVI V49 TV BOTH ENGINE CLEANUP -->
 </head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
