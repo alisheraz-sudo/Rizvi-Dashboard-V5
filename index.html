@@ -78,4 +78,22 @@
  }
  load();setInterval(load,10000);addEventListener('resize',draw);
 })();
+</script><script>
+(function(){
+ const tfEls=[...document.querySelectorAll('.tf span')];
+ const map={'1M':1,'3M':3,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
+ let selected=1;
+ function aggregate(raw,m){
+  const out=[]; for(let i=0;i<raw.length;i+=m){const a=raw.slice(i,i+m);if(!a.length)continue;
+   out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
+  } return out;
+ }
+ window.RIZVI_SET_TIMEFRAME=function(label,raw){
+  selected=map[label]||1;
+  const data=aggregate(raw||window.RIZVI_RAW_BARS||[],selected);
+  window.RIZVI_CANDLE_TIMEFRAME=label; window.RIZVI_AGG_BARS=data;
+  return data;
+ };
+ tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS)));
+})();
 </script></body></html>
