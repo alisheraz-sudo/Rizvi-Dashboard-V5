@@ -3749,3 +3749,75 @@ button{pointer-events:auto!important}
   setTimeout(clean,300);setTimeout(clean,1000);
 })();
 </script>
+
+<!-- RIZVI HIGH QUALITY SETUP FINAL RESET -->
+<style id="rizvi-high-quality-final-reset">
+/* One headline only. No split columns, no duplicate TRADE ACTION box. */
+#chartSetupBox .setupHighRow,
+#chartSetupBox #setupHighRowStatic{
+  display:block!important;grid-template-columns:1fr!important;
+  width:100%!important;height:32px!important;min-height:32px!important;
+  margin:0 0 6px!important;padding:0!important;gap:0!important;
+  overflow:hidden!important;box-sizing:border-box!important;
+}
+#chartSetupBox #chartHighSetupBtn.setupHighBox{
+  display:flex!important;width:100%!important;height:32px!important;min-height:32px!important;
+  margin:0!important;padding:0 10px!important;box-sizing:border-box!important;
+  align-items:center!important;justify-content:center!important;
+  border-width:2px!important;border-radius:7px!important;
+  font-size:11px!important;font-weight:950!important;line-height:1!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#chartSetupBox #chartHighSetupBtn .btnLabel{display:none!important;width:0!important;border:0!important}
+#chartSetupBox #chartHighSetupBtn .btnValue{
+  display:flex!important;width:100%!important;height:100%!important;
+  align-items:center!important;justify-content:center!important;
+  border:0!important;font-size:11px!important;font-weight:950!important;
+}
+#chartSetupBox #chartHighSetupBtn.buy{background:linear-gradient(90deg,#073d2e,#0a523c)!important;border-color:#19a276!important;color:#78edbd!important}
+#chartSetupBox #chartHighSetupBtn.sell{background:linear-gradient(90deg,#3b111a,#551722)!important;border-color:#d34b62!important;color:#ff9aaa!important}
+#chartSetupBox #chartHighSetupBtn.wait{background:linear-gradient(90deg,#0a2a22,#0d3b2e)!important;border-color:#28755a!important;color:#a8d9ca!important}
+@media(max-width:600px){
+  #chartSetupBox #chartHighSetupBtn.setupHighBox{height:30px!important;min-height:30px!important;font-size:10px!important}
+  #chartSetupBox #chartHighSetupBtn .btnValue{font-size:10px!important}
+}
+</style>
+<script id="rizvi-high-quality-final-reset-script">
+(function(){
+  if(window.__RIZVI_HIGH_FINAL_RESET)return;
+  window.__RIZVI_HIGH_FINAL_RESET=true;
+  const textProto=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
+  const classProto=Object.getOwnPropertyDescriptor(Element.prototype,'className');
+  function signal(){
+    const st=window.state||{}, feed=window.RIZVI_REAL_FEED||{};
+    const bars=Array.isArray(st.ohlc)&&st.ohlc.length>=30?st.ohlc.slice(-260):[];
+    const sig=bars.length>=30&&window.V5SignalEngine?window.V5SignalEngine(bars,bars.length-1):null;
+    const dir=sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT';
+    const q=sig&&String(sig.quality||'').toUpperCase()||'WAIT';
+    const live=feed.stale===false && Number.isFinite(Number(feed.price));
+    const high=q==='HIGH'&&dir!=='WAIT'&&live;
+    return {dir,q,high};
+  }
+  function apply(){
+    const box=document.getElementById('chartSetupBox');if(!box)return;
+    let row=document.getElementById('setupHighRowStatic');
+    if(!row){row=box.querySelector('.setupHighRow');}
+    if(!row){row=document.createElement('div');row.id='setupHighRowStatic';row.className='setupHighRow';box.insertBefore(row,box.firstElementChild)}
+    let h=document.getElementById('chartHighSetupBtn');
+    if(!h){h=document.createElement('div');h.id='chartHighSetupBtn';row.appendChild(h)}
+    if(h.parentElement!==row)row.appendChild(h);
+    [...row.children].forEach(el=>{if(el!==h)el.remove()});
+    const x=signal(), cls=x.high?(x.dir==='BUY'?'buy':'sell'):'wait';
+    const label=x.high?'HIGH QUALITY SETUP — '+x.dir:'TRADE ACTION — WAIT';
+    classProto.set.call(h,'setupHighBox '+cls);
+    textProto.set.call(h,label);
+    h.title='HIGH QUALITY SETUP — '+x.dir;
+    h.setAttribute('data-quality',x.q);
+    h.setAttribute('data-direction',x.dir);
+  }
+  document.addEventListener('DOMContentLoaded',apply);
+  setTimeout(apply,300);setTimeout(apply,1000);
+  setInterval(apply,700);
+  new MutationObserver(()=>{const r=document.getElementById('setupHighRowStatic');if(r&&r.children.length>1)apply()}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
