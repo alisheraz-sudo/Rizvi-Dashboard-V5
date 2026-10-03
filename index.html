@@ -4825,7 +4825,9 @@ button{pointer-events:auto!important}
     const live=window.RIZVI_LAST_CONFIRMED_SETUP||{};
     const liveEntry=N(live.entry);
     const base=N(window.state?.price)||N(window.state?.ohlc?.at?.(-1)?.c);
-    const testEntry=Number.isFinite(liveEntry)?liveEntry:(Number.isFinite(base)?base:NaN);
+    // Test mode uses the currently visible BTC/USD price when available;
+    // otherwise use the last screenshot-range price so the test remains drawable.
+    const testEntry=Number.isFinite(liveEntry)?liveEntry:(Number.isFinite(base)?base:84802.04);
     const testDir='BUY';
     const ss=testMode?{
       direction:testDir,
