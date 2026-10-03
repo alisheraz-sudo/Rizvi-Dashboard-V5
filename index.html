@@ -12,4 +12,21 @@
 <aside class="right"><section class="card"><div class="title">1. <b>SIGNAL</b> <small>(Market Analysis)</small></div><div class="big"><span>BUY</span><span>68% <em class="badge" style="background:#173c75;color:#7fb8ff">MEDIUM</em></span></div><div class="rows"><div class="row"><span>Trend</span><b>Bullish ↑</b></div><div class="row"><span>Momentum</span><b>Bullish ↑</b></div><div class="row"><span>RSI (14)</span><b>61</b></div><div class="row"><span>Structure</span><b>Support ↑</b></div><div class="row"><span>Volume / Delta</span><b>Positive ↑</b></div></div><div class="note">ⓘ Signal shows potential direction.<br>Not a trade yet.</div></section>
 <section class="card gborder"><div class="title">2. <b class="green">EXECUTION</b> <small>(Trade Qualification)</small></div><div class="row"><span>Quality Score</span><b>88% &nbsp; <em class="badge">HIGH QUALITY</em></b></div><div class="checks"><div class="check">Entry Valid</div><div class="check">SL Valid</div><div class="check">RR Acceptable (1:2)</div><div class="check">Structure Intact</div><div class="check">No Major Reversal</div></div><div class="ready">EXECUTE = READY</div></section>
 <section class="card"><div class="title">3. <b>TRADE RANGE</b> <small>(Based on Entry/SL/TP)</small></div><div class="rangeRows"><div class="rangeRow"><span>Entry</span><b>68,480.00</b></div><div class="rangeRow"><span>SL</span><b class="risk">68,720.00 (Risk 240)</b></div><div class="rangeRow"><span>TP1</span><b>68,230.00 (1R)</b></div><div class="rangeRow"><span>TP2</span><b>67,980.00 (1.5R)</b></div><div class="rangeRow"><span>TP3</span><b>67,650.00 (2R)</b></div></div><div class="note">ⓘ Range is calculated from actual prices,<br>not just percentage.</div></section></aside></div>
-<div class="foot">Signal tells you what the market is doing &nbsp; | &nbsp; Execution tells you if you should trade &nbsp; | &nbsp; Unwind helps you manage the trade<br><br>Rizvi Dashboard V5</div></div></body></html>
+<div class="foot">Signal tells you what the market is doing &nbsp; | &nbsp; Execution tells you if you should trade &nbsp; | &nbsp; Unwind helps you manage the trade<br><br>Rizvi Dashboard V5</div></div><script>
+(function(){
+ const tabs=[...document.querySelectorAll('.tf span')];
+ const chartTitle=document.querySelector('.head div');
+ tabs.forEach(t=>t.addEventListener('click',()=>{
+   tabs.forEach(x=>x.classList.remove('sel'));t.classList.add('sel');
+   const tf=t.textContent.trim();
+   const b=chartTitle.querySelector('b'); if(b)b.textContent=tf.toLowerCase();
+ }));
+ const actions=[...document.querySelectorAll('.btn')];
+ const direction=document.querySelector('.signalHead div:first-child b');
+ actions.forEach(a=>a.addEventListener('click',()=>{
+   actions.forEach(x=>x.style.boxShadow='none');
+   a.style.boxShadow='0 0 0 2px #fff5';
+   if(direction) direction.textContent=a.textContent.replace(/[↗↓⚠]/g,'').trim();
+ }));
+})();
+</script></body></html>
