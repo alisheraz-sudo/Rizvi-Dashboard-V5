@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 if(window.__RIZVI_ORDERBOOK_V62)return; window.__RIZVI_ORDERBOOK_V62=true;
-const MAX=10;
+const MAX=10;let history=[];
 const css=`
 #rzOrderBook{margin:10px 0;background:#07121d;border:1px solid #1b4258;border-radius:10px;overflow:hidden;font-size:11px}
 #rzOrderBook .ofHead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #17364b}
@@ -61,12 +61,12 @@ function render(bids,asks,status,source){
  document.getElementById('rzOfAskTotal').textContent=fmt(at);document.getElementById('rzOfBidTotal').textContent=fmt(bt);
  document.getElementById('rzOfImbalance').textContent=Number.isFinite(imb)?(imb>=0?'+':'')+imb.toFixed(1)+'%':'—';
  document.getElementById('rzOfSpread').textContent=Number.isFinite(spread)?fmt(spread):'—';
- const flow=imb>12?'BUY PRESSURE':imb<-12?'SELL PRESSURE':'BALANCED';
+ history.push({t:Date.now(),imb});history=history.filter(x=>Date.now()-x.t<5000);const avg=history.length?history.reduce((s,x)=>s+x.imb,0)/history.length:imb;const flow=imb>12?'BUY PRESSURE':imb<-12?'SELL PRESSURE':'BALANCED';
  const fe=document.getElementById('rzOfFlow');fe.textContent='FLOW: '+flow;fe.className=imb>12?'buy':imb<-12?'sell':'wait';
  const reason=flow==='BUY PRESSURE'?'Bid depth exceeds ask depth near the book.':flow==='SELL PRESSURE'?'Ask depth exceeds bid depth near the book.':'Bid/ask depth is relatively balanced.';
- document.getElementById('rzOfReason').textContent=reason+' Order flow is confirmation context, not a breakout by itself.';
+ document.getElementById('rzOfReason').textContent=reason+' 5s avg '+(Number.isFinite(avg)?avg.toFixed(1):'—')+'%. Order flow is confirmation context, not a breakout by itself.';
  const se=document.getElementById('rzOfStatus');se.textContent=status;se.className='ofStatus '+(status==='LIVE'?'ok':'');
- window.RIZVI_ORDER_BOOK={status,source,bids:b,asks:a,bidTotal:bt,askTotal:at,imbalancePct:imb,spread,mid,updatedAt:Date.now(),flow};
+ window.RIZVI_ORDER_BOOK={status,source,bids:b,asks:a,bidTotal:bt,askTotal:at,imbalancePct:imb,avgImbalancePct:avg,persistenceSamples:history.length,spread,mid,updatedAt:Date.now(),flow};
 }
 function fromCTrader(e){const d=e.detail||{};if(d.type!=='depth'||!d.depth)return;render(d.depth.bids,d.depth.asks,'LIVE','cTrader depth')}
 function btc(){
@@ -78,7 +78,7 @@ function btc(){
  window.__RIZVI_ORDERBOOK_WS=ws;
 }
 window.addEventListener('rizvi:ctrader',fromCTrader);
-window.addEventListener('change',()=>setTimeout(()=>{if(String(window.state?.symbol||'').toUpperCase().replace(/[^A-Z]/g,'').startsWith('BTC')){if(!window.__RIZVI_ORDERBOOK_WS)btc();}},300));
+window.addEventListener('change',()=>setTimeout(()=>{const isBtc=String(window.state?.symbol||'').toUpperCase().replace(/[^A-Z]/g,'').startsWith('BTC');if(isBtc){if(!window.__RIZVI_ORDERBOOK_WS)btc();}else{try{window.__RIZVI_ORDERBOOK_WS&&window.__RIZVI_ORDERBOOK_WS.close()}catch{}window.__RIZVI_ORDERBOOK_WS=null;render({}, {},'WAIT','symbol not BTC');}},300));
 document.addEventListener('DOMContentLoaded',()=>{install();setTimeout(btc,1200)});
 setTimeout(install,1000);
 })();
