@@ -4656,4 +4656,39 @@ button{pointer-events:auto!important}
  setTimeout(enforce,250);
  setInterval(enforce,500);
 })();
-</script>
+</script><!-- RIZVI ENTRY SL TP MOBILE FIX V49 -->
+<style id="rizvi-entry-sl-tp-mobile-v49">
+@media(max-width:600px){
+  #chartSetupBox .setupLevels{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:5px!important;
+    width:100%!important;
+    overflow:visible!important;
+    margin-top:6px!important;
+  }
+  #chartSetupBox .setupLevels .levelBtn{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:27px!important;
+    padding:0 3px!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:9px!important;
+    letter-spacing:.1px!important;
+  }
+  #chartSetupBox{
+    overflow:visible!important;
+  }
+}
+@media(max-width:390px){
+  #chartSetupBox .setupLevels{gap:4px!important}
+  #chartSetupBox .setupLevels .levelBtn{
+    padding:0 2px!important;
+    font-size:8.5px!important;
+  }
+}
+</style>
