@@ -515,7 +515,7 @@
   window.addEventListener('rizvi:signal-qualification-update',()=>setTimeout(analyze,50));
   setInterval(analyze,5000); analyze();
 })();
-<script>
+</script><script>
 (function(){
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function bindRange(r){
@@ -585,7 +585,7 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>render(e.detail));
   if(window.RIZVI_SIGNAL_QUALIFICATION) render(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
-<script>
+</script><script>
 (function(){
   function bindQualification(e){
     const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
