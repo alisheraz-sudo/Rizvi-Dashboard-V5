@@ -907,4 +907,34 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e.detail));
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
+</script><script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindOperational(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    const m=window.RIZVI_MARKET_RANGE;
+    const signal=document.querySelector('.right .card .big');
+    const exec=document.querySelectorAll('.right .card')[1];
+    if(q&&signal){
+      const dir=signal.querySelector('span:first-child');
+      const score=signal.querySelector('span:last-child');
+      if(dir)dir.textContent=q.signalDirection||q.marketDirection||'WAIT';
+      if(score)score.innerHTML=(q.patternConfidence??0)+'% <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    }
+    if(q&&exec){
+      const row=exec.querySelector('.row b');
+      if(row)row.innerHTML=(q.liquidityScore??0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+      const ready=exec.querySelector('.ready');
+      if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6a4d12';}
+    }
+    if(m){
+      const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+      Object.keys(map).forEach(k=>{const el=document.getElementById(k);if(el)el.textContent=fmt(m[map[k]]);});
+    }
+  }
+  bindOperational();
+  window.addEventListener('rizvi:signal-qualification-update',bindOperational);
+  window.addEventListener('rizvi:market-range-update',bindOperational);
+  setInterval(bindOperational,3000);
+})();
 </script></body></html>
