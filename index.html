@@ -177,4 +177,22 @@
   return true;
  };
 })();
+</script><script>
+(function(){
+ async function gold(){
+  try{
+   const d=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+   const p=Number(d?.spot_usd_oz);
+   if(!Number.isFinite(p))return;
+   window.RIZVI_GOLD_FEED={price:p,status:d?.data_state?.status||'unknown',price_as_of:d?.price_as_of||d?.updated_at,source:d?.price_source||d?.source};
+   window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+   window.RIZVI_LIVE_PRICES['XAU/USD']=p;
+   document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+   const nodes=[...document.querySelectorAll('body *')].filter(e=>e.children.length===0);
+   const q=nodes.find(e=>/68,432\.50|4,141\.80|4,000\.00/.test(e.textContent));
+   if(q)q.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }catch(e){window.RIZVI_GOLD_FEED={status:'unavailable'};}
+ }
+ window.RIZVI_REFRESH_GOLD=gold; gold(); setInterval(gold,30000);
+})();
 </script></body></html>
