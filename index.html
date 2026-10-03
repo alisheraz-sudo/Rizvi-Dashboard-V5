@@ -3909,6 +3909,58 @@ button{pointer-events:auto!important}
 #rizviWeekLevelBox{display:none!important}
 </style>
 
+<style id="rizvi-trade-sticker-left-upper-v1">
+/* Digital Entry/SL/TP sticker: inside candle area, upper-left, clear of right-side price movement. */
+#chartLevelMini{
+  display:flex!important;
+  flex-direction:column!important;
+  position:absolute!important;
+  left:18px!important;
+  right:auto!important;
+  top:62px!important;
+  bottom:auto!important;
+  z-index:130!important;
+  pointer-events:none!important;
+  gap:2px!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+#chartLevelMini .miniLevel{
+  width:176px!important;min-width:176px!important;height:28px!important;min-height:28px!important;
+  display:grid!important;grid-template-columns:72px 104px!important;
+  align-items:center!important;padding:0!important;
+  border:1px solid rgba(0,0,0,.35)!important;border-radius:3px!important;
+  overflow:hidden!important;box-sizing:border-box!important;
+  box-shadow:0 2px 5px rgba(0,0,0,.28)!important;
+}
+#chartLevelMini .miniLevel b{
+  height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0 5px!important;font-size:11px!important;font-weight:950!important;
+  box-sizing:border-box!important;background:rgba(4,10,15,.94)!important;color:#fff!important;
+}
+#chartLevelMini .miniLevel em{
+  height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0 5px!important;font-size:11px!important;font-weight:950!important;font-style:normal!important;
+  font-variant-numeric:tabular-nums!important;box-sizing:border-box!important;
+}
+#chartLevelMini .miniLevel.entry b{color:#72e6bb!important;border-color:#1e795c!important}
+#chartLevelMini .miniLevel.entry em{background:#69d9b2!important;color:#06120d!important}
+#chartLevelMini .miniLevel.sl b{color:#ff8797!important}
+#chartLevelMini .miniLevel.sl em{background:#e96879!important;color:#fff!important}
+#chartLevelMini .miniLevel.tp b{color:#70c5f5!important}
+#chartLevelMini .miniLevel.tp em{background:#4da8df!important;color:#06121b!important}
+@media(max-width:700px){
+  #chartLevelMini{left:18px!important;top:56px!important}
+  #chartLevelMini .miniLevel{
+    width:148px!important;min-width:148px!important;height:25px!important;min-height:25px!important;
+    grid-template-columns:62px 86px!important;
+  }
+  #chartLevelMini .miniLevel b,#chartLevelMini .miniLevel em{font-size:9px!important}
+}
+</style>
+
 <!-- RIZVI HIGH QUALITY SETUP FINAL RESET -->
 <style id="rizvi-high-quality-final-reset">
 /* One headline only. No split columns, no duplicate TRADE ACTION box. */
