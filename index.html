@@ -422,7 +422,7 @@
   refresh(); setInterval(refresh,30000);
   document.addEventListener('rizvi:symbol-change',refresh);
 })();
-</script></script><script>
+</script><script>
 (function(){
   function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
   function qualify(e){
@@ -623,7 +623,7 @@
   window.addEventListener('rizvi:signal-qualification-update',bindQualification);
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
-</script></script><script>
+</script><script>
 (function(){
   function ema(values,period){
     if(values.length<period)return null;
@@ -711,7 +711,7 @@
   setInterval(compute,5000);
   setTimeout(compute,1500);
 })();
-<script>
+</script><script>
 (function(){
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function bindQualification(q){
@@ -771,7 +771,7 @@
   window.addEventListener('rizvi:signal-qualification-update',bindQualification);
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
-<script>
+</script><script>
 (function(){
   const dirEl=document.querySelector('.signalHead div:first-child b');
   const qualityEl=document.querySelector('.signalHead div:nth-child(2) b');
