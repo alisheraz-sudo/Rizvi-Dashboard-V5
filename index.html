@@ -4293,3 +4293,87 @@ button{pointer-events:auto!important}
   setTimeout(start,500);
 })();
 </script>
+
+
+<!-- RIZVI FINAL TRADE ACTION / HIGH QUALITY SINGLE BOX V1 -->
+<style id="rizvi-final-single-action-v1">
+/* One decision box only: HIGH QUALITY SETUP — WAIT / BUY / SELL. */
+#chartSetupBox .setupHighRow{
+  display:block!important;
+  width:100%!important;
+  margin:0 0 8px!important;
+}
+#chartSetupBox #chartHighSetupBtn{
+  width:100%!important;
+  height:40px!important;
+  min-height:40px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:7px!important;
+  font-size:12px!important;
+  font-weight:950!important;
+  letter-spacing:.4px!important;
+  white-space:nowrap!important;
+}
+#chartSetupBox #chartHighSetupBtn.rz-buy{
+  background:linear-gradient(90deg,#063b2c,#0a5a42)!important;
+  border:2px solid #1cb782!important;
+  color:#7cf0c2!important;
+}
+#chartSetupBox #chartHighSetupBtn.rz-sell{
+  background:linear-gradient(90deg,#3b1119,#641b28)!important;
+  border:2px solid #df5068!important;
+  color:#ff9aaa!important;
+}
+#chartSetupBox #chartHighSetupBtn.rz-wait{
+  background:linear-gradient(90deg,#111b22,#18252d)!important;
+  border:2px solid #3b4d5a!important;
+  color:#c5d0d8!important;
+}
+/* Remove any duplicate TRADE ACTION/WAIT presentation layers. */
+#chartSetupBox .setupHighRow + .tradeAction,
+#chartSetupBox .tradeAction,
+#tradeActionBox,
+#tradeActionBtn{display:none!important}
+/* Weekly level floating buttons stay removed. */
+#rizviWeekLevelBox,.rizviWeekLevelBox{display:none!important}
+</style>
+<script id="rizvi-final-single-action-v1-script">
+(function(){
+  if(window.__RIZVI_FINAL_SINGLE_ACTION_V1)return;
+  window.__RIZVI_FINAL_SINGLE_ACTION_V1=true;
+  let cacheKey='', cached={dir:'WAIT',quality:'WAIT'};
+  function getSignal(){
+    const st=window.state||{};
+    const bars=Array.isArray(st.ohlc)&&st.ohlc.length>=32?st.ohlc.slice(-260):[];
+    const idx=bars.length-2;
+    const key=idx>=0&&bars[idx]?String(bars[idx].t):'';
+    if(key&&key!==cacheKey){
+      const sig=window.V5SignalEngine&&idx>=30?window.V5SignalEngine(bars,idx):null;
+      cached={
+        dir:sig&&sig.direction==='BUY'?'BUY':sig&&sig.direction==='SELL'?'SELL':'WAIT',
+        quality:sig&&String(sig.quality||'').toUpperCase()||'WAIT'
+      };
+      cacheKey=key;
+    }
+    return cached;
+  }
+  function apply(){
+    const b=document.getElementById('chartHighSetupBtn');
+    if(!b)return;
+    const x=getSignal();
+    const high=(x.quality==='HIGH'&&x.dir!=='WAIT');
+    const dir=high?x.dir:'WAIT';
+    b.className='setupHighBox '+(dir==='BUY'?'rz-buy':dir==='SELL'?'rz-sell':'rz-wait');
+    b.textContent='HIGH QUALITY SETUP — '+dir;
+    b.setAttribute('data-direction',dir);
+    b.setAttribute('data-quality',x.quality);
+    const wk=document.getElementById('rizviWeekLevelBox');
+    if(wk)wk.remove();
+  }
+  document.addEventListener('DOMContentLoaded',apply);
+  setTimeout(apply,250);setTimeout(apply,900);
+  setInterval(apply,700);
+})();
+</script>
