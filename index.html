@@ -142,4 +142,23 @@
   const oldLevel=window.RIZVI_SIGNAL_LEVELS;
   if(oldLevel) window.RIZVI_SIGNAL_LEVELS=function(price,direction){const v=oldLevel(price,direction);setTimeout(drawSignalLevels,0);return v;};
 })();
+</script><script>
+(function(){
+ const textNodes=[...document.querySelectorAll('body *')].filter(e=>e.children.length===0);
+ function setByLabel(label,value){
+  const n=textNodes.find(e=>e.textContent.trim()===label);
+  if(n&&n.nextElementSibling)n.nextElementSibling.textContent=value;
+ }
+ function bind(){
+  const lv=window.RIZVI_TRADE_RANGE,p=window.RIZVI_LIVE_PRICE;
+  if(Number.isFinite(Number(p)))setByLabel('ENTRY',Number(p).toFixed(2));
+  if(lv){
+   setByLabel('SL',Number(lv.sl).toFixed(2));setByLabel('TP1',Number(lv.tp1).toFixed(2));
+   setByLabel('TP2',Number(lv.tp2).toFixed(2));setByLabel('TP3',Number(lv.tp3).toFixed(2));
+  }
+  const d=document.querySelector('.signalHead div:first-child b');
+  if(d&&window.RIZVI_SIGNAL_DIRECTION)d.textContent=window.RIZVI_SIGNAL_DIRECTION;
+ }
+ setInterval(bind,2000);
+})();
 </script></body></html>
