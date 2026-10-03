@@ -3752,6 +3752,23 @@ button{pointer-events:auto!important}
 })();
 </script>
 
+<style id="rizvi-chart-levels-left-top-v5">
+/* Keep Entry / SL / TP labels inside the chart, upper-left, away from the right-side price movement. */
+#chartLevelMini{
+  left:10px!important;
+  right:auto!important;
+  top:10px!important;
+  bottom:auto!important;
+}
+@media(max-width:700px){
+  #chartLevelMini{
+    left:8px!important;
+    right:auto!important;
+    top:8px!important;
+  }
+}
+</style>
+
 <style id="rizvi-action-levels-final-v4">
 /* Final placement: chart labels stay visible; clickable level buttons sit at the bottom of the action box. */
 #chartSetupBox{
