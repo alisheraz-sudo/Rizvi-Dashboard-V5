@@ -269,6 +269,12 @@ html,body{background:#02070d!important;color:#eaf2f8!important;overflow-x:hidden
  .right{padding-top:8px!important}.rz62Title{font-size:15px!important}.rz62SignalBig{font-size:22px!important}
  .rz62Legend{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
 }
+</style><style id="rz-htf-liquidity-style">
+.rzHtfPanel{position:absolute;left:14px;right:14px;bottom:118px;z-index:120;background:rgba(5,16,26,.94);border:1px solid #173b51;border-radius:7px;padding:8px 10px;box-shadow:0 5px 18px rgba(0,0,0,.22);font-size:9px}
+.rzHtfHead{display:flex;justify-content:space-between;gap:8px;color:#8ca6b8;letter-spacing:.08em}.rzHtfHead b{color:#d8e7f1}.rzHtfHead span{color:#d7ae57}
+.rzHtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:7px}.rzHtfGrid div{background:#071522;border:1px solid #143247;border-radius:5px;padding:6px}.rzHtfGrid span{display:block;color:#71899d}.rzHtfGrid b{display:block;color:#dce9f2;margin-top:3px;font-size:10px}
+.rzHtfEvents{display:flex;gap:14px;margin-top:7px;color:#71899d;flex-wrap:wrap}.rzHtfEvents b{color:#bfe8ff}.rzHtfEvents span:last-child b{color:#d7ae57}
+@media(max-width:800px){.rzHtfPanel{position:relative;left:auto;right:auto;bottom:auto;margin:8px 10px}.rzHtfGrid{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main">
@@ -278,7 +284,16 @@ html,body{background:#02070d!important;color:#eaf2f8!important;overflow-x:hidden
 <button class="rzFinalAction unwind" id="rz62Unwind">⚠ UNWIND</button>
 </div>
 <div class="rzFinalStatus" id="rz62Status"><span>SIGNAL <b id="rz62SignalStatus">WAIT</b></span><span>EXECUTION <b id="rz62ExecutionStatus">WAIT</b></span></div>
-<section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">BTC/USD</span><span class="sub"> • 1m</span><span class="sub" id="chartOHLC"> O — H — L — C —</span></div><div class="tf" role="tablist"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="3M">3M</span><span data-tf="5M">5M</span><span data-tf="15M">15M</span><span data-tf="30M">30M</span><span data-tf="1H">1H</span><span data-tf="2H">2H</span><span data-tf="4H">4H</span><span data-tf="1D">1D</span></div></div><div class="grid"></div><div id="chartSignalBadge" style="position:absolute;left:45px;top:67px;background:#0b3028;border:1px solid #1aa879;color:#55dda5;padding:6px 9px;border-radius:5px;font-size:10px;z-index:8">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:73px;top:66px;z-index:8;display:flex;gap:8px;font-size:9px"><span id="hourHigh" style="color:#4fe3a5">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div id="chartLevelMini" style="display:none"><span id="miniEntry">—</span><span id="miniSl">—</span><span id="miniTp1">—</span><span id="miniTp2">—</span><span id="miniTp3">—</span></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="chartSetupBox" id="chartSetupBox"><div class="setupHighRow" id="setupHighRowStatic"><div id="chartHighSetupBtn" class="setupHighBox wait">HIGH QUALITY SETUP</div></div><div class="setupSignals"><button id="chartSigBtn" class="setupBtn">SIGNAL —</button><button id="chartComboBtn" class="setupBtn">COMBO —</button><button id="chartTrendBtn" class="setupBtn">TREND —</button><button id="chartDeltaBtn" class="setupBtn">DELTA —</button><button id="chartDivBtn" class="setupBtn">DIV —</button><button id="chartOfBtn" class="setupBtn">OF —</button><button id="chartRsiBtn" class="setupBtn">RSI —</button></div><div class="setupLevels"><button id="chartEntryBtn" class="levelBtn entryLvl">ENTRY —</button><button id="chartSlBtn" class="levelBtn slLvl">SL —</button><button id="chartTp1Btn" class="levelBtn tpLvl">TP1 —</button><button id="chartTp2Btn" class="levelBtn tpLvl">TP2 —</button><button id="chartTp3Btn" class="levelBtn tpLvl">TP3 —</button></div></div></section>
+<section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">BTC/USD</span><span class="sub"> • 1m</span><span class="sub" id="chartOHLC"> O — H — L — C —</span></div><div class="tf" role="tablist"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="3M">3M</span><span data-tf="5M">5M</span><span data-tf="15M">15M</span><span data-tf="30M">30M</span><span data-tf="1H">1H</span><span data-tf="2H">2H</span><span data-tf="4H">4H</span><span data-tf="1D">1D</span></div></div><div class="grid"></div><div id="chartSignalBadge" style="position:absolute;left:45px;top:67px;background:#0b3028;border:1px solid #1aa879;color:#55dda5;padding:6px 9px;border-radius:5px;font-size:10px;z-index:8">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:73px;top:66px;z-index:8;display:flex;gap:8px;font-size:9px"><span id="hourHigh" style="color:#4fe3a5">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div id="chartLevelMini" style="display:none"><span id="miniEntry">—</span><span id="miniSl">—</span><span id="miniTp1">—</span><span id="miniTp2">—</span><span id="miniTp3">—</span></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="rzHtfPanel" id="rzHtfPanel" aria-label="Higher timeframe liquidity levels">
+  <div class="rzHtfHead"><b>HTF LIQUIDITY RANGE</b><span id="rzHtfStatus">WAIT • DATA</span></div>
+  <div class="rzHtfGrid">
+    <div><span>1D H/L</span><b id="rzHtf1D">— / —</b></div>
+    <div><span>4H H/L</span><b id="rzHtf4H">— / —</b></div>
+    <div><span>1H H/L</span><b id="rzHtf1H">— / —</b></div>
+    <div><span>15M H/L</span><b id="rzHtf15M">— / —</b></div>
+  </div>
+  <div class="rzHtfEvents"><span>24H SWEEPS <b id="rzSweepHigh">0</b></span><span>24H LOW SWEEPS <b id="rzSweepLow">0</b></span><span>BREAKOUT WATCH <b id="rzBreakoutWatch">WAIT</b></span></div>
+</div><div class="chartSetupBox" id="chartSetupBox"><div class="setupHighRow" id="setupHighRowStatic"><div id="chartHighSetupBtn" class="setupHighBox wait">HIGH QUALITY SETUP</div></div><div class="setupSignals"><button id="chartSigBtn" class="setupBtn">SIGNAL —</button><button id="chartComboBtn" class="setupBtn">COMBO —</button><button id="chartTrendBtn" class="setupBtn">TREND —</button><button id="chartDeltaBtn" class="setupBtn">DELTA —</button><button id="chartDivBtn" class="setupBtn">DIV —</button><button id="chartOfBtn" class="setupBtn">OF —</button><button id="chartRsiBtn" class="setupBtn">RSI —</button></div><div class="setupLevels"><button id="chartEntryBtn" class="levelBtn entryLvl">ENTRY —</button><button id="chartSlBtn" class="levelBtn slLvl">SL —</button><button id="chartTp1Btn" class="levelBtn tpLvl">TP1 —</button><button id="chartTp2Btn" class="levelBtn tpLvl">TP2 —</button><button id="chartTp3Btn" class="levelBtn tpLvl">TP3 —</button></div></div></section>
 <section class="rzLegacyBindings"><div id="setupStatus">WAIT</div><div id="signalNotice">Dashboard signal is informational. Manual broker execution only. Auto Trading is OFF.</div><div id="qualityLabel">WAIT</div><div id="deltaValue">WAIT</div><div id="btReplayPrice">Price —</div><div id="btReplaySession">Session —</div><div id="btReplayLine"></div><div id="candlePattern">WAIT</div><div id="candleBias">WAIT</div><div id="candleShape">—</div><div id="candleResponse">WAIT</div><div id="liveIndicatorMatrix"><div id="indEma">WAIT</div><div id="indRsi">WAIT</div><div id="indMacd">WAIT</div><div id="indAtr">WAIT</div><div id="indAdx">WAIT</div><div id="indStoch">WAIT</div><div id="indBb">WAIT</div><div id="indIchi">WAIT</div><div id="indRegime">WAIT</div><div id="indMtf">WAIT</div><div id="indBos">WAIT</div><div id="indCandle">WAIT</div><div id="indDivergence">WAIT</div><div id="indDelta">NOT CONNECTED</div><div id="indCvd">NOT CONNECTED</div><div id="indOrderFlow">NOT CONNECTED</div><div id="indicatorNote">Waiting.</div></div><div id="overviewPrice">—</div><div id="overviewChange">WAIT</div><div id="overview1m">—</div><div id="overview5m">—</div><div id="overviewHigh">—</div><div id="overviewLow">—</div><div id="miniTf">1H</div><div id="miniCandles"></div><div id="miniPriceLine"></div><div id="miniPriceTag">—</div><div id="miniHigh">—</div><div id="miniLow">—</div><div id="miniCurrent">—</div><div id="miniRange">—</div></section>
 <div class="bottom rz62Examples">
  <div class="rz62Bottom red">
@@ -2054,6 +2069,42 @@ html body .miniMarketChart{display:none!important}
    const ex=q('rz62ExecutionStatus'); if(ex)ex.textContent=action==='UNWIND'?'MANAGE / CLOSE':'MANUAL '+action;
    document.dispatchEvent(new CustomEvent('rizvi:manual-action',{detail:{action,at:Date.now(),symbol:window.state?.symbol||''}}));
  });
+})();
+</script><script id="rz-htf-liquidity-engine">
+(function(){
+ if(window.__RZ_HTF_ENGINE)return; window.__RZ_HTF_ENGINE=true;
+ const q=id=>document.getElementById(id), n=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
+ const mins={15M:15,1H:60,4H:240,1D:1440}; let busy=false,cache={};
+ function fmt(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+ async function json(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
+ function rows(data){return (Array.isArray(data)?data:[]).map(x=>({t:Number(x[0]),o:n(x[1]),h:n(x[2]),l:n(x[3]),c:n(x[4])})).filter(x=>Number.isFinite(x.t)&&[x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t)}
+ async function get(tf,limit){const key=tf+limit;if(cache[key]&&Date.now()-cache[key].at<30000)return cache[key].rows;const d=await json('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval='+tf.toLowerCase()+'&limit='+limit+'&_='+Date.now());const r=rows(d);if(r.length<5)throw Error(tf+' insufficient');cache[key]={at:Date.now(),rows:r};return r}
+ function level(r){const prev=r.slice(0,-1).at(-1);return prev?{h:prev.h,l:prev.l,t:prev.t}:null}
+ function countSweeps(r,levels){let hi=0,lo=0;for(const b of r){if(b.h>levels.h&&b.c<=levels.h)hi++;if(b.l<levels.l&&b.c>=levels.l)lo++}return {hi,lo}}
+ async function refresh(){
+   if(window.state?.symbol!=='BTC/USD'||busy)return;busy=true;
+   try{
+    const [m15,h1,h4,d1]=await Promise.all([get('15m',300),get('1h',100),get('4h',60),get('1d',30)]);
+    const L={m15:level(m15),h1:level(h1),h4:level(h4),d1:level(d1)};
+    const f=(id,x)=>{const e=q(id);if(e)e.textContent=x?fmt(x.h)+' / '+fmt(x.l):'— / —'};
+    f('rzHtf15M',L.m15);f('rzHtf1H',L.h1);f('rzHtf4H',L.h4);f('rzHtf1D',L.d1);
+    const last24=m15.filter(x=>x.t>=Date.now()-86400000);
+    const base=L.m15||{h:Math.max(...last24.map(x=>x.h)),l:Math.min(...last24.map(x=>x.l))};
+    const sw=countSweeps(last24,base);
+    q('rzSweepHigh').textContent=sw.hi;q('rzSweepLow').textContent=sw.lo;
+    const px=n(window.state?.price),near=(x)=>Number.isFinite(px)&&x&&Math.abs(px-x.h)<=Math.max(px*.0008,1)||Number.isFinite(px)&&x&&Math.abs(px-x.l)<=Math.max(px*.0008,1);
+    const broken=(x)=>Number.isFinite(px)&&x&&(px>x.h||px<x.l);
+    let watch='WAIT';
+    const nearAny=[L.d1,L.h4,L.h1,L.m15].some(near),brokenAny=[L.d1,L.h4,L.h1,L.m15].some(broken);
+    if(brokenAny)watch='BREAKOUT TEST'; else if(nearAny)watch='WATCH';
+    q('rzBreakoutWatch').textContent=watch;
+    q('rzHtfStatus').textContent='REAL HTF DATA • BINANCE';
+    window.RIZVI_HTF_LEVELS={source:'Binance public BTCUSDT',updatedAt:new Date().toISOString(),levels:L,sweeps24h:sw,breakoutWatch:watch};
+   }catch(e){q('rzHtfStatus').textContent='WAIT • HTF DATA ERROR'}
+   finally{busy=false}
+ }
+ document.addEventListener('DOMContentLoaded',()=>{refresh();setInterval(refresh,30000)});
+ window.RizviHTF={refresh};
 })();
 </script></body>
 <style>
