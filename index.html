@@ -3821,3 +3821,53 @@ button{pointer-events:auto!important}
   new MutationObserver(()=>{const r=document.getElementById('setupHighRowStatic');if(r&&r.children.length>1)apply()}).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+
+<!-- RIZVI ACTION BOX FINAL SIZE + CHART GAP RESET -->
+<style id="rizvi-action-box-final-size">
+/* The lower ENTRY/SL/TP row is gone; reclaim that space for readable action controls. */
+#chartSetupBox{
+  height:178px!important;min-height:178px!important;
+  left:10px!important;right:10px!important;bottom:8px!important;
+  padding:8px 9px!important;box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+#chartSetupBox .setupHighRow,#chartSetupBox #setupHighRowStatic{
+  height:38px!important;min-height:38px!important;margin:0 0 7px!important;
+}
+#chartSetupBox #chartHighSetupBtn.setupHighBox{
+  height:38px!important;min-height:38px!important;font-size:12px!important;
+}
+#chartSetupBox #chartHighSetupBtn .btnValue{font-size:12px!important}
+#chartSetupBox .setupSignals{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:6px!important;margin:0!important;overflow:hidden!important;
+}
+#chartSetupBox .setupBtn{
+  height:34px!important;min-height:34px!important;width:100%!important;
+  font-size:10px!important;padding:0 5px!important;box-sizing:border-box!important;
+}
+#chartSetupBox .setupBtn .btnLabel{font-size:8.5px!important}
+#chartSetupBox .setupBtn .btnValue{font-size:10.5px!important}
+
+/* Chart ends exactly where the action panel starts — no large empty gap. */
+.chartarea{bottom:186px!important}
+.grid,.axis{bottom:186px!important}
+
+@media screen and (orientation:landscape) and (max-width:950px){
+  #chartSetupBox{height:178px!important;min-height:178px!important}
+  .chartarea{bottom:186px!important}.grid,.axis{bottom:186px!important}
+  #chartSetupBox .setupBtn{height:34px!important;min-height:34px!important}
+}
+@media screen and (max-width:700px) and (orientation:portrait){
+  #chartSetupBox{height:178px!important;min-height:178px!important;left:7px!important;right:7px!important}
+  .chartarea{bottom:186px!important}.grid,.axis{bottom:186px!important}
+  #chartSetupBox .setupSignals{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+  #chartSetupBox .setupBtn{height:34px!important;min-height:34px!important;font-size:10px!important}
+  #chartSetupBox .setupBtn .btnLabel{font-size:8.5px!important}
+  #chartSetupBox .setupBtn .btnValue{font-size:10.5px!important}
+}
+@media screen and (max-width:430px) and (orientation:portrait){
+  #chartSetupBox{height:178px!important;min-height:178px!important}
+  .chartarea{bottom:186px!important}.grid,.axis{bottom:186px!important}
+}
+</style>
