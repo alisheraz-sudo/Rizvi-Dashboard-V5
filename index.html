@@ -66,7 +66,19 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
  .chart{height:475px;border-radius:9px}.charthead{padding:0 10px}.charttitle{font-size:14px}.tf{gap:2px}.tf span{min-width:39px;padding:8px 7px;font-size:10px}
  .bottom{gap:8px}.panel{border-radius:9px}.right{padding:8px}.sighead{padding:14px}.levels,.stats,.checks,.quality,.sweep,.distance,.highQualityRow,.tradeCaptureCompact,.riskmini,.riskguards{margin-left:12px;margin-right:12px}
 }
-</style><style id="rizvi-live-indicator-matrix">.indicatorGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.indicatorGrid>div{background:#06111b;border:1px solid #19364d;border-radius:6px;padding:7px 8px;min-width:0}.indicatorGrid span{display:block;color:#71889c;font-size:9px;white-space:nowrap}.indicatorGrid b{display:block;margin-top:3px;font-size:10px;color:#dce7ef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.indicatorGrid b.bull{color:#51d89a!important}.indicatorGrid b.bear{color:#ed697b!important}.indicatorGrid b.neutral{color:#d7ae57!important}.indicatorNote{margin-top:8px;font-size:9px;color:#71879a;line-height:1.35}@media(max-width:950px){.indicatorGrid{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.indicatorGrid{grid-template-columns:repeat(2,1fr)}}.bottom .panel{min-width:0}</style></head><body><div class="app">
+</style><style id="rizvi-live-indicator-matrix">.indicatorGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.indicatorGrid>div{background:#06111b;border:1px solid #19364d;border-radius:6px;padding:7px 8px;min-width:0}.indicatorGrid span{display:block;color:#71889c;font-size:9px;white-space:nowrap}.indicatorGrid b{display:block;margin-top:3px;font-size:10px;color:#dce7ef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.indicatorGrid b.bull{color:#51d89a!important}.indicatorGrid b.bear{color:#ed697b!important}.indicatorGrid b.neutral{color:#d7ae57!important}.indicatorNote{margin-top:8px;font-size:9px;color:#71879a;line-height:1.35}@media(max-width:950px){.indicatorGrid{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.indicatorGrid{grid-template-columns:repeat(2,1fr)}}.bottom .panel{min-width:0}</style><script id="rizvi-v45-tradingview-lib" src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style id="rizvi-v45-tradingview-css">
+/* RIZVI V45 — TradingView Lightweight Charts */
+#chartArea{overflow:hidden!important}
+#chartArea > :not(#rizviTvChart){display:none!important}
+#rizviTvChart{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;z-index:40!important;touch-action:none}
+#rizviTvChart .rizviTvAttribution{position:absolute;left:8px;bottom:4px;z-index:10;font:10px/1.2 system-ui,sans-serif;opacity:.55;pointer-events:auto}
+#rizviTvChart .rizviTvAttribution a{color:#8da4b8;text-decoration:none}
+@media (max-width:700px){
+  #rizviTvChart .rizviTvAttribution{font-size:9px}
+}
+</style>
+</head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
 <section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">XAU/USD</span><span class="sub"> • 1m</span> <span class="sub" id="chartOHLC"> O —&nbsp; H —&nbsp; L —&nbsp; C —</span></div><div class="tf" role="tablist" aria-label="Chart timeframe"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="5M" role="tab" aria-selected="false">5M</span><span data-tf="15M" role="tab" aria-selected="false">15M</span><span data-tf="30M" role="tab" aria-selected="false">30M</span><span data-tf="1H" role="tab" aria-selected="false">1H</span></div></div><div class="grid"></div><div style="position:absolute;left:8px;top:61px;bottom:112px;width:28px;display:flex;flex-direction:column;gap:13px;align-items:center;color:#7290aa;font-size:15px;z-index:5">✣<br>⌁<br>♢<br>⌁<br>⌕<br>⌗<br>⌘</div><div id="chartSignalBadge" style="position:absolute;left:48px;top:62px;background:#0b3b31;border:1px solid #18a878;color:#4fe1a3;padding:8px 12px;border-radius:5px;font-size:12px;z-index:5">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:70px;top:62px;z-index:5;display:flex;gap:10px;font-size:11px"><span id="hourHigh" style="color:#4fe1a3">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span><span id="axis10">—</span><span id="axis11">—</span><span id="axis12">—</span><span id="axis13">—</span><span id="axis14">—</span><span id="axis15">—</span><span id="axis16">—</span><span id="axis17">—</span><span id="axis18">—</span><span id="axis19">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="chartSetupBox" id="chartSetupBox">
@@ -1410,6 +1422,141 @@ html body .miniMarketChart{display:none!important}
  }
  function start(){load();tick();draw();setInterval(load,10000);setInterval(tick,1000);setInterval(draw,300);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
+
+<script id="rizvi-v45-tradingview-script">
+(function(){
+  if(window.__RIZVI_V45_TV)return; window.__RIZVI_V45_TV=true;
+  const N=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
+  const TF={ '1M':1,'5M':5,'15M':15,'30M':30,'1H':60 };
+  let chart=null,series=null,priceLine=null,lastSignature='',lastTf='',ready=false,attempts=0;
+
+  function host(){
+    const area=document.getElementById('chartArea'); if(!area)return null;
+    let el=document.getElementById('rizviTvChart');
+    if(!el){
+      el=document.createElement('div'); el.id='rizviTvChart';
+      const a=document.createElement('div'); a.className='rizviTvAttribution';
+      a.innerHTML='<a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>';
+      el.appendChild(a); area.appendChild(el);
+    }
+    return el;
+  }
+
+  function waitForLib(){
+    if(window.LightweightCharts){init();return}
+    if(++attempts<80)setTimeout(waitForLib,250);
+  }
+
+  function init(){
+    if(ready)return;
+    const el=host(); if(!el)return;
+    const L=window.LightweightCharts;
+    try{
+      chart=L.createChart(el,{
+        autoSize:true,
+        layout:{background:{type:L.ColorType.Solid,color:'#07111c'},textColor:'#8095aa',fontFamily:'Inter,system-ui,-apple-system,Segoe UI,sans-serif'},
+        grid:{
+          vertLines:{color:'rgba(25,48,70,.55)'},
+          horzLines:{color:'rgba(25,48,70,.55)'}
+        },
+        crosshair:{
+          mode:L.CrosshairMode.Normal,
+          vertLine:{color:'rgba(125,160,190,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'},
+          horzLine:{color:'rgba(125,160,190,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'}
+        },
+        rightPriceScale:{
+          borderColor:'#18324b',
+          textColor:'#8095aa',
+          scaleMargins:{top:.08,bottom:.12}
+        },
+        timeScale:{
+          borderColor:'#18324b',
+          timeVisible:true,
+          secondsVisible:false,
+          rightOffset:4,
+          barSpacing:8,
+          minBarSpacing:3
+        },
+        handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
+        handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:{time:true,price:true}}
+      });
+      series=chart.addSeries(L.CandlestickSeries,{
+        upColor:'#29d89a',
+        downColor:'#e44e61',
+        borderUpColor:'#29d89a',
+        borderDownColor:'#e44e61',
+        wickUpColor:'#29d89a',
+        wickDownColor:'#e44e61',
+        borderVisible:true,
+        lastValueVisible:true,
+        priceLineVisible:false
+      });
+      ready=true;
+      window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(e){}});
+      refresh(true);
+      setInterval(()=>refresh(false),700);
+    }catch(e){
+      el.innerHTML='<div style="padding:18px;color:#d7ae57;font:12px system-ui">TradingView chart loading…</div>';
+    }
+  }
+
+  function aggregate(rows,minutes){
+    if(minutes===1)return rows.slice(-520).map(b=>({time:Math.floor(N(b.t)/1000),open:N(b.o),high:N(b.h),low:N(b.l),close:N(b.c)}));
+    const out=[], ms=minutes*60000;
+    for(const b of rows){
+      const t=N(b.t); if(!Number.isFinite(t))continue;
+      const bucket=Math.floor(t/ms)*ms, o=N(b.o),h=N(b.h),l=N(b.l),cl=N(b.c);
+      if(![o,h,l,cl].every(Number.isFinite))continue;
+      const last=out[out.length-1];
+      if(!last || last._t!==bucket)out.push({_t:bucket,time:Math.floor(bucket/1000),open:o,high:h,low:l,close:cl});
+      else{last.high=Math.max(last.high,h);last.low=Math.min(last.low,l);last.close=cl}
+    }
+    return out.slice(-240).map(({_t,...x})=>x);
+  }
+
+  function getRows(){
+    const st=window.state;
+    if(!st||!Array.isArray(st.ohlc))return [];
+    return st.ohlc.map(b=>({t:N(b.t),o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)}))
+      .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite))
+      .sort((a,b)=>a.t-b.t);
+  }
+
+  function refresh(force){
+    if(!ready||!series)return;
+    const rows=getRows(); if(!rows.length)return;
+    const tf=(window.state&&window.state.tf)||'1M', mins=TF[tf]||1;
+    const data=aggregate(rows,mins); if(!data.length)return;
+    const sig=tf+'|'+data.length+'|'+data[0].time+'|'+data[data.length-1].time;
+    if(force||sig!==lastSignature||tf!==lastTf){
+      series.setData(data);
+      chart.timeScale().fitContent();
+      lastSignature=sig;lastTf=tf;
+    }else{
+      series.update(data[data.length-1]);
+    }
+    const live=N(window.state.price);
+    const close=data[data.length-1].close;
+    const px=Number.isFinite(live)?live:close;
+    if(Number.isFinite(px)){
+      if(!priceLine)priceLine=series.createPriceLine({
+        price:px,color:'#62e6b0',lineWidth:1,lineStyle:L.LineStyle.Dashed,
+        axisLabelVisible:true,title:'LIVE'
+      });
+      else priceLine.applyOptions({price:px});
+    }
+    const o=data[data.length-1];
+    const oh=document.getElementById('chartOHLC');
+    if(oh)oh.innerHTML=' O '+o.open.toFixed(2)+'&nbsp; H '+o.high.toFixed(2)+'&nbsp; L '+o.low.toFixed(2)+'&nbsp; C '+o.close.toFixed(2);
+  }
+
+  function start(){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',waitForLib);
+    else waitForLib();
+  }
+  start();
 })();
 </script>
 </body>
