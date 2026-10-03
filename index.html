@@ -4879,7 +4879,16 @@ button{pointer-events:auto!important}
       const pw=chart.priceScale('right')?.width?.();
       if(Number.isFinite(pw)&&pw>40)scaleW=pw;
     }catch(e){}
-    const right=Math.max(x+70,w-scaleW-6);
+    // Keep the trade range deliberately slim: it should be a compact visual
+    // trade marker, not a wide chart overlay.
+    let plotRight=w-scaleW-6;
+    try{
+      const tw=chart.timeScale().width?.();
+      if(Number.isFinite(tw)&&tw>40)plotRight=Math.min(plotRight,tw);
+    }catch(e){}
+    const slimW=window.innerWidth<=600?96:120;
+    if(x+slimW>plotRight-4)x=Math.max(8,plotRight-slimW-4);
+    const right=Math.min(plotRight-4,x+slimW);
     const tp=document.querySelector('#rizviTvTradeRange .rzRangeTp');
     const slb=document.querySelector('#rizviTvTradeRange .rzRangeSl');
     const en=document.querySelector('#rizviTvTradeRange .rzRangeEntry');
