@@ -103,4 +103,19 @@
  const baseSet=window.RIZVI_SET_TIMEFRAME;
  if(baseSet) window.RIZVI_SET_TIMEFRAME=function(label,raw){const d=baseSet(label,raw);if(Array.isArray(d)){bars=d;draw();}return d;};
 })();
+</script><script>
+(function(){
+ function levels(p,dir){
+  const step=p*0.0025, risk=p*0.0015;
+  if(dir==='SELL') return {entry:p,sl:p+risk,tp1:p-step,tp2:p-step*2,tp3:p-step*3};
+  return {entry:p,sl:p+risk,tp1:p+step,tp2:p+step*2,tp3:p+step*3};
+ }
+ window.RIZVI_SIGNAL_LEVELS=function(price,direction){
+  const v=levels(Number(price),direction||'BUY');
+  window.RIZVI_TRADE_RANGE=v; return v;
+ };
+ window.addEventListener('rizvi:price-update',e=>{
+  const p=e.detail?.price;if(Number.isFinite(Number(p)))window.RIZVI_SIGNAL_LEVELS(p,e.detail?.direction||'BUY');
+ });
+})();
 </script></body></html>
