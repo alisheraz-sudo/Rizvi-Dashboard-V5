@@ -41,8 +41,49 @@ function parseForm(body){
   const p=new URLSearchParams(body);
   return {username:p.get('username')||'',password:p.get('password')||''};
 }
+
+// Rizvi Order Flow bridge: receives TradingView footprint alerts and exposes the latest
+// confirmed footprint snapshot to the dashboard. Optional secret protects the endpoint.
+const RIZVI_TV_SECRET=process.env.TV_WEBHOOK_SECRET||'';
+const RIZVI_OF_LATEST=new Map();
+const RIZVI_OF_HISTORY=new Map();
+function readJson(req){
+  return new Promise((resolve,reject)=>{
+    let body='';
+    req.on('data',chunk=>{body+=chunk;if(body.length>200000)req.destroy();});
+    req.on('end',()=>{try{resolve(body?JSON.parse(body):{})}catch(e){reject(e)}});
+    req.on('error',reject);
+  });
+}
+function ofKey(x){return String(x.symbol||x.ticker||'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function ofReply(res,status,obj){
+  return send(res,status,'application/json; charset=utf-8',JSON.stringify(obj),{
+    'Access-Control-Allow-Origin':'*',
+    'Access-Control-Allow-Headers':'Content-Type',
+    'Access-Control-Allow-Methods':'GET,POST,OPTIONS',
+    'Cache-Control':'no-store'
+  });
+}
+
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');
+
+  if(req.method==='OPTIONS')return ofReply(res,204,{ok:true});
+  if(url.pathname==='/tv/footprint' && req.method==='POST'){
+    if(RIZVI_TV_SECRET && url.searchParams.get('secret')!==RIZVI_TV_SECRET)return ofReply(res,401,{ok:false,error:'unauthorized'});
+    try{
+      const payload=await readJson(req);
+      const key=ofKey(payload);
+      const row={...payload,symbol:key,source:'TradingView Footprint',receivedAt:Date.now()};
+      RIZVI_OF_LATEST.set(key,row);
+      const h=RIZVI_OF_HISTORY.get(key)||[];h.push(row);while(h.length>100)h.shift();RIZVI_OF_HISTORY.set(key,h);
+      return ofReply(res,200,{ok:true,symbol:key,receivedAt:row.receivedAt});
+    }catch(e){return ofReply(res,400,{ok:false,error:'invalid JSON'});}
+  }
+  if(url.pathname==='/orderflow' && req.method==='GET'){
+    const key=String(url.searchParams.get('symbol')||'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    return ofReply(res,200,{ok:true,symbol:key,data:RIZVI_OF_LATEST.get(key)||null,history:(RIZVI_OF_HISTORY.get(key)||[]).slice(-30)});
+  }
 
   if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
 
