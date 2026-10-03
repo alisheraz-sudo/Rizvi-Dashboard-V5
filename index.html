@@ -3739,13 +3739,11 @@ button{pointer-events:auto!important}
 @media screen and (max-width:700px) and (orientation:portrait){#chartSetupBox{height:112px!important}}
 @media screen and (max-width:430px) and (orientation:portrait){#chartSetupBox{height:112px!important}}
 </style>
-<script id="rizvi-action-level-cleanup-v2-script">
+<script id="rizvi-action-level-cleanup-v3-script">
 (function(){
-  if(window.__RIZVI_LEVEL_CLEANUP_V2)return;
-  window.__RIZVI_LEVEL_CLEANUP_V2=true;
+  if(window.__RIZVI_LEVEL_CLEANUP_V3)return;
+  window.__RIZVI_LEVEL_CLEANUP_V3=true;
   function clean(){
-    const levels=document.querySelector('#chartSetupBox .setupLevels');
-    if(levels)levels.remove();
     const mini=document.getElementById('chartLevelMini');
     if(mini)mini.style.display='flex';
   }
@@ -3753,6 +3751,38 @@ button{pointer-events:auto!important}
   setTimeout(clean,300);setTimeout(clean,1000);
 })();
 </script>
+
+<style id="rizvi-action-levels-final-v4">
+/* Final placement: chart labels stay visible; clickable level buttons sit at the bottom of the action box. */
+#chartSetupBox{
+  height:216px!important;min-height:216px!important;
+}
+#chartSetupBox .setupLevels{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:6px!important;
+  position:absolute!important;
+  left:9px!important;right:9px!important;
+  bottom:8px!important;
+  height:30px!important;min-height:30px!important;
+  margin:0!important;padding:0!important;
+  overflow:hidden!important;
+}
+#chartSetupBox .setupLevels .levelBtn{
+  display:flex!important;
+  width:100%!important;height:30px!important;min-height:30px!important;
+  align-items:center!important;justify-content:center!important;
+  box-sizing:border-box!important;
+}
+.chartarea{bottom:224px!important}
+.grid,.axis{bottom:224px!important}
+@media screen and (max-width:700px){
+  #chartSetupBox{height:216px!important;min-height:216px!important}
+  #chartSetupBox .setupLevels{left:7px!important;right:7px!important;gap:3px!important;height:26px!important;min-height:26px!important}
+  #chartSetupBox .setupLevels .levelBtn{height:26px!important;min-height:26px!important;font-size:8px!important;padding:0 2px!important}
+  .chartarea{bottom:224px!important}.grid,.axis{bottom:224px!important}
+}
+</style>
 
 <!-- RIZVI HIGH QUALITY SETUP FINAL RESET -->
 <style id="rizvi-high-quality-final-reset">
