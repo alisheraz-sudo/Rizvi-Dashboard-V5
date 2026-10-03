@@ -1475,7 +1475,7 @@ html body .miniMarketChart{display:none!important}
   if(window.__RIZVI_V45_TV)return; window.__RIZVI_V45_TV=true;
   const N=v=>{const x=Number(v);return Number.isFinite(x)?x:NaN};
   const TF={ '1M':1,'5M':5,'15M':15,'30M':30,'1H':60 };
-  let chart=null,series=null,priceLine=null,lastSignature='',lastTf='',ready=false,attempts=0;
+  let chart=null,series=null,priceLine=null,lastSignature='',lastTf='',ready=false,attempts=0,L=null;
 
   function host(){
     const area=document.getElementById('chartArea'); if(!area)return null;
@@ -1497,7 +1497,7 @@ html body .miniMarketChart{display:none!important}
   function init(){
     if(ready)return;
     const el=host(); if(!el)return;
-    const L=window.LightweightCharts;
+    L=window.LightweightCharts;
     try{
       chart=L.createChart(el,{
         autoSize:true,
@@ -1571,30 +1571,34 @@ html body .miniMarketChart{display:none!important}
 
   function refresh(force){
     if(!ready||!series)return;
-    const rows=getRows(); if(!rows.length)return;
-    const tf=(window.state&&window.state.tf)||'1M', mins=TF[tf]||1;
-    const data=aggregate(rows,mins); if(!data.length)return;
-    const sig=tf+'|'+data.length+'|'+data[0].time+'|'+data[data.length-1].time;
-    if(force||sig!==lastSignature||tf!==lastTf){
-      series.setData(data);
-      chart.timeScale().fitContent();
-      lastSignature=sig;lastTf=tf;
-    }else{
-      series.update(data[data.length-1]);
+    try{
+      const rows=getRows(); if(!rows.length)return;
+      const tf=(window.state&&window.state.tf)||'1M', mins=TF[tf]||1;
+      const data=aggregate(rows,mins); if(!data.length)return;
+      const sig=tf+'|'+data.length+'|'+data[0].time+'|'+data[data.length-1].time;
+      if(force||sig!==lastSignature||tf!==lastTf){
+        series.setData(data);
+        requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(e){}});
+        lastSignature=sig;lastTf=tf;
+      }else{
+        series.update(data[data.length-1]);
+      }
+      const live=N(window.state.price);
+      const close=data[data.length-1].close;
+      const px=Number.isFinite(live)?live:close;
+      if(Number.isFinite(px)){
+        if(!priceLine)priceLine=series.createPriceLine({
+          price:px,color:'#62e6b0',lineWidth:1,lineStyle:L?.LineStyle?.Dashed ?? 2,
+          axisLabelVisible:true,title:'LIVE'
+        });
+        else priceLine.applyOptions({price:px});
+      }
+      const o=data[data.length-1];
+      const oh=document.getElementById('chartOHLC');
+      if(oh)oh.innerHTML=' O '+o.open.toFixed(2)+'&nbsp; H '+o.high.toFixed(2)+'&nbsp; L '+o.low.toFixed(2)+'&nbsp; C '+o.close.toFixed(2);
+    }catch(e){
+      window.RIZVI_TV_LAST_ERROR=String(e?.message||e);
     }
-    const live=N(window.state.price);
-    const close=data[data.length-1].close;
-    const px=Number.isFinite(live)?live:close;
-    if(Number.isFinite(px)){
-      if(!priceLine)priceLine=series.createPriceLine({
-        price:px,color:'#62e6b0',lineWidth:1,lineStyle:L.LineStyle.Dashed,
-        axisLabelVisible:true,title:'LIVE'
-      });
-      else priceLine.applyOptions({price:px});
-    }
-    const o=data[data.length-1];
-    const oh=document.getElementById('chartOHLC');
-    if(oh)oh.innerHTML=' O '+o.open.toFixed(2)+'&nbsp; H '+o.high.toFixed(2)+'&nbsp; L '+o.low.toFixed(2)+'&nbsp; C '+o.close.toFixed(2);
   }
 
   function start(){
