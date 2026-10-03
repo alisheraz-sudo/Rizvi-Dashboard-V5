@@ -5186,3 +5186,71 @@ button{pointer-events:auto!important}
   .bottom{grid-template-columns:1fr!important}
 }
 </style>
+
+<style id="rizvi-orderflow-live-v59">
+.ofLiveBadge{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:4px 7px;border-radius:5px;border:1px solid #29445b;background:#091724;color:#7890a5;font-size:9px;font-weight:800}
+.ofLiveBadge.ok{color:#62e0a8;border-color:#287d5d;background:#0c241b}
+.ofLiveBadge.warn{color:#e6b85b;border-color:#6b5420;background:#1b170d}
+</style>
+<script id="rizvi-orderflow-live-v59-script">
+(function(){
+ if(window.__RIZVI_ORDERFLOW_V59)return;
+ window.__RIZVI_ORDERFLOW_V59=true;
+ const API=window.RIZVI_ORDERFLOW_URL||'';
+ const STALE_MS=90000;
+ function setState(data,status){
+   const x=data||{};
+   const delta=Number(x.delta),dp=Number(x.deltaPct),br=Number(x.buyRatio);
+   const buy=Number.isFinite(dp)?dp>0:false,sell=Number.isFinite(dp)?dp<0:false;
+   window.RIZVI_ORDER_FLOW={
+     status:status||'NOT CONNECTED',receivedAt:Number(x.receivedAt)||0,
+     age:Number(x.receivedAt)?Date.now()-Number(x.receivedAt):Infinity,
+     symbol:String(x.symbol||'').toUpperCase(),buyVolume:Number(x.buyVolume),
+     sellVolume:Number(x.sellVolume),totalVolume:Number(x.totalVolume),
+     delta,deltaPct:dp,buyRatio:br,poc:Number(x.poc),vah:Number(x.vah),val:Number(x.val),
+     buyImbalance:Number(x.buyImbalance)||0,sellImbalance:Number(x.sellImbalance)||0,
+     direction:String(x.direction||'WAIT').toUpperCase(),
+     fresh:Number(x.receivedAt)?Date.now()-Number(x.receivedAt)<STALE_MS:false
+   };
+   const d=document.getElementById('ofDelta'),ba=document.getElementById('ofBidAsk'),im=document.getElementById('ofImbalance'),note=document.getElementById('ofNote');
+   if(d)d.textContent=Number.isFinite(delta)?((delta>=0?'+':'')+delta.toLocaleString()+' • '+(buy?'Buy Pressure':sell?'Sell Pressure':'Balanced')):'WAIT';
+   if(d)d.className=buy?'ofBull':sell?'ofBear':'';
+   if(ba)ba.textContent=Number.isFinite(br)?br.toFixed(1)+'% / '+(100-br).toFixed(1)+'%':'WAIT';
+   if(im)im.textContent=status==='CONNECTED'?(x.direction||'WAIT'):'WAIT';
+   if(im)im.className=x.direction==='BUY'?'ofBull':x.direction==='SELL'?'ofBear':'';
+   if(note)note.textContent=status==='CONNECTED'?'TRADINGVIEW FOOTPRINT • confirmed candle • delta/imbalance/POC active':'Order-flow awaiting TradingView footprint webhook';
+   const os=document.getElementById('ofState');if(os){os.textContent=status==='CONNECTED'?'CONNECTED':'WAIT';os.className=status==='CONNECTED'?'bull':'neutral'}
+ }
+ async function poll(){
+   if(!API){setState(null,'NOT CONNECTED');return}
+   try{
+     const u=API.replace(/\/$/,'')+'/orderflow?symbol='+(encodeURIComponent((window.state&&window.state.symbol)||'BTC/USD').replace('USD','USDT'));
+     const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+     const j=await r.json();const d=j&&j.data;
+     if(d&&Number(d.receivedAt)&&Date.now()-Number(d.receivedAt)<STALE_MS)setState(d,'CONNECTED');else setState(d,'STALE');
+   }catch(e){setState(null,'NOT CONNECTED')}
+ }
+ // Live order-flow enhances, but never invents, the existing V5 signal.
+ const base=window.V5SignalEngine;
+ if(base&&!window.__RIZVI_OF_ENGINE_WRAPPED){
+   window.__RIZVI_OF_ENGINE_WRAPPED=true;
+   window.V5SignalEngine=function(bars,idx){
+     const s=base(bars,idx);if(!s)return s;
+     const of=window.RIZVI_ORDER_FLOW||{};
+     let ofScore=0,ofAligned=false,ofConflict=false;
+     if(of.status==='CONNECTED'&&of.fresh){
+       if((s.direction==='BUY'&&of.direction==='BUY')||(s.direction==='SELL'&&of.direction==='SELL')){ofScore=2;ofAligned=true}
+       else if((s.direction==='BUY'&&of.direction==='SELL')||(s.direction==='SELL'&&of.direction==='BUY')){ofScore=-2;ofConflict=true}
+       const strong=Math.abs(Number(of.deltaPct))>=12;
+       if(strong && ofAligned)ofScore+=1;
+       if(strong && ofConflict)ofScore-=1;
+     }
+     const baseScore=Number(s.score)||0;
+     const score=Math.max(0,baseScore+ofScore);
+     const quality=score>=11?'HIGH':score>=7?'GOOD':s.direction?'WEAK':'WAIT';
+     return {...s,score,quality,orderFlow:{status:of.status||'NOT CONNECTED',direction:of.direction||'WAIT',deltaPct:Number(of.deltaPct),buyRatio:Number(of.buyRatio),poc:Number(of.poc),vah:Number(of.vah),val:Number(of.val),buyImbalance:Number(of.buyImbalance)||0,sellImbalance:Number(of.sellImbalance)||0,aligned:ofAligned,conflict:ofConflict,addedScore:ofScore}};
+   };
+ }
+ poll();setInterval(poll,3000);
+})();
+</script>
