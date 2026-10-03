@@ -182,6 +182,17 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
     font-size:9px!important;
   }
 }
+</style><style id="rizvi-final-shape-v57">
+/* RIZVI V57 FINAL SHAPE — preserve indicators, add clean 3-action execution rail */
+.rzFinalRail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 10px;padding:8px;background:#07121d;border:1px solid #1a3a52;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.rzFinalAction{height:42px;border-radius:8px;border:1px solid #29445a;background:#0b1722;color:#dce8f2;font-size:13px;font-weight:950;letter-spacing:.7px;cursor:pointer}
+.rzFinalAction.buy{border-color:#1e9a70;background:linear-gradient(135deg,#0a3025,#0d4b38);color:#7ff0c2}
+.rzFinalAction.sell{border-color:#a13b4e;background:linear-gradient(135deg,#32131b,#521b28);color:#ff9baa}
+.rzFinalAction.unwind{border-color:#8b6a2d;background:linear-gradient(135deg,#241d0d,#3a2c12);color:#f1cf73}
+.rzFinalAction.active{box-shadow:0 0 18px rgba(82,210,160,.18);transform:none}
+.rzFinalStatus{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px;padding:8px 11px;border:1px solid #17344a;border-radius:7px;background:#06101a;font-size:10px;color:#71889c}
+.rzFinalStatus b{color:#dce7ef;font-size:11px}
+@media(max-width:600px){.rzFinalRail{gap:6px;padding:6px;margin-bottom:8px}.rzFinalAction{height:40px;font-size:11px}.rzFinalStatus{font-size:9px}}
 </style></head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
@@ -1803,7 +1814,37 @@ html body .miniMarketChart{display:none!important}
   }
 }
 </style>
-</body>
+<script id="rizvi-final-shape-v57-script">
+(function(){
+ if(window.__RIZVI_FINAL_SHAPE_V57)return; window.__RIZVI_FINAL_SHAPE_V57=true;
+ function build(){
+  const top=document.querySelector('.top'); if(!top || document.getElementById('rzFinalRail'))return;
+  const rail=document.createElement('div'); rail.id='rzFinalRail'; rail.className='rzFinalRail';
+  rail.innerHTML='<button class="rzFinalAction buy" data-action="BUY">BUY</button><button class="rzFinalAction sell" data-action="SELL">SELL</button><button class="rzFinalAction unwind" data-action="UNWIND">UNWIND</button>';
+  const status=document.createElement('div'); status.id='rzFinalStatus'; status.className='rzFinalStatus';
+  status.innerHTML='<span>SIGNAL <b id="rzFinalSignal">WAIT</b></span><span>EXECUTION <b id="rzFinalExecution">WAIT</b></span>';
+  top.insertAdjacentElement('afterend',rail); rail.insertAdjacentElement('afterend',status);
+  rail.querySelectorAll('.rzFinalAction').forEach(btn=>btn.addEventListener('click',function(){
+    rail.querySelectorAll('.rzFinalAction').forEach(x=>x.classList.remove('active')); this.classList.add('active');
+    const a=this.dataset.action; window.RIZVI_MANUAL_ACTION=a;
+    document.dispatchEvent(new CustomEvent('rizvi:manual-action',{detail:{action:a,at:Date.now()}}));
+    const ex=document.getElementById('rzFinalExecution'); if(ex)ex.textContent=a==='UNWIND'?'UNWIND REQUEST':'MANUAL '+a;
+  }));
+ }
+ function sync(){
+  const h=document.getElementById('chartHighSetupBtn');
+  const sig=document.getElementById('rzFinalSignal'), ex=document.getElementById('rzFinalExecution');
+  if(!sig||!ex)return;
+  const d=String(h?.getAttribute('data-direction')||'WAIT').toUpperCase();
+  const q=String(h?.getAttribute('data-quality')||'WAIT').toUpperCase();
+  sig.textContent=d+(q==='HIGH'?' • HIGH':'');
+  if(window.RIZVI_MANUAL_ACTION)return;
+  ex.textContent=(q==='HIGH'&&(d==='BUY'||d==='SELL'))?'READY':'WAIT';
+ }
+ document.addEventListener('DOMContentLoaded',()=>{build();sync();setInterval(sync,500)});
+ setTimeout(()=>{build();sync()},700);
+})();
+</script></body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
 </style>
