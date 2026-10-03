@@ -1135,4 +1135,20 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>render(e.detail));
   if(window.RIZVI_SIGNAL_QUALIFICATION)render(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
+</script><script id="rizvi-live-trade-range-ui">
+(function(){
+  const box=document.querySelector('.main .right .card:nth-of-type(3)');
+  if(!box)return;
+  const rows=[...box.querySelectorAll('.rangeRow b')];
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function render(){
+    const v=window.RIZVI_TRADE_RANGE;if(!v||rows.length<5)return;
+    rows[0].textContent=fmt(v.entry);
+    rows[1].textContent=fmt(v.sl)+' (Risk '+fmt(Math.abs(v.sl-v.entry))+')';
+    rows[2].textContent=fmt(v.tp1)+' (1R)';
+    rows[3].textContent=fmt(v.tp2)+' (1.5R)';
+    rows[4].textContent=fmt(v.tp3)+' (2R)';
+  }
+  setInterval(render,1000);render();
+})();
 </script></script></body></html>
