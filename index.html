@@ -619,4 +619,88 @@
   window.addEventListener('rizvi:signal-qualification-update',bindQualification);
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
-</script></script></body></html>
+</script></script><script>
+(function(){
+  function ema(values,period){
+    if(values.length<period)return null;
+    let e=values.slice(0,period).reduce((a,b)=>a+b,0)/period;
+    const k=2/(period+1);
+    for(let i=period;i<values.length;i++)e=values[i]*k+e*(1-k);
+    return e;
+  }
+  function rsi(values,period){
+    if(values.length<=period)return null;
+    let gain=0,loss=0;
+    for(let i=1;i<=period;i++){const d=values[i]-values[i-1];if(d>=0)gain+=d;else loss-=d;}
+    let ag=gain/period,al=loss/period;
+    for(let i=period+1;i<values.length;i++){
+      const d=values[i]-values[i-1],g=Math.max(0,d),l=Math.max(0,-d);
+      ag=(ag*(period-1)+g)/period; al=(al*(period-1)+l)/period;
+    }
+    if(al===0)return 100;
+    return 100-(100/(1+ag/al));
+  }
+  function compute(){
+    const bars=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
+    if(bars.length<55)return;
+    const closes=bars.map(x=>Number(x.c)).filter(Number.isFinite);
+    if(closes.length<55)return;
+    const last=closes[closes.length-1], prev=closes[closes.length-6];
+    const e20=ema(closes,20),e50=ema(closes,50),rv=rsi(closes,14);
+    if(!Number.isFinite(e20)||!Number.isFinite(e50)||!Number.isFinite(rv))return;
+    const momentum=last-prev;
+    const trend=e20>e50?'BUY':e20<e50?'SELL':'NEUTRAL';
+    const mom=momentum>0?'BUY':momentum<0?'SELL':'NEUTRAL';
+    const rsiDir=rv>=52?'BUY':rv<=48?'SELL':'NEUTRAL';
+    let buy=0,sell=0;
+    if(trend==='BUY')buy+=30;if(trend==='SELL')sell+=30;
+    if(mom==='BUY')buy+=20;if(mom==='SELL')sell+=20;
+    if(rsiDir==='BUY')buy+=20;if(rsiDir==='SELL')sell+=20;
+    const recent=bars.slice(-10);
+    const recentHigh=Math.max(...recent.map(x=>Number(x.h)).filter(Number.isFinite));
+    const recentLow=Math.min(...recent.map(x=>Number(x.l)).filter(Number.isFinite));
+    if(last>recentHigh)buy+=15;
+    if(last<recentLow)sell+=15;
+    const liq=window.RIZVI_LIQUIDITY_ENGINE;
+    if(liq){
+      const sweeps=liq.sweeps||[],breakouts=liq.breakouts||[];
+      if(breakouts.some(x=>x.side==='UP'))buy+=15;
+      if(breakouts.some(x=>x.side==='DOWN'))sell+=15;
+      if(sweeps.some(x=>x.side==='LOW'))buy+=10;
+      if(sweeps.some(x=>x.side==='HIGH'))sell+=10;
+    }
+    const direction=buy>sell?'BUY':sell>buy?'SELL':'NEUTRAL';
+    const score=Math.max(buy,sell);
+    const quality=Math.max(0,Math.min(100,Math.round(score)));
+    const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    window.RIZVI_LIVE_SIGNAL={
+      symbol:window.RIZVI_CURRENT_SYMBOL||'BTCUSD',updatedAt:Date.now(),
+      direction,quality,trend,momentum:momentum>=0?'Bullish':'Bearish',rsi:rv,
+      ema20:e20,ema50:e50,source:'live-candles',
+      qualification:q
+    };
+    window.RIZVI_SIGNAL_DIRECTION=direction;
+    const head=document.querySelector('.signalHead div:first-child b');
+    const qualityEl=document.querySelector('.signalHead div:nth-child(2) b');
+    if(head)head.textContent=direction;
+    if(qualityEl)qualityEl.textContent=quality+'%';
+    const sig=document.querySelector('.right .card:first-child');
+    if(sig){
+      const big=sig.querySelector('.big');
+      if(big){const spans=big.querySelectorAll('span');if(spans[0])spans[0].textContent=direction;if(spans[1])spans[1].innerHTML=quality+'% <em class="badge">'+(quality>=80?'HIGH QUALITY':quality>=65?'MEDIUM':'LOW')+'</em>';}
+      const rows=sig.querySelectorAll('.rows .row');
+      if(rows[0])rows[0].querySelector('b').textContent=trend==='BUY'?'Bullish ↑':trend==='SELL'?'Bearish ↓':'Neutral';
+      if(rows[1])rows[1].querySelector('b').textContent=momentum>=0?'Bullish ↑':'Bearish ↓';
+      if(rows[2])rows[2].querySelector('b').textContent=rv.toFixed(0);
+      if(rows[3])rows[3].querySelector('b').textContent=last>=recentHigh?'Resistance breakout ↑':last<=recentLow?'Support breakdown ↓':'Structure active';
+    }
+    document.dispatchEvent(new CustomEvent('rizvi:live-signal-update',{detail:window.RIZVI_LIVE_SIGNAL}));
+    if(typeof window.RIZVI_SIGNAL_LEVELS==='function')window.RIZVI_SIGNAL_LEVELS(last,direction);
+  }
+  window.RIZVI_REFRESH_LIVE_SIGNAL=compute;
+  window.addEventListener('rizvi:chart-source',compute);
+  window.addEventListener('rizvi:liquidity-update',compute);
+  setInterval(compute,5000);
+  setTimeout(compute,1500);
+})();
+</script></body></html>
