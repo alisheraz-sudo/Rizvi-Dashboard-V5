@@ -46,7 +46,7 @@
     const cc=document.getElementById('chartClose'); if(cc) cc.textContent=text;
     const ct=document.getElementById('chartPriceTag'); if(ct) ct.textContent=text;
     if(live) live.textContent='LIVE';
-    window.RIZVI_LIVE_PRICE=p;
+    window.RIZVI_LIVE_PRICE=p; document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
     window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
     window.RIZVI_LIVE_PRICES.BTCUSD=p;
     const direction=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
@@ -1212,5 +1212,42 @@
   window.addEventListener('rizvi:liquidity-update',syncOperational);
   window.addEventListener('rizvi:signal-qualification-update',syncOperational);
   window.addEventListener('rizvi:market-range-update',syncOperational);
+})();
+<script>
+(function(){
+  const q=id=>document.getElementById(id);
+  const fmt=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';
+  function bindTrade(){
+    const p=Number(window.RIZVI_LIVE_PRICE||window.RIZVI_LIVE_PRICES?.[window.RIZVI_CURRENT_SYMBOL]);
+    if(!Number.isFinite(p))return;
+    const dir=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
+    const lv=window.RIZVI_SIGNAL_LEVELS?.(p,dir);
+    if(!lv)return;
+    const rows=[...document.querySelectorAll('.right .card:nth-child(3) .rangeRow b')];
+    if(rows.length>=5){rows[0].textContent=fmt(lv.entry);rows[1].textContent=fmt(lv.sl)+' (Risk '+fmt(Math.abs(lv.sl-lv.entry))+')';rows[2].textContent=fmt(lv.tp1)+' (1R)';rows[3].textContent=fmt(lv.tp2)+' (1.5R)';rows[4].textContent=fmt(lv.tp3)+' (2R)';}
+    window.RIZVI_TRADE_RANGE=lv;
+  }
+  function bindQualification(){
+    const ql=window.RIZVI_SIGNAL_QUALIFICATION;if(!ql)return;
+    const exec=document.querySelector('.right .card.gborder');
+    if(!exec)return;
+    const score=exec.querySelector('.row b'); if(score)score.innerHTML=ql.patternConfidence+'% <em class="badge">'+(ql.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    const ready=exec.querySelector('.ready'); if(ready){ready.textContent=ql.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=ql.status==='QUALIFIED_CONTEXT'?'#087e58':'#6d4d12';}
+    const signal= document.querySelector('.right .card:first-child .big span:first-child');
+    const head=document.querySelector('.signalHead div:first-child b');
+    const dir=ql.marketDirection==='NEUTRAL'? (head?.textContent||'BUY') : ql.marketDirection;
+    if(signal)signal.textContent=dir;
+    if(head)head.textContent=dir;
+  }
+  function bindRange(){
+    const r=window.RIZVI_MARKET_RANGE;if(!r)return;
+    const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+    Object.keys(map).forEach(k=>{const e=q(map[k]);if(e)e.textContent=fmt(r[k]);});
+  }
+  function bind(){bindTrade();bindQualification();bindRange();}
+  addEventListener('rizvi:signal-qualification-update',bind);
+  addEventListener('rizvi:market-range-update',bind);
+  document.addEventListener('rizvi:price-update',bind);
+  bind(); setInterval(bind,2000);
 })();
 </script></body></html>
