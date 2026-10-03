@@ -50,7 +50,14 @@
       const cc=document.getElementById('chartClose'); if(cc)cc.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       const ct=document.getElementById('chartPriceTag'); if(ct)ct.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       if(live)live.textContent='LIVE';
-      window.RIZVI_LIVE_PRICE=p; document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+      window.RIZVI_LIVE_PRICE=p;
+      window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+      window.RIZVI_LIVE_PRICES.BTCUSD=p;
+      const direction=document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
+      window.RIZVI_SIGNAL_DIRECTION=direction;
+      if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
+      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction}}));
+      window.dispatchEvent(new CustomEvent('rizvi:signal-levels-update',{detail:window.RIZVI_TRADE_RANGE})); document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
     }catch(e){}
   }
   btc(); setInterval(btc,5000);
@@ -195,7 +202,11 @@
    window.RIZVI_GOLD_FEED={price:p,status:d?.data_state?.status||'unknown',price_as_of:d?.price_as_of||d?.updated_at,source:d?.price_source||d?.source};
    window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
    window.RIZVI_LIVE_PRICES['XAU/USD']=p;
-   document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+   const direction=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
+   window.RIZVI_SIGNAL_DIRECTION=direction;
+   if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
+   document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction}}));
+   window.dispatchEvent(new CustomEvent('rizvi:signal-levels-update',{detail:window.RIZVI_TRADE_RANGE}));
    if(window.RIZVI_CURRENT_SYMBOL==='XAU/USD'){const q=document.getElementById('quotePrice');if(q)q.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
   }catch(e){window.RIZVI_GOLD_FEED={status:'unavailable'};}
  }
