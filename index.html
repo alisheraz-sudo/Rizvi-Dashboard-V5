@@ -3451,6 +3451,24 @@ button{pointer-events:auto!important}
 #chartArea .rizviV43Current{position:absolute!important;left:0!important;right:0!important;border-top:1px solid #62e6b0!important;z-index:95!important;pointer-events:none!important}
 #chartArea .rizviV43Price{position:absolute!important;right:-2px!important;transform:translateY(-50%)!important;background:#126344!important;color:#e5fff5!important;border:1px solid #3ac18d!important;border-radius:5px!important;padding:4px 7px!important;font-size:11px!important;font-weight:900!important;z-index:96!important;pointer-events:none!important}
 </style>
+<style id="rizvi-landscape-setup-fix">
+/* Keep the signal/action panel fully visible on short landscape screens. */
+@media screen and (orientation:landscape) and (max-width:950px){
+  .main{padding:6px 8px!important}
+  .chart{height:calc(100vh - 78px)!important;min-height:330px!important;max-height:430px!important}
+  .chartSetupBox{bottom:6px!important;height:142px!important}
+  .chartarea{bottom:156px!important}
+  .grid,.axis{bottom:156px!important}
+}
+@media screen and (orientation:landscape) and (max-width:600px){
+  .chart{height:calc(100vh - 70px)!important;min-height:320px!important;max-height:390px!important}
+  .chartSetupBox{left:7px!important;right:7px!important;height:142px!important}
+  .chartarea{bottom:156px!important}
+  .grid,.axis{bottom:156px!important}
+  .setupHighBox{height:30px!important;font-size:10px!important}
+  .setupBtn,.levelBtn{height:25px!important;font-size:8px!important}
+}
+</style>
 <script id="rizvi-v43-real-ohlc-chart-script">
 (function(){
   if(window.__RIZVI_V43_REAL_OHLC)return;
