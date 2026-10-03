@@ -53,6 +53,8 @@
       window.RIZVI_LIVE_PRICE=p;
       document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
       if(window.RIZVI_SIGNAL_LEVELS) window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY');
+      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+      if(window.RIZVI_SIGNAL_LEVELS) window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY');
       window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
       window.RIZVI_LIVE_PRICES.BTCUSD=p;
       const direction=document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
@@ -746,5 +748,25 @@
   });
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
   if(window.RIZVI_MARKET_RANGE)window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:window.RIZVI_MARKET_RANGE}));
+})();
+</script>
+<script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindQualification(e){
+    const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const exec=document.querySelector('.right .card.gborder');
+    if(exec){
+      const rows=exec.querySelectorAll('.row');
+      if(rows[0]?.querySelector('b')) rows[0].querySelector('b').textContent=(q.patternConfidence??0)+'%';
+      const ready=exec.querySelector('.ready');
+      if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6d5410';}
+    }
+    const sig=document.querySelector('.right .card:first-child .big');
+    if(sig){const spans=sig.querySelectorAll('span');if(spans[0])spans[0].textContent=q.signalDirection||'BUY';if(spans[1])spans[1].firstChild.textContent=(q.patternConfidence??0)+'% ';}
+  }
+  window.addEventListener('rizvi:signal-qualification-update',bindQualification);
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
 </script></body></html>
