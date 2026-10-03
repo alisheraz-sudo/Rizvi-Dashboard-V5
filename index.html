@@ -1607,10 +1607,12 @@ html body .miniMarketChart{display:none!important}
           });
           window.RIZVI_TV_LEVEL_LINES={};
           const next=levels||{};
-          if(!Number.isFinite(Number(next.entry))||!next.direction||next.direction==='WAIT')return;
+          if(next.direction!=='BUY'&&next.direction!=='SELL')return;
+          const levelVals=[next.entry,next.sl,next.tp1,next.tp2,next.tp3].map(Number);
+          if(!levelVals.every(v=>Number.isFinite(v)&&v>0))return;
           const add=(key,title,price,color,style)=>{
             if(!Number.isFinite(Number(price)))return;
-            window.RIZVI_TV_LEVEL_LINES[key]=series.createPriceLine({price:Number(price),color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title});
+            window.RIZVI_TV_LEVEL_LINES[key]=series.createPriceLine({price:Number(price),color,lineWidth:1,lineStyle:style,axisLabelVisible:false,title});
           };
           add('entry','ENTRY',next.entry,'#55dda1',L.LineStyle.Solid);
           add('sl','SL',next.sl,'#ef697b',L.LineStyle.Dashed);
@@ -3719,5 +3721,31 @@ button{pointer-events:auto!important}
   document.addEventListener('DOMContentLoaded',lockChartGeometry);
   setTimeout(lockChartGeometry,300);
   setTimeout(lockChartGeometry,1000);
+})();
+</script>
+
+<!-- RIZVI ACTION LEVEL CLEANUP V2 -->
+<style id="rizvi-action-level-cleanup-v2">
+/* The chart overlay is the single Entry/SL/TP button display. Remove the duplicate lower level buttons. */
+#chartSetupBox .setupLevels{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
+#chartSetupBox{height:112px!important;padding:7px 8px!important}
+#setupHighRowStatic,.setupHighRow{height:30px!important;min-height:30px!important;margin-bottom:6px!important}
+#chartSetupBox .setupSignals{margin:0!important}
+@media screen and (orientation:landscape) and (max-width:950px){#chartSetupBox{height:112px!important}}
+@media screen and (max-width:700px) and (orientation:portrait){#chartSetupBox{height:112px!important}}
+@media screen and (max-width:430px) and (orientation:portrait){#chartSetupBox{height:112px!important}}
+</style>
+<script id="rizvi-action-level-cleanup-v2-script">
+(function(){
+  if(window.__RIZVI_LEVEL_CLEANUP_V2)return;
+  window.__RIZVI_LEVEL_CLEANUP_V2=true;
+  function clean(){
+    const levels=document.querySelector('#chartSetupBox .setupLevels');
+    if(levels)levels.remove();
+    const mini=document.getElementById('chartLevelMini');
+    if(mini)mini.style.display='flex';
+  }
+  document.addEventListener('DOMContentLoaded',clean);
+  setTimeout(clean,300);setTimeout(clean,1000);
 })();
 </script>
