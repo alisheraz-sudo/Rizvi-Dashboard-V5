@@ -4503,4 +4503,89 @@ button{pointer-events:auto!important}
 #chartSetupBox #chartHighSetupBtn.rz-hq-sell{background:linear-gradient(135deg,#38121b,#641b2a)!important;border:2px solid #e85a70!important;color:#ffabb7!important;box-shadow:0 0 18px rgba(232,90,112,.14),inset 0 1px 0 rgba(255,255,255,.08)!important}
 #chartSetupBox #chartHighSetupBtn.rz-hq-wait{background:linear-gradient(135deg,#101a22,#192731)!important;border:2px solid #536776!important;color:#d2dce4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}
 #chartSetupBox #chartHighSetupBtn.rz-hq.is-new{filter:brightness(1.08)}
-</style>
+</style><!-- RIZVI TRADE ACTION FINAL STABILITY V46 -->
+<style id="rizvi-trade-action-final-v46">
+#chartSetupBox .setupHighRow,
+#chartSetupBox #setupHighRowStatic{
+  display:block!important;
+  grid-template-columns:1fr!important;
+  width:100%!important;
+  height:42px!important;
+  min-height:42px!important;
+  margin:0 0 7px!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+#chartSetupBox #chartHighSetupBtn{
+  display:flex!important;
+  width:100%!important;
+  height:42px!important;
+  min-height:42px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  border-radius:8px!important;
+  font-size:13px!important;
+  font-weight:950!important;
+  letter-spacing:.45px!important;
+  white-space:nowrap!important;
+  animation:none!important;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease!important;
+}
+#chartSetupBox #chartHighSetupBtn.rzFinalBuy{
+  background:linear-gradient(135deg,#063c2d,#0a5f46)!important;
+  border:2px solid #20c995!important;color:#8af2c9!important;
+  box-shadow:0 0 18px rgba(32,201,149,.16),inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+#chartSetupBox #chartHighSetupBtn.rzFinalSell{
+  background:linear-gradient(135deg,#3b111a,#681d2b)!important;
+  border:2px solid #e85a70!important;color:#ffabb7!important;
+  box-shadow:0 0 18px rgba(232,90,112,.15),inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+#chartSetupBox #chartHighSetupBtn.rzFinalWait{
+  background:linear-gradient(135deg,#0b1b28,#132a3a)!important;
+  border:2px solid #3b7399!important;color:#a9d5f4!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+<script id="rizvi-trade-action-final-v46-script">
+(function(){
+ if(window.__RIZVI_TRADE_ACTION_FINAL_V46)return;
+ window.__RIZVI_TRADE_ACTION_FINAL_V46=true;
+ let pending='',pendingCount=0,stable='WAIT',stableQuality='WAIT',lastChange=0;
+ function candidate(){
+   const st=window.state||{};
+   let bars=Array.isArray(st.ohlc)?st.ohlc:[];
+   if(typeof window.liveAggregate==='function')bars=window.liveAggregate(bars,st.tf).slice(-260);
+   else bars=bars.slice(-260);
+   if(bars.length<30||!window.V5SignalEngine)return null;
+   let s;try{s=window.V5SignalEngine(bars,bars.length-1)}catch(e){return null}
+   const d=s&&s.direction==='BUY'?'BUY':s&&s.direction==='SELL'?'SELL':'WAIT';
+   const q=String(s&&s.quality||'WAIT').toUpperCase();
+   const high=(q==='HIGH'&&(d==='BUY'||d==='SELL'));
+   return {sig:high?d:'WAIT',q};
+ }
+ function apply(){
+   const box=document.getElementById('chartSetupBox');if(!box)return;
+   let row=document.getElementById('setupHighRowStatic')||box.querySelector('.setupHighRow');
+   if(!row)return;
+   let h=document.getElementById('chartHighSetupBtn');
+   if(!h){h=document.createElement('div');h.id='chartHighSetupBtn';row.appendChild(h)}
+   if(h.parentElement!==row)row.appendChild(h);
+   Array.from(row.children).forEach(el=>{if(el!==h)el.remove()});
+   const x=candidate();
+   if(x){
+     const key=x.sig+'|'+x.q;
+     if(key===pending)pendingCount++; else {pending=key;pendingCount=1}
+     if(pendingCount>=3 && stable!==x.sig){stable=x.sig;stableQuality=x.q;lastChange=Date.now()}
+   }
+   const buy=stable==='BUY',sell=stable==='SELL';
+   h.className='setupHighBox '+(buy?'rzFinalBuy':sell?'rzFinalSell':'rzFinalWait');
+   h.textContent=(buy||sell)?'HIGH QUALITY SETUP — '+stable:'TRADE ACTION — WAIT';
+   h.setAttribute('data-direction',stable);
+   h.setAttribute('data-quality',(buy||sell)?'HIGH':'WAIT');
+   h.title=(buy||sell)?'Confirmed high-quality setup; stabilized against live-tick fluctuation.':'Waiting for a confirmed high-quality setup.';
+ }
+ document.addEventListener('DOMContentLoaded',()=>{apply();setInterval(apply,500)});
+ setTimeout(apply,600);
+})();
+</script>
