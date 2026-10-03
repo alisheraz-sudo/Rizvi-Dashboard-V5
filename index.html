@@ -444,6 +444,32 @@
 })();
 </script><script>
 (function(){
+  function bindLiveQualification(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    const l=window.RIZVI_LIQUIDITY_ENGINE;
+    if(!q)return;
+    const signal=document.querySelector('.right .card .big span:first-child');
+    const quality=document.querySelector('.right .card .big span:nth-child(2)');
+    const headDir=document.querySelector('.signalHead div:first-child b');
+    const headBadge=document.querySelector('.signalHead div:nth-child(2) .badge');
+    const ready=document.querySelector('.ready');
+    if(headDir&&q.signalDirection&&q.signalDirection!=='NEUTRAL')headDir.textContent=q.signalDirection;
+    if(signal&&q.signalDirection&&q.signalDirection!=='NEUTRAL')signal.textContent=q.signalDirection;
+    if(quality)quality.innerHTML=(q.patternConfidence||0)+'% <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(headBadge)headBadge.textContent=q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT';
+    if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6b5312';}
+    const execCard=document.querySelectorAll('.right .card')[1];
+    if(execCard){
+      const rows=execCard.querySelectorAll('.row');
+      if(rows[0]){const b=rows[0].querySelector('b');if(b)b.innerHTML=(q.liquidityScore||0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';}
+    }
+    if(l){window.RIZVI_OPERATIONAL_STATUS={symbol:l.symbol,liquidity:l.status,qualification:q.status,updatedAt:Date.now()};}
+  }
+  window.addEventListener('rizvi:signal-qualification-update',e=>bindLiveQualification(e.detail));
+  window.addEventListener('rizvi:liquidity-update',()=>setTimeout(bindLiveQualification,0));
+  setInterval(bindLiveQualification,2000);
+})();
+(function(){
   function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
   function qualify(e){
     if(!e)return;
