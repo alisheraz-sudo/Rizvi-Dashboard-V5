@@ -3903,15 +3903,15 @@ button{pointer-events:auto!important}
 </script>
 
 <!-- RIZVI TRADE LEVELS + WEEKLY LEVEL RESTORE V2 -->
-<style id="rizvi-trade-levels-weekly-v2">
-/* Screenshot-matched Entry / SL / TP stack: compact vertical label at the upper-right of the chart. */
+<style id="rizvi-trade-levels-weekly-v3">
+/* Keep chart levels visible on the chart; move the compact controls back into the action box. */
 #chartLevelMini{
   display:flex!important;
   flex-direction:column!important;
   position:absolute!important;
   left:auto!important;
-  right:70px!important;
-  top:8px!important;
+  right:10px!important;
+  top:10px!important;
   bottom:auto!important;
   z-index:120!important;
   pointer-events:none!important;
@@ -3919,93 +3919,68 @@ button{pointer-events:auto!important}
   padding:0!important;
   background:transparent!important;
   border:0!important;
-  border-radius:0!important;
   box-shadow:none!important;
   overflow:visible!important;
 }
 #chartLevelMini .miniLevel{
-  width:186px!important;
-  min-width:186px!important;
-  height:30px!important;
-  min-height:30px!important;
-  display:grid!important;
-  grid-template-columns:82px 104px!important;
-  align-items:center!important;
-  justify-content:stretch!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:3px!important;
-  overflow:hidden!important;
-  font-size:12px!important;
-  font-weight:950!important;
-  line-height:1!important;
-  box-sizing:border-box!important;
+  width:186px!important;min-width:186px!important;height:30px!important;min-height:30px!important;
+  display:grid!important;grid-template-columns:82px 104px!important;align-items:center;
+  padding:0!important;border:0!important;border-radius:3px!important;overflow:hidden;
+  font-size:12px!important;font-weight:950!important;line-height:1!important;box-sizing:border-box!important;
 }
 #chartLevelMini .miniLevel b{
-  height:100%!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  padding:0 9px 0 6px!important;
-  font-size:12px!important;
-  font-weight:950!important;
-  color:#fff!important;
+  height:100%!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  padding:0 9px 0 6px!important;font-size:12px!important;font-weight:950!important;
   box-sizing:border-box!important;
 }
 #chartLevelMini .miniLevel em{
-  height:100%!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:0 7px!important;
-  font-style:normal!important;
-  font-size:12px!important;
-  font-weight:950!important;
-  color:#071018!important;
-  background:#5bdbb1!important;
-  font-variant-numeric:tabular-nums!important;
-  box-sizing:border-box!important;
+  height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0 7px!important;font-style:normal!important;font-size:12px!important;font-weight:950!important;
+  font-variant-numeric:tabular-nums!important;box-sizing:border-box!important;
 }
 #chartLevelMini .miniLevel.entry b{background:#4fbd9b!important;color:#03100b!important}
-#chartLevelMini .miniLevel.entry em{background:#73dfbb!important}
+#chartLevelMini .miniLevel.entry em{background:#73dfbb!important;color:#071018!important}
 #chartLevelMini .miniLevel.sl b{background:#f06c7d!important;color:#fff!important}
 #chartLevelMini .miniLevel.sl em{background:#f47b8a!important;color:#fff!important}
 #chartLevelMini .miniLevel.tp b{background:#47a9e9!important;color:#fff!important}
 #chartLevelMini .miniLevel.tp em{background:#5cb9f1!important;color:#06121b!important}
+
+/* Action-box level controls: restore them below the play/action controls. */
+#chartSetupBox .setupLevels{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:6px!important;
+  height:30px!important;min-height:30px!important;
+  margin:7px 0 0!important;padding:0!important;
+  overflow:hidden!important;
+}
+#chartSetupBox .setupLevels .setupLevel,
+#chartSetupBox .setupLevels .levelBtn,
+#chartSetupBox .setupLevels > div,
+#chartSetupBox .setupLevels > button{
+  height:30px!important;min-height:30px!important;
+  min-width:0!important;box-sizing:border-box!important;
+}
 .rizviWeekLevelBox{
-  position:absolute;
-  right:70px;
-  top:166px;
-  bottom:auto;
-  z-index:121;
-  display:flex;
-  gap:5px;
-  align-items:center;
-  padding:5px 6px;
-  background:rgba(3,12,18,.95);
-  border:1px solid #5c4e25;
-  border-radius:7px;
-  box-shadow:0 5px 18px rgba(0,0,0,.34);
-  pointer-events:none;
-  font-variant-numeric:tabular-nums;
+  position:absolute;right:10px;top:160px;bottom:auto;z-index:121;
+  display:flex;gap:5px;align-items:center;padding:5px 6px;
+  background:rgba(3,12,18,.95);border:1px solid #5c4e25;border-radius:7px;
+  box-shadow:0 5px 18px rgba(0,0,0,.34);pointer-events:none;font-variant-numeric:tabular-nums;
 }
 .rizviWeekLevelBox .wkTitle{color:#e4c96d;font-size:8px;font-weight:950;letter-spacing:.25px}
 .rizviWeekLevelBox .wkItem{min-width:78px;height:22px;display:flex;align-items:center;justify-content:center;padding:0 5px;border-radius:4px;font-size:8px;font-weight:850}
 .rizviWeekLevelBox .wkHigh{color:#70e7b5;background:#08271d;border:1px solid #1c7255}
 .rizviWeekLevelBox .wkLow{color:#ff9aa7;background:#2b1118;border:1px solid #7b3442}
-@media(max-width:600px){
-  #chartLevelMini{right:8px!important;top:8px!important;gap:1px!important}
-  #chartLevelMini .miniLevel{
-    width:132px!important;min-width:132px!important;height:24px!important;min-height:24px!important;
-    grid-template-columns:58px 74px!important;
-  }
+@media(max-width:700px){
+  #chartLevelMini{right:8px!important;top:8px!important}
+  #chartLevelMini .miniLevel{width:142px!important;min-width:142px!important;height:24px!important;min-height:24px!important;grid-template-columns:62px 80px!important}
   #chartLevelMini .miniLevel b,#chartLevelMini .miniLevel em{font-size:9px!important}
-  #chartLevelMini .miniLevel b{padding-right:6px!important}
+  #chartSetupBox .setupLevels{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important;height:25px!important;min-height:25px!important}
+  #chartSetupBox .setupLevels .setupLevel,#chartSetupBox .setupLevels .levelBtn,#chartSetupBox .setupLevels>div,#chartSetupBox .setupLevels>button{height:25px!important;min-height:25px!important}
   .rizviWeekLevelBox{right:8px;top:142px;gap:3px;padding:4px}
   .rizviWeekLevelBox .wkTitle{font-size:7px}
   .rizviWeekLevelBox .wkItem{min-width:62px;height:20px;font-size:7px}
 }
-</style>
 <script id="rizvi-trade-levels-weekly-v1-script">
 (function(){
   if(window.__RIZVI_TRADE_LEVELS_WEEKLY_V1)return;
