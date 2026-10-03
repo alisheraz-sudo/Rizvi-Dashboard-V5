@@ -487,4 +487,34 @@
   window.addEventListener('rizvi:signal-qualification-update',()=>setTimeout(analyze,50));
   setInterval(analyze,5000); analyze();
 })();
+<script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindRange(r){
+    if(!r)return;
+    const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+    Object.keys(map).forEach(k=>{const el=document.getElementById(map[k]);if(el)el.textContent=fmt(r[k]);});
+  }
+  function bindQualification(q){
+    if(!q)return;
+    const signal=document.querySelector('.signalHead div:first-child b');
+    const side=document.querySelector('.card .big span:first-child');
+    const quality=document.querySelector('.signalHead div:nth-child(2) b');
+    const ready=document.querySelector('.gborder .ready');
+    const scoreRow=document.querySelector('.gborder .row b');
+    if(signal && q.signalDirection) signal.textContent=q.signalDirection;
+    if(side && q.signalDirection) side.textContent=q.signalDirection;
+    if(quality) quality.textContent=(q.patternConfidence||0)+'%';
+    if(scoreRow) scoreRow.innerHTML=(q.patternConfidence||0)+'%';
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#73540b';
+      ready.style.borderColor=q.status==='QUALIFIED_CONTEXT'?'#11e091':'#d6a62b';
+    }
+  }
+  window.addEventListener('rizvi:market-range-update',e=>bindRange(e.detail));
+  window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e.detail));
+  if(window.RIZVI_MARKET_RANGE)bindRange(window.RIZVI_MARKET_RANGE);
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
+})();
 </script></body></html>
