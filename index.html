@@ -656,7 +656,7 @@
     if(trend==='BUY')buy+=30;if(trend==='SELL')sell+=30;
     if(mom==='BUY')buy+=20;if(mom==='SELL')sell+=20;
     if(rsiDir==='BUY')buy+=20;if(rsiDir==='SELL')sell+=20;
-    const recent=bars.slice(-10);
+    const recent=bars.slice(-11,-1);
     const recentHigh=Math.max(...recent.map(x=>Number(x.h)).filter(Number.isFinite));
     const recentLow=Math.min(...recent.map(x=>Number(x.l)).filter(Number.isFinite));
     if(last>recentHigh)buy+=15;
@@ -673,11 +673,13 @@
     const score=Math.max(buy,sell);
     const quality=Math.max(0,Math.min(100,Math.round(score)));
     const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    const qualificationScore=Math.round((quality+(q.liquidityScore??50))/2);
+    const qualificationStatus=qualificationScore>=70?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION';
     window.RIZVI_LIVE_SIGNAL={
       symbol:window.RIZVI_CURRENT_SYMBOL||'BTCUSD',updatedAt:Date.now(),
       direction,quality,trend,momentum:momentum>=0?'Bullish':'Bearish',rsi:rv,
       ema20:e20,ema50:e50,source:'live-candles',
-      qualification:q
+      qualification:{...q,combinedScore:qualificationScore,status:qualificationStatus}
     };
     window.RIZVI_SIGNAL_DIRECTION=direction;
     const head=document.querySelector('.signalHead div:first-child b');
@@ -696,6 +698,8 @@
     }
     document.dispatchEvent(new CustomEvent('rizvi:live-signal-update',{detail:window.RIZVI_LIVE_SIGNAL}));
     if(typeof window.RIZVI_SIGNAL_LEVELS==='function')window.RIZVI_SIGNAL_LEVELS(last,direction);
+    const exec=document.querySelector('.right .card:nth-child(2)');
+    if(exec){const scoreEl=exec.querySelector('.row b');const ready=exec.querySelector('.ready');if(scoreEl)scoreEl.innerHTML=qualificationScore+'% &nbsp; <em class="badge">'+(qualificationStatus==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';if(ready)ready.textContent=qualificationStatus==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';}
   }
   window.RIZVI_REFRESH_LIVE_SIGNAL=compute;
   window.addEventListener('rizvi:chart-source',compute);
