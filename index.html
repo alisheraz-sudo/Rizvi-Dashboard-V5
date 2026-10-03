@@ -213,4 +213,40 @@
  }
  window.RIZVI_REFRESH_GOLD_BARS=goldBars; goldBars(); setInterval(goldBars,60000);
 })();
+</script><script>
+(function(){
+  const direct={BTCUSD:'coinbase','XAU/USD':'xaus',USOIL:'ctrader'};
+  window.RIZVI_DIRECT_CHART_SOURCE=direct;
+  window.RIZVI_CHART_DATA={};
+  let timer=null;
+  async function btc(){
+    const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
+    if(!Array.isArray(d))return [];
+    return d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));
+  }
+  async function gold(){
+    const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+    const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
+    return a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
+  }
+  async function select(sym){
+    clearInterval(timer);
+    window.RIZVI_CURRENT_SYMBOL=sym;
+    if(sym==='USOIL'){
+      window.RIZVI_CHART_DATA[sym]={source:'ctrader',status:'waiting-for-authorized-symbol'};
+      document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{symbol:sym,source:'ctrader'}}));
+      return;
+    }
+    try{
+      const bars=sym==='XAU/USD'?await gold():await btc();
+      window.RIZVI_CHART_DATA[sym]={source:direct[sym],bars,updatedAt:Date.now()};
+      window.RIZVI_RAW_BARS=bars; window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
+      document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{symbol:sym,source:direct[sym],bars}}));
+      timer=setInterval(()=>select(sym),sym==='XAU/USD'?30000:10000);
+    }catch(e){window.RIZVI_CHART_DATA[sym]={source:direct[sym],status:'unavailable'};}
+  }
+  window.RIZVI_SELECT_CHART_SYMBOL=select;
+  document.addEventListener('rizvi:symbol-change',e=>select(e.detail?.symbol||'BTCUSD'));
+  select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
+})();
 </script></body></html>
