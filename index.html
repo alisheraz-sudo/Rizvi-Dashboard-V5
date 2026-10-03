@@ -11,7 +11,7 @@
 <div class="legend"><div><b>↗ BUY / ↓ SELL</b>Signal Direction<br>(Market Analysis)</div><div><b>🛡 HIGH QUALITY</b>Qualified Signal<br>(80–95%)</div><div><b>⚠ UNWIND</b>Exit / Reversal Signal</div><div><b>▣ TRADE RANGE</b>Entry / SL / TP<br>(Based on actual prices)</div></div></main>
 <aside class="right"><section class="card"><div class="title">1. <b>SIGNAL</b> <small>(Market Analysis)</small></div><div class="big"><span>BUY</span><span>68% <em class="badge" style="background:#173c75;color:#7fb8ff">MEDIUM</em></span></div><div class="rows"><div class="row"><span>Trend</span><b>Bullish ↑</b></div><div class="row"><span>Momentum</span><b>Bullish ↑</b></div><div class="row"><span>RSI (14)</span><b>61</b></div><div class="row"><span>Structure</span><b>Support ↑</b></div><div class="row"><span>Volume / Delta</span><b>Positive ↑</b></div></div><div class="note">ⓘ Signal shows potential direction.<br>Not a trade yet.</div></section>
 <section class="card gborder"><div class="title">2. <b class="green">EXECUTION</b> <small>(Trade Qualification)</small></div><div class="row"><span>Quality Score</span><b>88% &nbsp; <em class="badge">HIGH QUALITY</em></b></div><div class="checks"><div class="check">Entry Valid</div><div class="check">SL Valid</div><div class="check">RR Acceptable (1:2)</div><div class="check">Structure Intact</div><div class="check">No Major Reversal</div></div><div class="ready">SIGNAL QUALIFIED</div></section>
-<section class="card"><div class="title">3. <b>TRADE RANGE</b> <small>(Based on Entry/SL/TP)</small></div><div class="rangeRows"><div class="rangeRow"><span>Entry</span><b>68,480.00</b></div><div class="rangeRow"><span>SL</span><b class="risk">68,720.00 (Risk 240)</b></div><div class="rangeRow"><span>TP1</span><b>68,230.00 (1R)</b></div><div class="rangeRow"><span>TP2</span><b>67,980.00 (1.5R)</b></div><div class="rangeRow"><span>TP3</span><b>67,650.00 (2R)</b></div></div><div class="note">ⓘ Range is calculated from actual prices,<br>not just percentage.</div></section><section class="card marketRange"><div class="title">4. <b>MARKET RANGE</b> <small>(Liquidity Levels)</small></div><div class="rangeRows"><div class="rangeRow"><span>DAY HIGH</span><b id="dayHigh">--</b></div><div class="rangeRow"><span>DAY LOW</span><b id="dayLow">--</b></div><div class="rangeRow"><span>4H HIGH</span><b id="h4High">--</b></div><div class="rangeRow"><span>4H LOW</span><b id="h4Low">--</b></div></div><div class="note">ⓘ Live market levels used by the signal engine for liquidity, sweep and structure checks.</div></section></aside></div>
+<section class="card"><div class="title">3. <b>TRADE RANGE</b> <small>(Based on Entry/SL/TP)</small></div><div class="rangeRows"><div class="rangeRow"><span>Entry</span><b>68,480.00</b></div><div class="rangeRow"><span>SL</span><b class="risk">68,720.00 (Risk 240)</b></div><div class="rangeRow"><span>TP1</span><b>68,230.00 (1R)</b></div><div class="rangeRow"><span>TP2</span><b>67,980.00 (1.5R)</b></div><div class="rangeRow"><span>TP3</span><b>67,650.00 (2R)</b></div></div><div class="note">ⓘ Range is calculated from actual prices,<br>not just percentage.</div></section><section class="card marketRange"><div class="title">4. <b>MARKET RANGE</b> <small>(Liquidity Levels)</small></div><div class="rangeRows"><div class="rangeRow"><span>DAY HIGH</span><b id="dayHigh">--</b></div><div class="rangeRow"><span>DAY LOW</span><b id="dayLow">--</b></div><div class="rangeRow"><span>4H HIGH</span><b id="h4High">--</b></div><div class="rangeRow"><span>4H LOW</span><b id="h4Low">--</b></div><div class="rangeRow"><span>1H HIGH</span><b id="h1High">--</b></div><div class="rangeRow"><span>1H LOW</span><b id="h1Low">--</b></div><div class="rangeRow"><span>30M HIGH</span><b id="m30High">--</b></div><div class="rangeRow"><span>30M LOW</span><b id="m30Low">--</b></div><div class="rangeRow"><span>15M HIGH</span><b id="m15High">--</b></div><div class="rangeRow"><span>15M LOW</span><b id="m15Low">--</b></div></div><div class="note">ⓘ Live market levels used by the signal engine for liquidity, sweep and structure checks.</div></section></aside></div>
 <div class="foot">Signal tells you what the market is doing &nbsp; | &nbsp; Qualification tells you if the signal is ready &nbsp; | &nbsp; Unwind helps you manage the trade<br><br>Rizvi Dashboard V5</div></div><script>
 (function(){
  const tabs=[...document.querySelectorAll('.tf span')];
@@ -287,41 +287,56 @@
     dayHigh:document.getElementById('dayHigh'),
     dayLow:document.getElementById('dayLow'),
     h4High:document.getElementById('h4High'),
-    h4Low:document.getElementById('h4Low')
+    h4Low:document.getElementById('h4Low'),
+    h1High:document.getElementById('h1High'),
+    h1Low:document.getElementById('h1Low'),
+    m30High:document.getElementById('m30High'),
+    m30Low:document.getElementById('m30Low'),
+    m15High:document.getElementById('m15High'),
+    m15Low:document.getElementById('m15Low')
   };
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function publish(r){
     window.RIZVI_MARKET_RANGE=r;
-    if(out.dayHigh)out.dayHigh.textContent=fmt(r.dayHigh);
-    if(out.dayLow)out.dayLow.textContent=fmt(r.dayLow);
-    if(out.h4High)out.h4High.textContent=fmt(r.h4High);
-    if(out.h4Low)out.h4Low.textContent=fmt(r.h4Low);
+    Object.keys(out).forEach(k=>{if(out[k])out[k].textContent=fmt(r[k]);});
     window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:r}));
   }
-  function btcBarsToRange(rows){
-    const bars=rows.map(x=>({t:+x[0],h:+x[2],l:+x[3]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+  function previousBucket(bars,minutes,now){
+    const size=minutes*60000, end=Math.floor(now/size)*size, start=end-size;
+    return bars.filter(b=>b.t>=start&&b.t<end);
+  }
+  function buildRange(bars,symbol,source){
     if(!bars.length)return null;
-    const now=Date.now();
-    const dayKey=new Date(now).toISOString().slice(0,10);
+    const now=Date.now(), dayKey=new Date(now).toISOString().slice(0,10);
     const today=bars.filter(b=>new Date(b.t).toISOString().slice(0,10)===dayKey);
-    const current4hStart=Math.floor(now/(4*3600000))*4*3600000;
-    const prev4h=bars.filter(b=>b.t>=current4hStart-4*3600000&&b.t<current4hStart);
-    const d=today.length?today:bars.slice(-24);
-    const h=prev4h.length?prev4h:bars.slice(-4);
+    const d=today.length?today:bars.slice(-96);
+    function hiLo(windowBars,fallbackCount){
+      const a=windowBars.length?windowBars:bars.slice(-fallbackCount);
+      return {high:Math.max(...a.map(x=>x.h)),low:Math.min(...a.map(x=>x.l))};
+    }
+    const r4=hiLo(previousBucket(bars,240,now),16);
+    const r1=hiLo(previousBucket(bars,60,now),8);
+    const r30=hiLo(previousBucket(bars,30,now),4);
+    const r15=hiLo(previousBucket(bars,15,now),2);
     return {
-      symbol:'BTCUSD',source:'BINANCE 1H',
+      symbol,source,
       dayHigh:Math.max(...d.map(x=>x.h)),dayLow:Math.min(...d.map(x=>x.l)),
-      h4High:Math.max(...h.map(x=>x.h)),h4Low:Math.min(...h.map(x=>x.l)),
+      h4High:r4.high,h4Low:r4.low,
+      h1High:r1.high,h1Low:r1.low,
+      m30High:r30.high,m30Low:r30.low,
+      m15High:r15.high,m15Low:r15.low,
       updatedAt:Date.now()
     };
   }
   async function btc(){
     try{
-      const rows=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=48',{cache:'no-store'}).then(r=>r.json());
+      const rows=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200',{cache:'no-store'}).then(r=>r.json());
       if(!Array.isArray(rows))throw new Error('bad response');
-      const v=btcBarsToRange(rows); if(v)publish(v);
+      const bars=rows.map(x=>({t:+x[0],h:+x[2],l:+x[3]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+      const v=buildRange(bars,'BTCUSD','BINANCE 15M');
+      if(v)publish(v);
     }catch(e){
-      window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 1H'});
+      window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 15M'});
     }
   }
   async function gold(){
@@ -330,12 +345,8 @@
       const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
       const bars=a.map(x=>Array.isArray(x)?({t:+x[0],h:+x[2],l:+x[3]}):({t:+(x.timestamp||x.time||x.t),h:+(x.high||x.h),l:+(x.low||x.l)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
-      const now=Date.now(), dayKey=new Date(now).toISOString().slice(0,10);
-      const today=bars.filter(b=>new Date(b.t).toISOString().slice(0,10)===dayKey);
-      const current4hStart=Math.floor(now/(4*3600000))*4*3600000;
-      const prev4h=bars.filter(b=>b.t>=current4hStart-4*3600000&&b.t<current4hStart);
-      const d1=today.length?today:bars.slice(-1), h4=prev4h.length?prev4h:bars.slice(-1);
-      publish({symbol:'XAU/USD',source:'XAUS INTRADAY',dayHigh:Math.max(...d1.map(x=>x.h)),dayLow:Math.min(...d1.map(x=>x.l)),h4High:Math.max(...h4.map(x=>x.h)),h4Low:Math.min(...h4.map(x=>x.l)),updatedAt:Date.now()});
+      const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
+      if(v)publish(v);
     }catch(e){}
   }
   function refresh(){
@@ -346,4 +357,4 @@
   refresh(); setInterval(refresh,30000);
   document.addEventListener('rizvi:symbol-change',refresh);
 })();
-</script></body></html>
+</script></script></body></html>
