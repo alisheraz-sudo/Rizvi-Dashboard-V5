@@ -78,7 +78,7 @@ function btc(){
  window.__RIZVI_ORDERBOOK_WS=ws;
 }
 window.addEventListener('rizvi:ctrader',fromCTrader);
-window.addEventListener('change',()=>setTimeout(()=>{const isBtc=String(window.state?.symbol||'').toUpperCase().replace(/[^A-Z]/g,'').startsWith('BTC');if(isBtc){if(!window.__RIZVI_ORDERBOOK_WS)btc();}else{try{window.__RIZVI_ORDERBOOK_WS&&window.__RIZVI_ORDERBOOK_WS.close()}catch{}window.__RIZVI_ORDERBOOK_WS=null;render({}, {},'WAIT','symbol not BTC');}},300));
+window.addEventListener('change',()=>setTimeout(()=>{history=[];const isBtc=String(window.state?.symbol||'').toUpperCase().replace(/[^A-Z]/g,'').startsWith('BTC');if(isBtc){if(!window.__RIZVI_ORDERBOOK_WS)btc();}else{try{window.__RIZVI_ORDERBOOK_WS&&window.__RIZVI_ORDERBOOK_WS.close()}catch{}window.__RIZVI_ORDERBOOK_WS=null;render({}, {},'WAIT','symbol not BTC');}},300));
 document.addEventListener('DOMContentLoaded',()=>{install();setTimeout(btc,1200)});
 setTimeout(install,1000);
 })();
