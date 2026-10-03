@@ -301,6 +301,39 @@
     Object.keys(out).forEach(k=>{if(out[k])out[k].textContent=fmt(r[k]);});
     window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:r}));
   }
+  function attachLiquidityEngine(r,bars){
+    const latest=bars[bars.length-1];
+    if(!latest)return;
+    const levels=[
+      {tf:'DAY',high:r.dayHigh,low:r.dayLow},
+      {tf:'4H',high:r.h4High,low:r.h4Low},
+      {tf:'1H',high:r.h1High,low:r.h1Low},
+      {tf:'30M',high:r.m30High,low:r.m30Low},
+      {tf:'15M',high:r.m15High,low:r.m15Low}
+    ];
+    const eps=(latest.h-latest.l)*0.02;
+    const sweeps=[], grabs=[], breakouts=[];
+    levels.forEach(x=>{
+      const brokeUp=Number.isFinite(latest.c)&&latest.c>x.high+eps;
+      const brokeDn=Number.isFinite(latest.c)&&latest.c<x.low-eps;
+      const sweptHigh=latest.h>x.high+eps && Number.isFinite(latest.c)&&latest.c<=x.high+eps;
+      const sweptLow=latest.l<x.low-eps && Number.isFinite(latest.c)&&latest.c>=x.low-eps;
+      if(sweptHigh)sweeps.push({timeframe:x.tf,side:'HIGH',price:x.high});
+      if(sweptLow)sweeps.push({timeframe:x.tf,side:'LOW',price:x.low});
+      if((latest.h>x.high+eps)&&!brokeUp)grabs.push({timeframe:x.tf,side:'HIGH',price:x.high});
+      if((latest.l<x.low-eps)&&!brokeDn)grabs.push({timeframe:x.tf,side:'LOW',price:x.low});
+      if(brokeUp)breakouts.push({timeframe:x.tf,side:'UP',price:x.high});
+      if(brokeDn)breakouts.push({timeframe:x.tf,side:'DOWN',price:x.low});
+    });
+    window.RIZVI_LIQUIDITY_ENGINE={
+      symbol:r.symbol,updatedAt:Date.now(),levels:r,
+      latestBar:{t:latest.t,h:latest.h,l:latest.l,c:latest.c},
+      sweeps,grabs,breakouts,
+      status:(sweeps.length||grabs.length||breakouts.length)?'EVENTS_DETECTED':'NO_EVENT',
+      useFor:['liquidity sweep','liquidity grab','high/low raid','breakout detection','structure qualification']
+    };
+    window.dispatchEvent(new CustomEvent('rizvi:liquidity-update',{detail:window.RIZVI_LIQUIDITY_ENGINE}));
+  }
   function previousBucket(bars,minutes,now){
     const size=minutes*60000, end=Math.floor(now/size)*size, start=end-size;
     return bars.filter(b=>b.t>=start&&b.t<end);
@@ -332,9 +365,9 @@
     try{
       const rows=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200',{cache:'no-store'}).then(r=>r.json());
       if(!Array.isArray(rows))throw new Error('bad response');
-      const bars=rows.map(x=>({t:+x[0],h:+x[2],l:+x[3]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+      const bars=rows.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       const v=buildRange(bars,'BTCUSD','BINANCE 15M');
-      if(v)publish(v);
+      if(v){publish(v);attachLiquidityEngine(v,bars);}
     }catch(e){
       window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 15M'});
     }
@@ -343,10 +376,10 @@
     try{
       const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=36&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
       const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
-      const bars=a.map(x=>Array.isArray(x)?({t:+x[0],h:+x[2],l:+x[3]}):({t:+(x.timestamp||x.time||x.t),h:+(x.high||x.h),l:+(x.low||x.l)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+      const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
       const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
-      if(v)publish(v);
+      if(v){publish(v);attachLiquidityEngine(v,bars);}
     }catch(e){}
   }
   function refresh(){
