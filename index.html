@@ -29,4 +29,22 @@
    if(direction) direction.textContent=a.textContent.replace(/[↗↓⚠]/g,'').trim();
  }));
 })();
+</script><script>
+(function(){
+  const priceEl=[...document.querySelectorAll('body *')].find(e=>e.children.length===0&&/68,432\.50/.test(e.textContent));
+  const live=document.querySelector('.quote .live')||[...document.querySelectorAll('body *')].find(e=>e.children.length===0&&/LIVE/.test(e.textContent));
+  let last=null;
+  async function btc(){
+    try{
+      const x=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());
+      const p=Number(x?.data?.amount);
+      if(!Number.isFinite(p))return;
+      last=p;
+      if(priceEl)priceEl.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      if(live)live.textContent='LIVE';
+      window.RIZVI_LIVE_PRICE=p;
+    }catch(e){}
+  }
+  btc(); setInterval(btc,5000);
+})();
 </script></body></html>
