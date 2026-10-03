@@ -4814,11 +4814,14 @@ button{pointer-events:auto!important}
   function draw(){
     const box=ensure();if(!box)return;
     const dir=String(window.RIZVI_LAST_CONFIRMED_SETUP?.direction||'WAIT').toUpperCase();
+    const hq=document.getElementById('chartHighSetupBtn');
+    const hqDir=String(hq?.getAttribute('data-direction')||'WAIT').toUpperCase();
+    const hqQuality=String(hq?.getAttribute('data-quality')||'WAIT').toUpperCase();
     const ss=window.RIZVI_LAST_CONFIRMED_SETUP||{};
     const entry=N(ss.entry),sl=N(ss.sl),tp3=N(ss.tp3);
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
-    if((dir!=='BUY'&&dir!=='SELL')||![entry,sl,tp3].every(Number.isFinite)||!series||!chart){
+    if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp3].every(Number.isFinite)||!series||!chart){
       box.style.display='none';return;
     }
     const yEntry=series.priceToCoordinate(entry),ySl=series.priceToCoordinate(sl),yTp=series.priceToCoordinate(tp3);
