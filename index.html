@@ -4926,3 +4926,25 @@ button{pointer-events:auto!important}
   },100);
 })();
 </script>
+
+<!-- RIZVI SLIM TRADE RANGE FINAL -->
+<style id="rizvi-slim-trade-range-final">
+/* Final test-range presentation: one compact trade only. */
+@media(max-width:600px){
+  #tradeZone,#slZone{display:none!important}
+}
+#rizviTvTradeRange .rzRangeTp{background:rgba(36,205,142,.28)!important;border-color:rgba(67,226,164,.9)!important}
+#rizviTvTradeRange .rzRangeSl{background:rgba(150,72,190,.30)!important;border-color:rgba(188,111,224,.9)!important}
+</style>
+<script id="rizvi-slim-trade-range-final-script">
+(function(){
+  function clean(){
+    const test=new URLSearchParams(location.search).get('testRange')==='1';
+    if(!test)return;
+    ['tradeZone','slZone'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.setProperty('display','none','important')});
+    document.querySelectorAll('.tradeZone,.slZone').forEach(e=>e.style.setProperty('display','none','important'));
+  }
+  document.addEventListener('DOMContentLoaded',clean);
+  setTimeout(clean,300);setInterval(clean,500);
+})();
+</script>
