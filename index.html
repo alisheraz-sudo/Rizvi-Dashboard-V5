@@ -518,4 +518,44 @@
   if(window.RIZVI_MARKET_RANGE)bindRange(window.RIZVI_MARKET_RANGE);
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
+</script><script>
+(function(){
+  function render(q){
+    if(!q)return;
+    const head=document.querySelector('.signalHead');
+    const dir=head?.querySelector('div:first-child b');
+    const quality=head?.querySelector('div:nth-child(2) b');
+    const badge=head?.querySelector('div:nth-child(2) .badge');
+    const signalBig=document.querySelector('.right .card:first-child .big span:first-child');
+    const signalPct=document.querySelector('.right .card:first-child .big span:nth-child(2)');
+    const ready=document.querySelector('.right .gborder .ready');
+    const score=document.querySelector('.right .gborder .row b');
+    const direction=q.marketDirection==='NEUTRAL'?q.signalDirection:q.marketDirection;
+    if(dir && direction) dir.textContent=direction;
+    if(signalBig && direction) signalBig.textContent=direction;
+    const pct=Number(q.patternConfidence);
+    if(quality && Number.isFinite(pct)) quality.textContent=pct+'%';
+    if(signalPct && Number.isFinite(pct)) signalPct.childNodes[0].nodeValue=pct+'% ';
+    if(score && Number.isFinite(q.liquidityScore)) score.firstChild.nodeValue=q.liquidityScore+'%  ';
+    if(badge){
+      const high=pct>=80;
+      badge.textContent=high?'HIGH QUALITY':'WATCH';
+      badge.style.background=high?'#10b875':'#173c75';
+      badge.style.color=high?'#04150d':'#7fb8ff';
+    }
+    if(ready){
+      const ok=q.status==='QUALIFIED_CONTEXT';
+      ready.textContent=ok?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=ok?'#087e58':'#6b4b08';
+      ready.style.borderColor=ok?'#11e091':'#d99b18';
+    }
+    window.RIZVI_VISIBLE_SIGNAL_STATE={
+      direction,pct,liquidityScore:q.liquidityScore,status:q.status,
+      confirmedSweep:q.confirmedSweep,confirmedBreakout:q.confirmedBreakout,
+      multiTimeframe:q.multiTimeframe,updatedAt:q.updatedAt
+    };
+  }
+  window.addEventListener('rizvi:signal-qualification-update',e=>render(e.detail));
+  if(window.RIZVI_SIGNAL_QUALIFICATION) render(window.RIZVI_SIGNAL_QUALIFICATION);
+})();
 </script></body></html>
