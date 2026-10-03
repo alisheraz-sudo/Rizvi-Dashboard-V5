@@ -4692,3 +4692,72 @@ button{pointer-events:auto!important}
   }
 }
 </style>
+<!-- RIZVI ENTRY SL TP MOBILE FINAL V50 -->
+<style id="rizvi-entry-sl-tp-mobile-final-v50">
+/* Mobile portrait: keep Entry/SL/TP controls in normal flow below the signal matrix. */
+@media screen and (max-width:700px) and (orientation:portrait){
+  #chartSetupBox{
+    height:300px!important;
+    min-height:300px!important;
+    overflow:visible!important;
+    padding:8px!important;
+  }
+  #chartSetupBox .setupSignals{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    width:100%!important;
+    height:auto!important;
+    overflow:visible!important;
+  }
+  #chartSetupBox .setupLevels{
+    position:relative!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    grid-auto-rows:30px!important;
+    gap:6px!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:8px 0 0!important;
+    padding:0!important;
+    overflow:visible!important;
+  }
+  #chartSetupBox .setupLevels .levelBtn{
+    position:relative!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:30px!important;
+    min-height:30px!important;
+    margin:0!important;
+    padding:0 3px!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden!important;
+    white-space:nowrap!important;
+    text-overflow:ellipsis!important;
+    font-size:10px!important;
+  }
+  #chartSetupBox .setupLevels .levelBtn .btnLabel,
+  #chartSetupBox .setupLevels .levelBtn .btnValue{
+    min-width:0!important;
+    overflow:hidden!important;
+    white-space:nowrap!important;
+    text-overflow:ellipsis!important;
+  }
+  .chartarea{bottom:314px!important}
+  .grid,.axis{bottom:314px!important}
+}
+@media screen and (max-width:430px) and (orientation:portrait){
+  #chartSetupBox{height:300px!important;min-height:300px!important}
+  #chartSetupBox .setupLevels{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+  #chartSetupBox .setupLevels .levelBtn{height:30px!important;min-height:30px!important;font-size:9px!important}
+}
+</style>
