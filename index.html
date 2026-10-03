@@ -51,6 +51,8 @@
       const ct=document.getElementById('chartPriceTag'); if(ct)ct.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       if(live)live.textContent='LIVE';
       window.RIZVI_LIVE_PRICE=p;
+      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+      if(window.RIZVI_SIGNAL_LEVELS) window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY');
       window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
       window.RIZVI_LIVE_PRICES.BTCUSD=p;
       const direction=document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
@@ -177,6 +179,20 @@
  setInterval(bind,2000);
 })();
 </script><script>
+(function(){
+  function syncVisibleSignal(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const right=document.querySelector('.right .card:nth-child(2)');
+    if(!right)return;
+    const score=right.querySelector('.row b');
+    const ready=right.querySelector('.ready');
+    if(score) score.innerHTML=(q.patternConfidence||0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(ready) ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+  }
+  window.addEventListener('rizvi:signal-qualification-update',syncVisibleSignal);
+  setInterval(syncVisibleSignal,2000);
+})();</script><script>
 (function(){
  const symbols={
   BTCUSD:{decimals:2,source:'coinbase'},
