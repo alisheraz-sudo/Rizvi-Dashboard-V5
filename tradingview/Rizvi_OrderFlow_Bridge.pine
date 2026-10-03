@@ -1,0 +1,40 @@
+//@version=6
+indicator("Rizvi Order Flow Bridge", overlay=true, max_labels_count=50)
+
+int ticksPerRow = input.int(10, "Ticks per footprint row", minval=1)
+int vaPercent = input.int(70, "Value Area %", minval=1, maxval=100)
+int imbalancePercent = input.int(300, "Imbalance %", minval=1)
+
+footprint fp = request.footprint(ticksPerRow, vaPercent, imbalancePercent)
+bool ok = not na(fp)
+float buyVol = ok ? fp.buy_volume() : na
+float sellVol = ok ? fp.sell_volume() : na
+float totalVol = ok ? fp.total_volume() : na
+float delta = ok ? fp.delta() : na
+volume_row poc = ok ? fp.poc() : na
+volume_row vah = ok ? fp.vah() : na
+volume_row val = ok ? fp.val() : na
+float pocPrice = ok ? (poc.up_price()+poc.down_price())/2.0 : na
+float vahPrice = ok ? vah.up_price() : na
+float valPrice = ok ? val.down_price() : na
+
+int buyImb = 0
+int sellImb = 0
+if ok
+    array<volume_row> rows = fp.rows()
+    for row in rows
+        buyImb += row.has_buy_imbalance() ? 1 : 0
+        sellImb += row.has_sell_imbalance() ? 1 : 0
+
+float buyRatio = ok and totalVol > 0 ? buyVol/totalVol*100.0 : na
+float deltaPct = ok and totalVol > 0 ? delta/totalVol*100.0 : na
+bool confirmed = barstate.isconfirmed
+string dir = confirmed and ok ? (deltaPct >= 12 and buyImb >= sellImb ? "BUY" : deltaPct <= -12 and sellImb >= buyImb ? "SELL" : "WAIT") : "WAIT"
+
+plot(pocPrice, "POC", color=color.purple, linewidth=2, style=plot.style_linebr)
+plot(vahPrice, "VAH", color=color.new(color.green, 35), linewidth=1, style=plot.style_linebr)
+plot(valPrice, "VAL", color=color.new(color.red, 35), linewidth=1, style=plot.style_linebr)
+
+if confirmed and ok
+    string msg = '{"symbol":"' + syminfo.ticker + '","time":' + str.tostring(time) + ',"close":' + str.tostring(close) + ',"buyVolume":' + str.tostring(buyVol) + ',"sellVolume":' + str.tostring(sellVol) + ',"totalVolume":' + str.tostring(totalVol) + ',"delta":' + str.tostring(delta) + ',"deltaPct":' + str.tostring(deltaPct) + ',"buyRatio":' + str.tostring(buyRatio) + ',"poc":' + str.tostring(pocPrice) + ',"vah":' + str.tostring(vahPrice) + ',"val":' + str.tostring(valPrice) + ',"buyImbalance":' + str.tostring(buyImb) + ',"sellImbalance":' + str.tostring(sellImb) + ',"direction":"' + dir + '","confirmed":true}'
+    alert(msg, alert.freq_once_per_bar_close)
