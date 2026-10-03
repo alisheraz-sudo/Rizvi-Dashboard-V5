@@ -189,7 +189,7 @@ window.renderV5LiveSignal=function(){
   const st=window.state;if(!st)return;
   const feed=window.RIZVI_REAL_FEED||{};
   const brokerConnected=!!(window.RizviCTrader&&window.RizviCTrader.state&&window.RizviCTrader.state.authorized);
-  const realFeedOK=!!(feed.price&&feed.stale===false&&feed.status==='REAL SPOT');
+  const realFeedOK=!!(feed.price&&feed.stale===false&&['REAL SPOT','REAL SPOT/TICK'].includes(feed.status));
   const brokerPriceOK=brokerConnected&&Number.isFinite(st.price)&&(!feed.stale||feed.status==='BROKER');
   const liveOK=realFeedOK||brokerPriceOK;
   const rawBars=(st.ohlc&&st.ohlc.length?st.ohlc.slice(-520):[]);
