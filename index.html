@@ -23,10 +23,11 @@
  }));
  const actions=[...document.querySelectorAll('.btn')];
  const direction=document.querySelector('.signalHead div:first-child b');
+  window.RIZVI_SIGNAL_DIRECTION='BUY';
  actions.forEach(a=>a.addEventListener('click',()=>{
    actions.forEach(x=>x.style.boxShadow='none');
    a.style.boxShadow='0 0 0 2px #fff5';
-   if(direction) direction.textContent=a.textContent.replace(/[↗↓⚠]/g,'').trim();
+   if(direction) { const d=a.textContent.replace(/[↗↓⚠]/g,'').trim(); direction.textContent=d; window.RIZVI_SIGNAL_DIRECTION=d; document.dispatchEvent(new CustomEvent('rizvi:signal-direction-update',{detail:{direction:d}})); }
  }));
 })();
 
@@ -49,7 +50,7 @@
       const cc=document.getElementById('chartClose'); if(cc)cc.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       const ct=document.getElementById('chartPriceTag'); if(ct)ct.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       if(live)live.textContent='LIVE';
-      window.RIZVI_LIVE_PRICE=p;
+      window.RIZVI_LIVE_PRICE=p; document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
     }catch(e){}
   }
   btc(); setInterval(btc,5000);
