@@ -1655,6 +1655,7 @@ html body .miniMarketChart{display:none!important}
         handleScroll:{mouseWheel:false,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
         handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:{time:true,price:true}}
       });
+      window.RIZVI_TV_CHART=chart;
       series=chart.addSeries(L.CandlestickSeries,{
         upColor:'#29d89a',
         downColor:'#e44e61',
@@ -1669,6 +1670,7 @@ html body .miniMarketChart{display:none!important}
         priceLineWidth:1,
         priceLineStyle:L.LineStyle.Dashed
       });
+      window.RIZVI_TV_SERIES=series;
       // Signal execution levels are rendered on the same TradingView price scale.
       window.RIZVI_TV_LEVEL_LINES={};
       window.RIZVI_TV_SET_LEVELS=function(levels){
