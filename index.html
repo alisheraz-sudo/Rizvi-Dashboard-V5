@@ -4761,3 +4761,103 @@ button{pointer-events:auto!important}
   #chartSetupBox .setupLevels .levelBtn{height:30px!important;min-height:30px!important;font-size:9px!important}
 }
 </style>
+
+<!-- RIZVI TRADE RANGE BOX V51 -->
+<style id="rizvi-trade-range-box-v51">
+#rizviTvTradeRange{
+  position:absolute!important;
+  left:0!important;top:0!important;
+  width:100%!important;height:100%!important;
+  z-index:18!important;pointer-events:none!important;
+  display:none!important;overflow:hidden!important;
+}
+#rizviTvTradeRange .rzRangePart{
+  position:absolute!important;left:0!important;right:auto!important;
+  box-sizing:border-box!important;pointer-events:none!important;
+}
+#rizviTvTradeRange .rzRangeTp{
+  background:rgba(36,205,142,.22)!important;
+  border:1px dashed rgba(67,226,164,.72)!important;
+  border-left:0!important;border-right:0!important;
+}
+#rizviTvTradeRange .rzRangeSl{
+  background:rgba(150,72,190,.24)!important;
+  border:1px dashed rgba(188,111,224,.78)!important;
+  border-left:0!important;border-right:0!important;
+}
+#rizviTvTradeRange .rzRangeEntry{
+  position:absolute!important;height:0!important;
+  border-top:1px dashed rgba(220,235,245,.78)!important;
+  pointer-events:none!important;
+}
+</style>
+<script id="rizvi-trade-range-box-v51-script">
+(function(){
+  if(window.__RIZVI_TRADE_RANGE_BOX_V51)return;
+  window.__RIZVI_TRADE_RANGE_BOX_V51=true;
+  function N(v){const n=Number(v);return Number.isFinite(n)?n:NaN}
+  function host(){
+    return document.getElementById('rizviTvChart')||document.getElementById('chartArea');
+  }
+  function ensure(){
+    const h=host();if(!h)return null;
+    let box=document.getElementById('rizviTvTradeRange');
+    if(!box){
+      box=document.createElement('div');box.id='rizviTvTradeRange';
+      box.innerHTML='<div class="rzRangePart rzRangeTp"></div><div class="rzRangePart rzRangeSl"></div><div class="rzRangeEntry"></div>';
+      h.appendChild(box);
+    }else if(box.parentElement!==h)h.appendChild(box);
+    return box;
+  }
+  function draw(){
+    const box=ensure();if(!box)return;
+    const dir=String(window.RIZVI_LAST_CONFIRMED_SETUP?.direction||'WAIT').toUpperCase();
+    const ss=window.RIZVI_LAST_CONFIRMED_SETUP||{};
+    const entry=N(ss.entry),sl=N(ss.sl),tp3=N(ss.tp3);
+    const chart=window.RIZVI_TV_CHART;
+    const series=window.RIZVI_TV_SERIES;
+    if((dir!=='BUY'&&dir!=='SELL')||![entry,sl,tp3].every(Number.isFinite)||!series||!chart){
+      box.style.display='none';return;
+    }
+    const yEntry=series.priceToCoordinate(entry),ySl=series.priceToCoordinate(sl),yTp=series.priceToCoordinate(tp3);
+    if(![yEntry,ySl,yTp].every(Number.isFinite)){box.style.display='none';return}
+    const w=box.clientWidth,h=box.clientHeight;
+    if(w<20||h<20){box.style.display='none';return}
+    let x=55;
+    const key=document.getElementById('chartHighSetupBtn')?.getAttribute('data-candle');
+    if(key){
+      const t=N(key);
+      const tc=chart.timeScale().timeToCoordinate(t>2e10?Math.floor(t/1000):t);
+      if(Number.isFinite(tc))x=Math.max(24,Math.min(w-90,tc));
+    }
+    const right=Math.max(x+70,w-12);
+    const tp=document.querySelector('#rizviTvTradeRange .rzRangeTp');
+    const slb=document.querySelector('#rizviTvTradeRange .rzRangeSl');
+    const en=document.querySelector('#rizviTvTradeRange .rzRangeEntry');
+    if(dir==='BUY'){
+      tp.style.left=x+'px';tp.style.top=Math.min(yTp,yEntry)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yEntry-yTp)+'px';
+      slb.style.left=x+'px';slb.style.top=Math.min(yEntry,ySl)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(ySl-yEntry)+'px';
+    }else{
+      tp.style.left=x+'px';tp.style.top=Math.min(yEntry,yTp)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yTp-yEntry)+'px';
+      slb.style.left=x+'px';slb.style.top=Math.min(ySl,yEntry)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(yEntry-ySl)+'px';
+    }
+    en.style.left=x+'px';en.style.width=(right-x)+'px';en.style.top=yEntry+'px';
+    box.style.display='block';
+  }
+  function start(){draw();setInterval(draw,300)}
+  document.addEventListener('DOMContentLoaded',start);
+  setTimeout(start,700);
+})();
+</script>
+
+<script id="rizvi-trade-range-box-v51-bridge">
+(function(){
+  let tries=0;
+  const timer=setInterval(()=>{
+    if(window.__RIZVI_TRADE_RANGE_BRIDGED)return;
+    const src=window.RIZVI_TV_CHART;
+    if(src){window.__RIZVI_TRADE_RANGE_BRIDGED=true;clearInterval(timer);return}
+    if(++tries>200)clearInterval(timer);
+  },100);
+})();
+</script>
