@@ -50,7 +50,7 @@
       const cc=document.getElementById('chartClose'); if(cc)cc.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       const ct=document.getElementById('chartPriceTag'); if(ct)ct.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       if(live)live.textContent='LIVE';
-      window.RIZVI_LIVE_PRICE=p;\n      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+      window.RIZVI_LIVE_PRICE=p; document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY'}}));\n      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
       document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
       if(window.RIZVI_SIGNAL_LEVELS)window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY');
       document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
@@ -825,5 +825,28 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>applyQualification(e.detail));
   window.addEventListener('rizvi:liquidity-update',e=>setTimeout(()=>applyQualification(window.RIZVI_SIGNAL_QUALIFICATION),0));
   setInterval(()=>{applyLevels();if(window.RIZVI_SIGNAL_QUALIFICATION)applyQualification(window.RIZVI_SIGNAL_QUALIFICATION)},2000);
+})();
+<script>
+(function(){
+  function bindQualification(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const topDir=document.querySelector('.signalHead div:first-child b');
+    const signalBig=document.querySelector('.right .card:nth-child(1) .big span:first-child');
+    const signalScore=document.querySelector('.right .card:nth-child(1) .big span:nth-child(2)');
+    const qualityRow=[...document.querySelectorAll('.right .card')].find(x=>x.textContent.includes('Quality Score'))?.querySelector('.row b');
+    const ready=[...document.querySelectorAll('.right .card')].find(x=>x.textContent.includes('SIGNAL QUALIFIED'))?.querySelector('.ready');
+    if(topDir && q.signalDirection && q.signalDirection!=='NEUTRAL') topDir.textContent=q.signalDirection;
+    if(signalBig && q.signalDirection && q.signalDirection!=='NEUTRAL') signalBig.textContent=q.signalDirection;
+    if(signalScore) signalScore.innerHTML=(q.patternConfidence||0)+'% <em class="badge" style="background:#173c75;color:#7fb8ff">'+(q.patternConfidence>=80?'HIGH':q.patternConfidence>=60?'MEDIUM':'LOW')+'</em>';
+    if(qualityRow) qualityRow.innerHTML=(q.liquidityScore||0)+'% <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'QUALIFIED':'WAIT')+'</em>';
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6f5510';
+    }
+  }
+  window.addEventListener('rizvi:signal-qualification-update',bindQualification);
+  setInterval(bindQualification,2000);
+  bindQualification();
 })();
 </script></body></html>
