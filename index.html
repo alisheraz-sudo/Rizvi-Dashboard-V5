@@ -424,4 +424,67 @@
   window.addEventListener('rizvi:liquidity-update',e=>qualify(e.detail));
   if(window.RIZVI_LIQUIDITY_ENGINE)qualify(window.RIZVI_LIQUIDITY_ENGINE);
 })();
+</script><script>
+(function(){
+  const signalBox=document.querySelector('.right .card:nth-child(1)');
+  const execBox=document.querySelector('.right .card:nth-child(2)');
+  const rangeBox=document.querySelector('.right .card:nth-child(3)');
+  const headDirection=document.querySelector('.signalHead div:first-child b');
+  const headQuality=document.querySelector('.signalHead div:nth-child(2) b');
+  const headBadge=document.querySelector('.signalHead div:nth-child(2) .badge');
+  const signalBig=signalBox?.querySelector('.big');
+  const rows=signalBox?.querySelectorAll('.row b')||[];
+  const execScore=execBox?.querySelector('.row b');
+  const ready=execBox?.querySelector('.ready');
+  const actionBtns=[...document.querySelectorAll('.actions .btn')];
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function rsi(bars,n=14){
+    if(bars.length<n+1)return null;
+    let up=0,dn=0;
+    for(let i=bars.length-n;i<bars.length;i++){const d=bars[i].c-bars[i-1].c;if(d>0)up+=d;else dn-=d;}
+    if(dn===0)return 100;
+    return 100-(100/(1+up/dn));
+  }
+  function ema(arr,n){if(arr.length<n)return null;let e=arr.slice(0,n).reduce((a,b)=>a+b,0)/n,k=2/(n+1);for(let i=n;i<arr.length;i++)e=arr[i]*k+e*(1-k);return e;}
+  function analyze(){
+    const bars=(window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[]).filter(x=>Number.isFinite(x.c));
+    if(bars.length<20)return;
+    const closes=bars.map(x=>x.c), e9=ema(closes,9), e21=ema(closes,21), last=bars.at(-1), prev=bars.at(-2);
+    const r=rsi(bars,14);
+    const trend=e9>e21?'Bullish ↑':e9<e21?'Bearish ↓':'Neutral →';
+    const momentum=last.c>prev.c?'Bullish ↑':last.c<prev.c?'Bearish ↓':'Neutral →';
+    const recent=bars.slice(-10), recentHigh=Math.max(...recent.map(x=>x.h)), recentLow=Math.min(...recent.map(x=>x.l));
+    const structure=last.c>recentHigh*0.999?'Resistance ↑':last.c<recentLow*1.001?'Support ↓':(last.c>=e21?'Support ↑':'Resistance ↓');
+    let direction=e9>e21&&last.c>=e9?'BUY':e9<e21&&last.c<=e9?'SELL':'WAIT';
+    const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
+    const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    if(q.marketDirection==='BUY'&&q.aligned)direction='BUY';
+    if(q.marketDirection==='SELL'&&q.aligned)direction='SELL';
+    if(direction==='WAIT')direction=e9>=e21?'BUY':'SELL';
+    let score=50;
+    score += trend.startsWith(direction==='BUY'?'Bullish':'Bearish')?15:0;
+    score += momentum.startsWith(direction==='BUY'?'Bullish':'Bearish')?10:0;
+    if(r!==null){ if(direction==='BUY'&&r>=50&&r<75)score+=10; if(direction==='SELL'&&r<=50&&r>25)score+=10; }
+    if(q.aligned)score+=10;
+    if(q.multiTimeframe)score+=5;
+    score=Math.max(55,Math.min(95,Math.round(score)));
+    const quality=score>=80?'HIGH QUALITY':score>=70?'MEDIUM':'WATCH';
+    const color=direction==='BUY'?'#00e39a':direction==='SELL'?'#ff5b68':'#ffc43d';
+    if(headDirection){headDirection.textContent=direction;headDirection.style.color=color;}
+    if(headQuality)headQuality.textContent=score+'%';
+    if(headBadge)headBadge.textContent=quality;
+    if(signalBig){signalBig.children[0].textContent=direction;signalBig.children[0].style.color=color;signalBig.children[1].innerHTML=score+'% <em class="badge">'+quality+'</em>';}
+    const vals=[trend,momentum,r===null?'--':Math.round(r),structure,'OHLC only'];
+    rows.forEach((x,i)=>{if(vals[i]!=null)x.textContent=vals[i];});
+    if(execScore)execScore.innerHTML=score+'% &nbsp; <em class="badge">'+quality+'</em>';
+    if(ready){ready.textContent=score>=70?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=score>=70?'#087e58':'#75530a';}
+    actionBtns.forEach(b=>b.style.boxShadow=b.textContent.includes(direction)?'0 0 0 2px #fff5':'none');
+    window.RIZVI_LIVE_SIGNAL={symbol:window.RIZVI_CURRENT_SYMBOL||'BTCUSD',direction,score,quality,trend,momentum,rsi:r,structure,liquidity:liq.status||'NO_EVENT',updatedAt:Date.now()};
+    window.dispatchEvent(new CustomEvent('rizvi:live-signal-update',{detail:window.RIZVI_LIVE_SIGNAL}));
+  }
+  window.addEventListener('rizvi:chart-source',()=>setTimeout(analyze,50));
+  window.addEventListener('rizvi:market-range-update',()=>setTimeout(analyze,50));
+  window.addEventListener('rizvi:signal-qualification-update',()=>setTimeout(analyze,50));
+  setInterval(analyze,5000); analyze();
+})();
 </script></body></html>
