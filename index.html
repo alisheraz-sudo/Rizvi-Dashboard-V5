@@ -36,8 +36,8 @@
   document.addEventListener('rizvi:symbol-change',e=>{const sym=e.detail?.symbol;if(quoteSymbol)quoteSymbol.textContent=sym||'BTCUSD';if(symbolSelect)symbolSelect.value=sym||'BTCUSD';});
 </script><script>
 (function(){
-  const priceEl=[...document.querySelectorAll('body *')].find(e=>e.children.length===0&&/68,432\.50/.test(e.textContent));
-  const live=document.querySelector('.quote .live')||[...document.querySelectorAll('body *')].find(e=>e.children.length===0&&/LIVE/.test(e.textContent));
+  const priceEl=document.getElementById('quotePrice');
+  const live=document.getElementById('quoteLive');
   let last=null;
   async function btc(){
     try{
@@ -195,8 +195,6 @@
    window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
    window.RIZVI_LIVE_PRICES['XAU/USD']=p;
    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
-   const nodes=[...document.querySelectorAll('body *')].filter(e=>e.children.length===0);
-   const q=nodes.find(e=>/68,432\.50|4,141\.80|4,000\.00/.test(e.textContent));
    if(window.RIZVI_CURRENT_SYMBOL==='XAU/USD'){const q=document.getElementById('quotePrice');if(q)q.textContent=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
   }catch(e){window.RIZVI_GOLD_FEED={status:'unavailable'};}
  }
