@@ -1591,8 +1591,33 @@ html body .miniMarketChart{display:none!important}
         wickDownColor:'#e44e61',
         borderVisible:true,
         lastValueVisible:true,
-        priceLineVisible:false
+        priceLineVisible:true,
+        priceLineColor:'#53dca5',
+        priceLineWidth:1,
+        priceLineStyle:L.LineStyle.Dashed
       });
+      // Signal execution levels are rendered on the same TradingView price scale.
+      window.RIZVI_TV_LEVEL_LINES={};
+      window.RIZVI_TV_SET_LEVELS=function(levels){
+        try{
+          if(!series||!series.createPriceLine)return;
+          Object.keys(window.RIZVI_TV_LEVEL_LINES||{}).forEach(k=>{
+            try{series.removePriceLine(window.RIZVI_TV_LEVEL_LINES[k])}catch(e){}
+          });
+          window.RIZVI_TV_LEVEL_LINES={};
+          const next=levels||{};
+          if(!Number.isFinite(Number(next.entry))||!next.direction||next.direction==='WAIT')return;
+          const add=(key,title,price,color,style)=>{
+            if(!Number.isFinite(Number(price)))return;
+            window.RIZVI_TV_LEVEL_LINES[key]=series.createPriceLine({price:Number(price),color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title});
+          };
+          add('entry','ENTRY',next.entry,'#55dda1',L.LineStyle.Solid);
+          add('sl','SL',next.sl,'#ef697b',L.LineStyle.Dashed);
+          add('tp1','TP1',next.tp1,'#58b7ff',L.LineStyle.Dashed);
+          add('tp2','TP2',next.tp2,'#58b7ff',L.LineStyle.Dashed);
+          add('tp3','TP3',next.tp3,'#58b7ff',L.LineStyle.Dashed);
+        }catch(e){window.RIZVI_TV_LEVEL_ERROR=String(e?.message||e)}
+      };
       ready=true;
       window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(e){}});
       refresh(true);
@@ -2779,6 +2804,7 @@ body:has(#symbolSelect option[value="BTC/USD"]:checked) #chartPrice{
     write(document.getElementById('chartTp1Btn'),'TP1',s.dir==='WAIT'?'—':price(s.tp1,s.d),s.cls,true);
     write(document.getElementById('chartTp2Btn'),'TP2',s.dir==='WAIT'?'—':price(s.tp2,s.d),s.cls,true);
     write(document.getElementById('chartTp3Btn'),'TP3',s.dir==='WAIT'?'—':price(s.tp3,s.d),s.cls,true);
+    if(window.RIZVI_TV_SET_LEVELS) window.RIZVI_TV_SET_LEVELS({direction:s.dir,entry:s.entry,sl:s.sl,tp1:s.tp1,tp2:s.tp2,tp3:s.tp3});
     const h=document.getElementById('chartHighSetupBtn');
     if(h){
       lock(h);
