@@ -937,4 +937,20 @@
   window.addEventListener('rizvi:market-range-update',bindOperational);
   setInterval(bindOperational,3000);
 })();
+</script><script>
+(function(){
+  const health={symbol:null,price:false,candles:false,marketRange:false,liquidity:false,signal:false,updatedAt:null};
+  function stamp(key,value=true){health[key]=value;health.updatedAt=Date.now();window.RIZVI_OPERATIONAL_HEALTH={...health};window.dispatchEvent(new CustomEvent('rizvi:operational-health',{detail:window.RIZVI_OPERATIONAL_HEALTH}));}
+  document.addEventListener('rizvi:symbol-change',e=>{health.symbol=e.detail?.symbol||window.RIZVI_CURRENT_SYMBOL||'BTCUSD';stamp('symbol',true);});
+  document.addEventListener('rizvi:price-update',e=>{if(Number.isFinite(Number(e.detail?.price)))stamp('price',true);});
+  window.addEventListener('rizvi:chart-source',e=>{if(Array.isArray(e.detail?.bars)&&e.detail.bars.length)stamp('candles',true);});
+  window.addEventListener('rizvi:market-range-update',e=>{if(e.detail?.dayHigh!=null)stamp('marketRange',true);});
+  window.addEventListener('rizvi:liquidity-update',e=>{if(e.detail)stamp('liquidity',true);});
+  window.addEventListener('rizvi:signal-qualification-update',e=>{if(e.detail)stamp('signal',true);});
+  window.RIZVI_OPERATIONAL_CHECK=function(){
+    const s=window.RIZVI_OPERATIONAL_HEALTH||health;
+    return {ready:!!(s.price&&s.candles&&s.marketRange&&s.liquidity&&s.signal),...s};
+  };
+  setTimeout(()=>{health.symbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';window.RIZVI_OPERATIONAL_HEALTH={...health};},500);
+})();
 </script></body></html>
