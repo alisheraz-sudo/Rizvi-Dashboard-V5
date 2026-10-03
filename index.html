@@ -3901,3 +3901,165 @@ button{pointer-events:auto!important}
   window.RIZVI_CHART_INTERACTION='FULL • WHEEL ZOOM • DRAG PAN • PINCH ZOOM';
 })();
 </script>
+
+<!-- RIZVI TRADE LEVELS + WEEKLY LEVEL RESTORE V1 -->
+<style id="rizvi-trade-levels-weekly-v1">
+/* Keep the latest confirmed Entry/SL/TP visible on the chart. */
+#chartLevelMini{
+  display:flex!important;
+  position:absolute!important;
+  left:auto!important;
+  right:12px!important;
+  top:auto!important;
+  bottom:194px!important;
+  z-index:120!important;
+  pointer-events:none!important;
+  gap:4px!important;
+  padding:5px!important;
+  background:rgba(3,12,18,.94)!important;
+  border:1px solid #2b5368!important;
+  border-radius:7px!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.34)!important;
+}
+#chartLevelMini .miniLevel{
+  min-width:72px!important;
+  justify-content:center!important;
+  font-size:8px!important;
+}
+#chartLevelMini .miniLevel em{font-variant-numeric:tabular-nums!important}
+.rizviWeekLevelBox{
+  position:absolute;
+  right:12px;
+  bottom:148px;
+  z-index:121;
+  display:flex;
+  gap:5px;
+  align-items:center;
+  padding:5px 6px;
+  background:rgba(3,12,18,.95);
+  border:1px solid #5c4e25;
+  border-radius:7px;
+  box-shadow:0 5px 18px rgba(0,0,0,.34);
+  pointer-events:none;
+  font-variant-numeric:tabular-nums;
+}
+.rizviWeekLevelBox .wkTitle{
+  color:#e4c96d;font-size:8px;font-weight:950;letter-spacing:.25px;
+}
+.rizviWeekLevelBox .wkItem{
+  min-width:78px;height:22px;display:flex;align-items:center;justify-content:center;
+  padding:0 5px;border-radius:4px;font-size:8px;font-weight:850;
+}
+.rizviWeekLevelBox .wkHigh{color:#70e7b5;background:#08271d;border:1px solid #1c7255}
+.rizviWeekLevelBox .wkLow{color:#ff9aa7;background:#2b1118;border:1px solid #7b3442}
+@media(max-width:600px){
+  #chartLevelMini{right:8px!important;bottom:194px!important;gap:3px!important;padding:4px!important}
+  #chartLevelMini .miniLevel{min-width:59px!important;padding:0 4px!important;font-size:7px!important}
+  .rizviWeekLevelBox{right:8px;bottom:148px;gap:3px;padding:4px}
+  .rizviWeekLevelBox .wkTitle{font-size:7px}
+  .rizviWeekLevelBox .wkItem{min-width:62px;height:20px;font-size:7px}
+}
+</style>
+<script id="rizvi-trade-levels-weekly-v1-script">
+(function(){
+  if(window.__RIZVI_TRADE_LEVELS_WEEKLY_V1)return;
+  window.__RIZVI_TRADE_LEVELS_WEEKLY_V1=true;
+
+  function ensureWeeklyBox(){
+    const chart=document.querySelector('.chart');
+    if(!chart)return null;
+    let box=document.getElementById('rizviWeekLevelBox');
+    if(!box){
+      box=document.createElement('div');
+      box.id='rizviWeekLevelBox';
+      box.className='rizviWeekLevelBox';
+      box.innerHTML='<span class="wkTitle">WK LEVEL</span><span class="wkItem wkHigh" id="rizviWkHigh">WK H —</span><span class="wkItem wkLow" id="rizviWkLow">WK L —</span>';
+      chart.appendChild(box);
+    }
+    return box;
+  }
+
+  function fmt(v){
+    const n=Number(v);
+    if(!Number.isFinite(n))return '—';
+    const s=window.state?.symbol;
+    const d=(window.SYMBOLS&&window.SYMBOLS[s]&&window.SYMBOLS[s].decimals)||2;
+    return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+
+  function weekStartUtc(ts){
+    const d=new Date(ts);
+    const day=d.getUTCDay();
+    const delta=(day+6)%7;
+    d.setUTCHours(0,0,0,0);
+    d.setUTCDate(d.getUTCDate()-delta);
+    return d.getTime();
+  }
+
+  async function loadWeekly(){
+    const s=window.state?.symbol;
+    if(s!=='BTC/USD'&&s!=='XAU/USD')return;
+    const api=s==='XAU/USD'?'https://biquote.io/api/XAUUSD/ohlc?interval=1d&limit=10':'https://biquote.io/api/BTCUSD/ohlc?interval=1d&limit=10';
+    try{
+      const res=await fetch(api,{cache:'no-store'});
+      if(!res.ok)throw new Error('weekly '+res.status);
+      const data=await res.json();
+      const bars=Array.isArray(data?.bars)?data.bars:[];
+      const parsed=bars.map(b=>({
+        t:Date.parse(b.openTime),
+        h:Number(b.high),l:Number(b.low)
+      })).filter(b=>Number.isFinite(b.t)&&Number.isFinite(b.h)&&Number.isFinite(b.l));
+      const start=weekStartUtc(Date.now());
+      const cur=parsed.filter(b=>b.t>=start);
+      if(!cur.length)throw new Error('no current-week bars');
+      const hi=Math.max(...cur.map(b=>b.h)),lo=Math.min(...cur.map(b=>b.l));
+      const h=document.getElementById('rizviWkHigh'),l=document.getElementById('rizviWkLow');
+      if(h)h.textContent='WK H '+fmt(hi);
+      if(l)l.textContent='WK L '+fmt(lo);
+    }catch(e){
+      const bars=Array.isArray(window.state?.ohlc)?window.state.ohlc:[];
+      const start=weekStartUtc(Date.now());
+      const cur=bars.filter(b=>Number(b?.t)>=start);
+      const h=cur.length?Math.max(...cur.map(b=>Number(b.h)).filter(Number.isFinite)):NaN;
+      const l=cur.length?Math.min(...cur.map(b=>Number(b.l)).filter(Number.isFinite)):NaN;
+      const he=document.getElementById('rizviWkHigh'),le=document.getElementById('rizviWkLow');
+      if(he)he.textContent='WK H '+fmt(h);
+      if(le)le.textContent='WK L '+fmt(l);
+    }
+  }
+
+  function persistTradeLevels(){
+    const ss=window.signalState||{};
+    const dir=String(ss.direction||'WAIT').toUpperCase();
+    const vals=[ss.entry,ss.sl,ss.tp1,ss.tp2,ss.tp3].map(Number);
+    if((dir==='BUY'||dir==='SELL')&&vals.every(v=>Number.isFinite(v))){
+      window.RIZVI_LAST_CONFIRMED_SETUP={direction:dir,entry:vals[0],sl:vals[1],tp1:vals[2],tp2:vals[3],tp3:vals[4],at:Date.now()};
+    }
+    const last=window.RIZVI_LAST_CONFIRMED_SETUP;
+    const age=last?.at?Date.now()-last.at:Infinity;
+    const usable=!!last&&age<2*60*60*1000&&Number.isFinite(last.entry)&&Number.isFinite(last.sl)&&Number.isFinite(last.tp1)&&Number.isFinite(last.tp2)&&Number.isFinite(last.tp3);
+    const box=document.getElementById('chartLevelMini');
+    if(!box)return;
+    const src=usable?last:null;
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=src?fmt(v):'—'};
+    set('miniEntry',src?.entry);set('miniSl',src?.sl);set('miniTp1',src?.tp1);set('miniTp2',src?.tp2);set('miniTp3',src?.tp3);
+    box.dataset.direction=src?.direction||'WAIT';
+    box.dataset.source=src?'LAST CONFIRMED SETUP':'WAIT';
+    if(window.RIZVI_TV_SET_LEVELS){
+      window.RIZVI_TV_SET_LEVELS(src?{
+        direction:src.direction,entry:src.entry,sl:src.sl,tp1:src.tp1,tp2:src.tp2,tp3:src.tp3
+      }:{direction:'WAIT'});
+    }
+  }
+
+  function start(){
+    ensureWeeklyBox();
+    loadWeekly();
+    persistTradeLevels();
+    setInterval(persistTradeLevels,700);
+    setInterval(loadWeekly,60000);
+  }
+  document.addEventListener('DOMContentLoaded',start);
+  setTimeout(start,500);
+})();
+</script>
