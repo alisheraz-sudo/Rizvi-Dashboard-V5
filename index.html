@@ -4821,11 +4821,24 @@ button{pointer-events:auto!important}
   }
   function draw(){
     const box=ensure();if(!box)return;
-    const dir=String(window.RIZVI_LAST_CONFIRMED_SETUP?.direction||'WAIT').toUpperCase();
+    const testMode=new URLSearchParams(location.search).get('testRange')==='1';
+    const live=window.RIZVI_LAST_CONFIRMED_SETUP||{};
+    const liveEntry=N(live.entry);
+    const base=N(window.state?.price)||N(window.state?.ohlc?.at?.(-1)?.c);
+    const testEntry=Number.isFinite(liveEntry)?liveEntry:(Number.isFinite(base)?base:NaN);
+    const testDir='BUY';
+    const ss=testMode?{
+      direction:testDir,
+      entry:testEntry,
+      sl:testEntry-40,
+      tp1:testEntry+20,
+      tp2:testEntry+40,
+      tp3:testEntry+60
+    }:live;
+    const dir=String(ss.direction||'WAIT').toUpperCase();
     const hq=document.getElementById('chartHighSetupBtn');
-    const hqDir=String(hq?.getAttribute('data-direction')||'WAIT').toUpperCase();
-    const hqQuality=String(hq?.getAttribute('data-quality')||'WAIT').toUpperCase();
-    const ss=window.RIZVI_LAST_CONFIRMED_SETUP||{};
+    const hqDir=testMode?dir:String(hq?.getAttribute('data-direction')||'WAIT').toUpperCase();
+    const hqQuality=testMode?'HIGH':String(hq?.getAttribute('data-quality')||'WAIT').toUpperCase();
     const entry=N(ss.entry),sl=N(ss.sl),tp1=N(ss.tp1),tp2=N(ss.tp2),tp3=N(ss.tp3);
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
