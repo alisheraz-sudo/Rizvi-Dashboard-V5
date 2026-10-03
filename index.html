@@ -4792,6 +4792,14 @@ button{pointer-events:auto!important}
   border-top:1px dashed rgba(220,235,245,.78)!important;
   pointer-events:none!important;
 }
+#rizviTvTradeRange .rzTpLine{
+  position:absolute!important;height:0!important;
+  border-top:1px solid rgba(102,241,178,.92)!important;
+  pointer-events:none!important;
+}
+#rizviTvTradeRange .rzTpLine.tp3{
+  border-top:2px solid rgba(102,241,178,.98)!important;
+}
 </style>
 <script id="rizvi-trade-range-box-v51-script">
 (function(){
@@ -4806,7 +4814,7 @@ button{pointer-events:auto!important}
     let box=document.getElementById('rizviTvTradeRange');
     if(!box){
       box=document.createElement('div');box.id='rizviTvTradeRange';
-      box.innerHTML='<div class="rzRangePart rzRangeTp"></div><div class="rzRangePart rzRangeSl"></div><div class="rzRangeEntry"></div>';
+      box.innerHTML='<div class="rzRangePart rzRangeTp"></div><div class="rzRangePart rzRangeSl"></div><div class="rzRangeEntry"></div><div class="rzTpLine tp1"></div><div class="rzTpLine tp2"></div><div class="rzTpLine tp3"></div>';
       h.appendChild(box);
     }else if(box.parentElement!==h)h.appendChild(box);
     return box;
@@ -4818,14 +4826,14 @@ button{pointer-events:auto!important}
     const hqDir=String(hq?.getAttribute('data-direction')||'WAIT').toUpperCase();
     const hqQuality=String(hq?.getAttribute('data-quality')||'WAIT').toUpperCase();
     const ss=window.RIZVI_LAST_CONFIRMED_SETUP||{};
-    const entry=N(ss.entry),sl=N(ss.sl),tp3=N(ss.tp3);
+    const entry=N(ss.entry),sl=N(ss.sl),tp1=N(ss.tp1),tp2=N(ss.tp2),tp3=N(ss.tp3);
     const chart=window.RIZVI_TV_CHART;
     const series=window.RIZVI_TV_SERIES;
-    if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp3].every(Number.isFinite)||!series||!chart){
+    if((dir!=='BUY'&&dir!=='SELL')||hqQuality!=='HIGH'||hqDir!==dir||![entry,sl,tp1,tp2,tp3].every(Number.isFinite)||!series||!chart){
       box.style.display='none';return;
     }
-    const yEntry=series.priceToCoordinate(entry),ySl=series.priceToCoordinate(sl),yTp=series.priceToCoordinate(tp3);
-    if(![yEntry,ySl,yTp].every(Number.isFinite)){box.style.display='none';return}
+    const yEntry=series.priceToCoordinate(entry),ySl=series.priceToCoordinate(sl),yTp1=series.priceToCoordinate(tp1),yTp2=series.priceToCoordinate(tp2),yTp3=series.priceToCoordinate(tp3);
+    if(![yEntry,ySl,yTp1,yTp2,yTp3].every(Number.isFinite)){box.style.display='none';return}
     const w=box.clientWidth,h=box.clientHeight;
     if(w<20||h<20){box.style.display='none';return}
     let x=55;
@@ -4839,6 +4847,9 @@ button{pointer-events:auto!important}
     const tp=document.querySelector('#rizviTvTradeRange .rzRangeTp');
     const slb=document.querySelector('#rizviTvTradeRange .rzRangeSl');
     const en=document.querySelector('#rizviTvTradeRange .rzRangeEntry');
+    const l1=document.querySelector('#rizviTvTradeRange .rzTpLine.tp1');
+    const l2=document.querySelector('#rizviTvTradeRange .rzTpLine.tp2');
+    const l3=document.querySelector('#rizviTvTradeRange .rzTpLine.tp3');
     if(dir==='BUY'){
       tp.style.left=x+'px';tp.style.top=Math.min(yTp,yEntry)+'px';tp.style.width=(right-x)+'px';tp.style.height=Math.abs(yEntry-yTp)+'px';
       slb.style.left=x+'px';slb.style.top=Math.min(yEntry,ySl)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(ySl-yEntry)+'px';
@@ -4847,6 +4858,8 @@ button{pointer-events:auto!important}
       slb.style.left=x+'px';slb.style.top=Math.min(ySl,yEntry)+'px';slb.style.width=(right-x)+'px';slb.style.height=Math.abs(yEntry-ySl)+'px';
     }
     en.style.left=x+'px';en.style.width=(right-x)+'px';en.style.top=yEntry+'px';
+    [l1,l2,l3].forEach((el,y)=>{el.style.left=x+'px';el.style.width=(right-x)+'px';el.style.top=y+'px'});
+    l1.style.top=yTp1+'px';l2.style.top=yTp2+'px';l3.style.top=yTp3+'px';
     box.style.display='block';
   }
   function start(){draw();setInterval(draw,300)}
