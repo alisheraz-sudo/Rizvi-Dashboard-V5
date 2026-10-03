@@ -1979,16 +1979,36 @@ html body .miniMarketChart{display:none!important}
 (function(){
  function q(id){return document.getElementById(id)}
  function txt(id,v){const e=q(id);if(e)e.textContent=v==null?'—':String(v)}
+ function check(id,ok,label){
+   const e=q(id); if(!e)return;
+   e.textContent=(ok?'✓ ':'— ')+label;
+   e.style.opacity=ok?'1':'.55';
+   e.style.color=ok?'#62e0a8':'#8a6a72';
+   e.style.background=ok?'#0d1d18':'#171015';
+ }
  function run(){
   const s=window.state||{}, sig=window.signalState||{}, bars=s.ohlc||[], last=Number(s.price);
   const dir=String(sig.direction||'WAIT').toUpperCase();
   const score=Number(sig.score||0), quality=String(sig.quality||'WAIT').toUpperCase();
   const pct=score?Math.min(95,Math.max(45,Math.round(score/12*100))):null;
   const fmtN=n=>Number.isFinite(Number(n))&&window.fmt?window.fmt(Number(n)):'—';
-  const r=bars.length&&window.rsi?window.rsi(bars.map(x=>typeof x==='number'?x:x.c),14):null;
+  const closes=bars.map(x=>typeof x==='number'?x:x.c).filter(Number.isFinite);
+  const r=closes.length&&window.rsi?window.rsi(closes,14):null;
   const bull=dir==='BUY', bear=dir==='SELL';
+  const entry=Number(sig.entry), sl=Number(sig.sl), tp1=Number(sig.tp1), tp2=Number(sig.tp2), tp3=Number(sig.tp3);
+  const hasRange=[entry,sl,tp1,tp2,tp3].every(Number.isFinite);
+  const riskDist=hasRange?Math.abs(entry-sl):NaN;
+  const rewardDist=hasRange?Math.abs(tp3-entry):NaN;
+  const rrOk=hasRange&&riskDist>0&&rewardDist/riskDist>=1.95;
+  const slOk=hasRange&&((bull&&sl<entry)||(bear&&sl>entry));
+  const targetsOk=hasRange&&((bull&&tp1>entry&&tp2>tp1&&tp3>tp2)||(bear&&tp1<entry&&tp2<tp1&&tp3<tp2));
+  const structureOk=dir!=='WAIT'&&(bull?!!sig.bosUp:!!sig.bosDn)||dir!=='WAIT'&&String(sig.regime||'').toUpperCase()!=='RANGE';
+  const reversalOk=dir!=='WAIT'&&String(sig.regime||'').toUpperCase()!==(bull?'BEAR':'BULL')&&String(sig.mtf||'').toUpperCase()!==(bull?'BEAR':'BULL');
+  const liveOk=!!(window.RIZVI_REAL_FEED?.price&&window.RIZVI_REAL_FEED?.stale===false)||!!(window.RizviCTrader?.state?.authorized&&Number.isFinite(s.price));
+  const entryOk=dir!=='WAIT'&&hasRange&&Number.isFinite(last);
+  const ready=dir!=='WAIT'&&quality==='HIGH'&&entryOk&&slOk&&targetsOk&&rrOk&&structureOk&&reversalOk&&liveOk;
   txt('rz62SignalStatus',dir==='WAIT'?'WAIT':dir);
-  txt('rz62ExecutionStatus',quality==='HIGH'?'READY':quality);
+  txt('rz62ExecutionStatus',ready?'READY':window.RIZVI_MANUAL_ACTION?(window.RIZVI_MANUAL_ACTION==='UNWIND'?'MANAGE / CLOSE':'MANUAL '+window.RIZVI_MANUAL_ACTION):(quality==='HIGH'?'QUALIFY':'WAIT'));
   txt('signalStatusBadge',bull?'BUY '+(pct||68)+'%':bear?'SELL '+(pct||68)+'%':'WAIT');
   txt('signalPrice',dir==='WAIT'?'WAIT':dir);
   txt('rz62SignalPct',pct?(pct+'%'):'—%');
@@ -1997,17 +2017,39 @@ html body .miniMarketChart{display:none!important}
   txt('rsiState',Number.isFinite(r)?r.toFixed(0):'—');
   txt('divergenceState',bull?'Support ↑':bear?'Resistance ↓':'WAIT');
   txt('deltaState',window.RIZVI_ORDER_FLOW&&window.RIZVI_ORDER_FLOW.status==='CONNECTED'?(window.RIZVI_ORDER_FLOW.direction||'Balanced'):'WAIT');
-  txt('hqBtn3',quality==='HIGH'?'HIGH QUALITY':quality);
-  txt('hqBtn1',pct?((quality==='HIGH'?88:pct)+'%'):'WAIT');
+  txt('hqBtn3',ready?'HIGH QUALITY':quality);
+  txt('hqBtn1',pct?((ready?88:quality==='HIGH'?82:pct)+'%'):'WAIT');
   txt('captureEntry',fmtN(sig.entry));txt('signalSl',fmtN(sig.sl));txt('signalTp1',fmtN(sig.tp1));txt('signalTp2',fmtN(sig.tp2));txt('signalTp3',fmtN(sig.tp3));
-  txt('signalTime',sig.createdAt?'ACTIVE':'WAITING');
+  txt('signalTime',sig.createdAt?(ready?'EXECUTION READY':sig.status||'ACTIVE'):'WAITING');
+  check('rz62CheckEntry',entryOk,'Entry Valid');
+  check('rz62CheckSl',slOk,'SL Valid');
+  check('rz62CheckRr',rrOk,'RR Acceptable (1:2)');
+  check('rz62CheckStructure',structureOk,'Structure Intact');
+  check('rz62CheckReversal',reversalOk,'No Major Reversal');
+  const exec=q('logTradeBtn');
+  if(exec){
+    exec.textContent=ready?'EXECUTE = READY':dir==='WAIT'?'EXECUTE = WAIT':quality==='HIGH'?'EXECUTE = CHECK':'EXECUTE = WAIT';
+    exec.classList.toggle('ready',ready);
+    exec.style.opacity=ready?'1':'.7';
+  }
   const trend=bull?'Bullish':bear?'Bearish':'WAIT', mom=trend, struct=bull?'Support':bear?'Resistance':'WAIT', rs=Number.isFinite(r)?r.toFixed(0):'—', label=(bull?'BUY':bear?'SELL':'WAIT');
-  ['1','2'].forEach(n=>{txt('rz62Ex'+n+'Score',label+' '+(n==='2'?(quality==='HIGH'?88:pct||68):(pct||68))+'%');txt('rz62Ex'+n+'Trend',trend);txt('rz62Ex'+n+'Mom',mom);txt('rz62Ex'+n+'Rsi',rs);txt('rz62Ex'+n+'Struct',struct)});
-  txt('rz62Ex2Exec',quality==='HIGH'?'YES':'WAIT');
-  q('logTradeBtn')?.classList.toggle('ready',quality==='HIGH');
+  ['1','2'].forEach(n=>{
+    txt('rz62Ex'+n+'Score',label+' '+(n==='2'?(ready?88:quality==='HIGH'?82:pct||68):(pct||68))+'%');
+    txt('rz62Ex'+n+'Trend',trend);txt('rz62Ex'+n+'Mom',mom);txt('rz62Ex'+n+'Rsi',rs);txt('rz62Ex'+n+'Struct',struct)
+  });
+  txt('rz62Ex2Exec',ready?'YES':'WAIT');
  }
- document.addEventListener('DOMContentLoaded',run);setInterval(run,1200);
- document.addEventListener('click',e=>{const b=e.target.closest('.rzFinalAction');if(!b)return;const action=b.id.includes('Buy')?'BUY':b.id.includes('Sell')?'SELL':'UNWIND';window.RIZVI_MANUAL_ACTION=action;const s=q('rz62ExecutionStatus');if(s)s.textContent=action==='UNWIND'?'MANAGE / CLOSE':'MANUAL '+action;});
+ document.addEventListener('DOMContentLoaded',run);
+ setInterval(run,1200);
+ document.addEventListener('click',e=>{
+   const b=e.target.closest('.rzFinalAction'); if(!b)return;
+   const action=b.id.includes('Buy')?'BUY':b.id.includes('Sell')?'SELL':'UNWIND';
+   document.querySelectorAll('.rzFinalAction').forEach(x=>x.classList.remove('active'));
+   b.classList.add('active');
+   window.RIZVI_MANUAL_ACTION=action;
+   const ex=q('rz62ExecutionStatus'); if(ex)ex.textContent=action==='UNWIND'?'MANAGE / CLOSE':'MANUAL '+action;
+   document.dispatchEvent(new CustomEvent('rizvi:manual-action',{detail:{action,at:Date.now(),symbol:window.state?.symbol||''}}));
+ });
 })();
 </script></body>
 <style>
