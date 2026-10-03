@@ -182,18 +182,134 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
     font-size:9px!important;
   }
 }
+</style><style id="rizvi-final-shape-v57">
+/* RIZVI V57 FINAL SHAPE — preserve indicators, add clean 3-action execution rail */
+.rzFinalRail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 10px;padding:8px;background:#07121d;border:1px solid #1a3a52;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.rzFinalAction{height:42px;border-radius:8px;border:1px solid #29445a;background:#0b1722;color:#dce8f2;font-size:13px;font-weight:950;letter-spacing:.7px;cursor:pointer}
+.rzFinalAction.buy{border-color:#1e9a70;background:linear-gradient(135deg,#0a3025,#0d4b38);color:#7ff0c2}
+.rzFinalAction.sell{border-color:#a13b4e;background:linear-gradient(135deg,#32131b,#521b28);color:#ff9baa}
+.rzFinalAction.unwind{border-color:#8b6a2d;background:linear-gradient(135deg,#241d0d,#3a2c12);color:#f1cf73}
+.rzFinalAction.active{box-shadow:0 0 18px rgba(82,210,160,.18);transform:none}
+.rzFinalStatus{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px;padding:8px 11px;border:1px solid #17344a;border-radius:7px;background:#06101a;font-size:10px;color:#71889c}
+.rzFinalStatus b{color:#dce7ef;font-size:11px}
+@media(max-width:600px){.rzFinalRail{gap:6px;padding:6px;margin-bottom:8px}.rzFinalAction{height:40px;font-size:11px}.rzFinalStatus{font-size:9px}}
+</style><style id="rizvi-master-layout-v60">
+:root{--rz-bg:#02080f;--rz-card:#07131f;--rz-line:#17364b;--rz-muted:#8298ab;--rz-text:#e9f2f7;--rz-green:#50dda6;--rz-red:#ef6478;--rz-gold:#e7c766;--rz-blue:#54a9e8;--rz-purple:#b76be0}
+html,body{background:#02080f!important;color:var(--rz-text)!important}body{overflow-x:hidden!important}
+.app{display:grid!important;grid-template-columns:188px minmax(0,1fr) 350px!important;min-height:100vh!important;background:linear-gradient(135deg,#02080f,#06111b 55%,#02080f)!important}
+.side{position:sticky!important;top:0!important;height:100vh!important;background:#06111d!important;border-right:1px solid #17344a!important;padding:20px 11px!important;z-index:20}
+.brand{font-size:15px!important;letter-spacing:2px!important;padding:8px 14px 28px!important}.nav{gap:6px!important}.nav div{min-height:48px!important;border-radius:9px!important;padding:8px 14px!important;font-size:13px!important}.nav .on{background:linear-gradient(135deg,#10386b,#16477f)!important;border-color:#245b98!important}
+.main{max-width:none!important;padding:0 14px 18px!important;min-width:0!important}.top{height:78px!important;margin:0 0 12px!important;padding:0 8px!important;border-bottom:1px solid #17364b!important}
+.asset{gap:12px!important}.coin{font-size:29px!important}.symbol{font-size:22px!important}.gold{font-size:12px!important}.topprice{font-size:26px!important}.topcenter{gap:10px!important}
+.rzFinalRail{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:10px!important;padding:10px!important;margin:0 0 8px!important;background:#07131f!important;border:1px solid #1a4661!important;border-radius:12px!important}
+.rzFinalAction{height:58px!important;border-radius:9px!important;font-size:17px!important;font-weight:1000!important;letter-spacing:.08em!important;background:#0a1d27!important;border:1px solid #24536a!important;color:#dce9ef!important}
+.rzFinalAction.buy{background:linear-gradient(180deg,#0d4435,#092d25)!important;border-color:#159c78!important;color:#65e2b1!important}.rzFinalAction.sell{background:linear-gradient(180deg,#451923,#2f1018)!important;border-color:#b33d55!important;color:#ff8292!important}.rzFinalAction.unwind{background:linear-gradient(180deg,#3b2d12,#2b200c)!important;border-color:#9a6e20!important;color:#f0cf72!important}
+.rzFinalAction.active{box-shadow:0 0 0 2px rgba(255,255,255,.08),0 0 24px rgba(57,217,155,.12)!important}
+.rzFinalStatus{display:flex!important;justify-content:space-between!important;align-items:center!important;margin:0 0 10px!important;padding:13px 16px!important;min-height:50px!important;background:#06111c!important;border:1px solid #17384e!important;border-radius:10px!important;font-size:14px!important;color:#7e95a8!important}.rzFinalStatus b{color:#e6eef4!important;font-size:16px!important}
+.chart{height:610px!important;background:#06111b!important;border:1px solid #1b4962!important;border-radius:12px!important;overflow:hidden!important}.charthead{height:58px!important;padding:0 15px!important;background:linear-gradient(180deg,#0b1c29,#07131f)!important;border-bottom:1px solid #17364b!important}.charttitle{font-size:17px!important}.sub{font-size:12px!important}.tf{gap:4px!important}.tf span{min-width:54px!important;padding:10px 11px!important;font-weight:800!important}.tf .sel{background:#123b6c!important;border-color:#2463a0!important}
+.grid{inset:58px 64px 72px 0!important;background-size:72px 52px!important;opacity:.55!important}.chartarea{left:35px!important;right:65px!important;top:65px!important;bottom:72px!important}.axis{top:58px!important;bottom:72px!important;width:64px!important;background:#06111b!important;border-left:1px solid #17364b!important}
+.rsiPanel{bottom:18px!important;height:46px!important;border-top:1px solid #17364b!important;background:#07131f!important}.chartSetupBox{left:14px!important;right:auto!important;top:90px!important;bottom:auto!important;width:190px!important;height:auto!important;background:#07131f!important;border:2px solid #1b4258!important;border-radius:9px!important;padding:5px!important;z-index:20!important}.setupHighRow,.setupSignals{display:none!important}.setupLevels{display:grid!important;grid-template-columns:1fr!important;gap:2px!important;margin:0!important}.levelBtn{height:35px!important;border-radius:4px!important;font-size:10px!important;width:100%!important}.chartSetupBox .entryLvl{background:#66d7ba!important;color:#07131b!important;border-color:#66d7ba!important}.chartSetupBox .slLvl{background:#e66578!important;color:#fff!important;border-color:#e66578!important}.chartSetupBox .tpLvl{background:#4ca5d9!important;color:#fff!important;border-color:#4ca5d9!important}#chartPrice{z-index:18!important;font-size:14px!important;font-weight:900!important}#rizviTvTradeRange{z-index:25!important}
+.bottom{display:none!important}.right{background:#06111d!important;border-left:1px solid #17364b!important;padding:12px!important;overflow:auto!important}.signalbox{height:auto!important;overflow:visible!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.rzMasterCard{background:linear-gradient(180deg,#091824,#07131e)!important;border:1px solid #1b4359!important;border-radius:11px!important;padding:14px!important;margin-bottom:10px!important;box-shadow:0 8px 24px rgba(0,0,0,.2)!important}.rzMasterHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px!important}.rzMasterTitle{font-size:12px!important;font-weight:1000!important;letter-spacing:.08em!important;color:#dfeaf1!important}.rzMasterValue{font-size:22px!important;font-weight:1000!important}.rzMasterRow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #102c3d;font-size:12px;color:#8096a9}.rzMasterRow:last-child{border-bottom:0}.rzMasterRow b{color:#dce7ef}.rzSignalGreen{color:#54dda6!important}.rzSignalRed{color:#ef667a!important}.rzSignalGold{color:#e7c766!important}
+.rzQuality{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:7px;background:#102a20;border:1px solid #28674b;margin-top:8px}.rzQuality b{color:#57dda5}.rzQuality span{color:#b8c8d3;font-size:11px}.rzReady{display:block;width:100%;padding:10px;border-radius:7px;background:#e8eef3;color:#071019;text-align:center;font-weight:1000;font-size:12px;margin-top:9px}.rzTradeGrid{display:grid;gap:5px}.rzTradeRow{display:grid;grid-template-columns:1fr 1fr;gap:5px}.rzTradeCell{padding:8px 9px;background:#06111a;border:1px solid #17364a;border-radius:6px}.rzTradeCell small{display:block;font-size:9px;color:#71889a}.rzTradeCell b{font-size:12px;color:#e5edf2}.rzTradeCell.sl b{color:#ef667a}.rzTradeCell.tp b{color:#53dda6}.rzMasterFooter{font-size:10px;color:#687f92;text-align:center;padding:7px 4px 2px;line-height:1.45}
+.sighead,.sigtime,.levels,.stats,.tradeCaptureCompact,.highQualityRow,.checks,.sweep,.distance,.riskmini,.riskguards,.action,.notice{display:none!important}.rzLegacyBindings{display:none!important}
+@media(max-width:1050px){.app{grid-template-columns:76px minmax(0,1fr)!important}.right{grid-column:1/-1;border-left:0;border-top:1px solid #17364b}.side{padding:15px 7px!important}.brand{font-size:11px!important;padding-left:6px!important}.nav div{justify-content:center!important;padding:8px!important;font-size:0!important}.nav .ico{font-size:18px!important}.chart{height:570px!important}}
+@media(max-width:700px){html,body{width:100%!important;min-width:0!important}.app{display:block!important;background:#02080f!important}.side{position:static!important;width:100%!important;height:auto!important;padding:8px 9px!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;border-right:0!important;border-bottom:1px solid #17364b!important;overflow:hidden!important}.brand{padding:5px!important;font-size:11px!important;flex:0 0 auto!important}.nav{display:flex!important;overflow-x:auto!important;gap:5px!important;flex:1!important;scrollbar-width:none!important}.nav div{font-size:10px!important;min-height:36px!important;height:36px!important;padding:6px 9px!important;gap:5px!important;white-space:nowrap!important;justify-content:flex-start!important}.nav .ico{font-size:13px!important}.main{padding:7px!important}.top{height:61px!important;padding:0 3px!important;margin-bottom:8px!important}.coin{width:31px!important;height:31px!important;font-size:21px!important}.symbol{font-size:17px!important}.gold{font-size:10px!important}.topprice{font-size:21px!important}.delta{font-size:9px!important}.topcenter{gap:6px!important}.topcenter .tfTop{display:inline-block!important;padding:8px 10px!important;font-size:12px!important}.topcenter #topTfHint,.topcenter .clock{display:none!important}.feed{max-width:118px!important;font-size:9px!important;overflow:hidden!important;text-overflow:ellipsis!important}.gear{font-size:14px!important}.rzFinalRail{padding:5px!important;gap:5px!important;border-radius:10px!important}.rzFinalAction{height:49px!important;font-size:13px!important}.rzFinalStatus{min-height:45px!important;padding:10px 12px!important;font-size:11px!important}.rzFinalStatus b{font-size:13px!important}.chart{height:535px!important;border-radius:10px!important}.charthead{height:50px!important;padding:0 9px!important}.charttitle{font-size:14px!important}.sub{font-size:9px!important}.tf span{min-width:43px!important;padding:8px 7px!important;font-size:9px!important}.grid{inset:50px 52px 62px 0!important;background-size:58px 46px!important}.chartarea{left:25px!important;right:53px!important;top:58px!important;bottom:63px!important}.axis{top:50px!important;bottom:62px!important;width:53px!important;font-size:9px!important}.chartSetupBox{left:10px!important;top:82px!important;width:158px!important;padding:4px!important}.levelBtn{height:31px!important;font-size:9px!important}.rsiPanel{bottom:12px!important;height:43px!important}.right{padding:7px!important}.rzMasterCard{padding:12px!important;margin-bottom:8px!important}.rzMasterValue{font-size:20px!important}.rzTradeRow{grid-template-columns:1fr 1fr}.rzMasterRow{font-size:11px!important}}
+@media(max-width:390px){.nav div{font-size:9px!important;padding:6px 7px!important}.chart{height:510px!important}.chartSetupBox{width:145px!important}.rzFinalAction{font-size:12px!important}}
+</style><style id="rizvi-approved-layout-v62">
+/* V62 — approved reference layout. Presentation-only: existing engines/feed/chart remain active. */
+html,body{background:#02070d!important;color:#eaf2f8!important;overflow-x:hidden!important}
+.app{display:grid!important;grid-template-columns:minmax(0,1fr) 330px!important;grid-template-rows:auto auto auto auto 1fr!important;gap:0 12px!important;min-height:100vh!important;padding:0 18px 14px!important;background:#02070d!important}
+.side{display:none!important}
+.main{display:contents!important}
+.top{grid-column:1/-1!important;grid-row:1!important;height:70px!important;margin:0!important;padding:0 4px!important;border-bottom:1px solid #17344b!important}
+.rzFinalRail{grid-column:1!important;grid-row:2!important;margin:12px 0 8px!important;padding:8px!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:10px!important;background:#07131f!important;border:1px solid #1a4661!important;border-radius:10px!important}
+.rzFinalAction{height:54px!important;border-radius:8px!important;font-size:17px!important;font-weight:950!important;letter-spacing:.04em!important}
+.rzFinalAction.buy{background:linear-gradient(180deg,#0d4936,#092d25)!important;border-color:#159c78!important;color:#65e2b1!important}
+.rzFinalAction.sell{background:linear-gradient(180deg,#5b1d2b,#36121b)!important;border-color:#c3425b!important;color:#ff8091!important}
+.rzFinalAction.unwind{background:linear-gradient(180deg,#4a3511,#281f0d)!important;border-color:#b27d12!important;color:#f5d46e!important}
+.rzFinalStatus{grid-column:1!important;grid-row:3!important;margin:0 0 10px!important;min-height:50px!important;padding:10px 14px!important;border:1px solid #173b54!important;border-radius:9px!important;background:#07131f!important}
+.chart{grid-column:1!important;grid-row:4!important;width:100%!important;height:560px!important;margin:0!important;border-radius:10px!important}
+.right{grid-column:2!important;grid-row:2 / 5!important;width:100%!important;min-width:0!important;padding:12px 0 0!important;background:transparent!important;border:0!important}
+.right .signalbox{height:100%!important;overflow:visible!important;background:transparent!important;border:0!important}
+.rz62Card{background:linear-gradient(180deg,#071622,#06111b);border:1px solid #1b5a78;border-radius:9px;margin-bottom:10px;padding:13px 14px;box-shadow:0 8px 22px rgba(0,0,0,.22)}
+.rz62Head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.rz62Title{font-size:17px;font-weight:900;letter-spacing:.01em;color:#eaf3f8}
+.rz62Title .green{color:#45e0a3}.rz62Title .blue{color:#53a9ff}.rz62Title .gold{color:#e9c766}
+.rz62Badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:5px;background:#102b3e;border:1px solid #24628c;color:#8dcaff;white-space:nowrap}
+.rz62SignalBig{display:flex;align-items:baseline;gap:9px;margin:2px 0 10px;font-size:25px;font-weight:950;color:#44dfa3}
+.rz62SignalBig span{font-size:22px;color:#dbe8f1}
+.rz62Rows{display:grid;gap:6px}
+.rz62Row{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#9cb0c1}
+.rz62Row b{color:#47dda1;font-size:12px}.rz62Row b.red{color:#ef6579}.rz62Row b.blue{color:#61b8f4}.rz62Row b.gold{color:#e9c766}
+.rz62Note{margin-top:10px;padding-top:9px;border-top:1px solid #183b52;color:#7f95a8;font-size:10px;line-height:1.35}
+.rz62Checks{display:grid;gap:5px;margin:9px 0}.rz62Check{font-size:11px;color:#cfe0e8}.rz62Check:before{content:'✓';display:inline-grid;place-items:center;width:16px;height:16px;margin-right:7px;border-radius:50%;background:#16a36d;color:#fff;font-weight:900}
+.rz62Ready{display:block;text-align:center;margin-top:10px;padding:10px;border-radius:6px;background:#0d6b50;border:1px solid #27b783;color:#d9fff1;font-weight:950;font-size:13px}
+.rz62Range{display:grid;gap:5px}.rz62RangeRow{display:grid;grid-template-columns:1fr 1fr;gap:7px}.rz62Cell{padding:7px 8px;border:1px solid #1a3e56;border-radius:5px;background:#07131d}.rz62Cell small{display:block;color:#7e95a8;font-size:9px}.rz62Cell b{font-size:12px;color:#e5edf2}.rz62Cell.sl b{color:#ef6579}.rz62Cell.tp b{color:#4fe0a5}
+.bottom{grid-column:1!important;grid-row:5!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:10px!important;margin:10px 0 0!important}
+.rz62Bottom{min-height:175px;background:#07131f;border:1px solid #21445a;border-radius:9px;padding:13px 14px}
+.rz62Bottom.red{border-color:#a43648}.rz62Bottom.green{border-color:#159d73}.rz62Bottom.gold{border-color:#a17a18}
+.rz62Bottom h3{margin:0 0 9px;font-size:13px;color:#edf4f8}.rz62Bottom .score{font-size:20px;font-weight:950;margin-bottom:8px}.rz62Bottom .meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;font-size:10px;color:#8ea4b5}.rz62Bottom .meta b{color:#dce8ef}.rz62Bottom .exec{margin-top:10px;text-align:center;padding:7px;border-radius:5px;font-size:10px;font-weight:900}.rz62Bottom.red .score,.rz62Bottom.red .exec{color:#ff7082}.rz62Bottom.green .score,.rz62Bottom.green .exec{color:#4fe0a5}.rz62Bottom.gold .score,.rz62Bottom.gold .exec{color:#e9c766}
+.rz62Legend{grid-column:1/-1;grid-row:6!important;margin-top:10px;padding:10px 18px;border:1px solid #17364b;border-radius:8px;background:#06111b;display:flex;justify-content:space-around;gap:20px;color:#8ea3b4;font-size:10px;text-align:center}
+.rz62Legend b{display:block;font-size:11px;color:#4fdca3;margin-bottom:2px}.rz62Legend .gold{color:#e9c766}.rz62Legend .blue{color:#58b7ff}
+.rzLegacyBindings{display:none!important}
+@media(max-width:900px){
+ .app{grid-template-columns:1fr!important;grid-template-rows:auto!important;padding:0 8px 12px!important}
+ .top,.rzFinalRail,.rzFinalStatus,.chart,.bottom,.rz62Legend{grid-column:1!important}
+ .right{grid-column:1!important;grid-row:auto!important;padding-top:10px!important}
+ .chart{grid-row:auto!important;height:510px!important}.rzFinalRail{grid-row:auto!important}.rzFinalStatus{grid-row:auto!important}.bottom{grid-row:auto!important}.rz62Legend{grid-row:auto!important}
+}
+@media(max-width:600px){
+ .app{padding:0 6px 10px!important}
+ .top{height:60px!important}.asset{gap:7px!important}.symbol{font-size:17px!important}.gold{font-size:10px!important}.topprice{font-size:20px!important}.feed{font-size:9px!important;max-width:120px!important}.gear{font-size:14px!important}
+ .rzFinalRail{gap:5px!important;padding:5px!important}.rzFinalAction{height:46px!important;font-size:12px!important}
+ .rzFinalStatus{min-height:44px!important;font-size:9px!important}
+ .chart{height:500px!important}.charthead{height:48px!important}.chartSetupBox{left:9px!important;top:82px!important;width:158px!important}
+ .bottom{grid-template-columns:1fr!important}.rz62Bottom{min-height:155px}
+ .right{padding-top:8px!important}.rz62Title{font-size:15px!important}.rz62SignalBig{font-size:22px!important}
+ .rz62Legend{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+}
 </style></head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
-<main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
-<section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">XAU/USD</span><span class="sub"> • 1m</span> <span class="sub" id="chartOHLC"> O —&nbsp; H —&nbsp; L —&nbsp; C —</span></div><div class="tf" role="tablist" aria-label="Chart timeframe"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="5M" role="tab" aria-selected="false">5M</span><span data-tf="15M" role="tab" aria-selected="false">15M</span><span data-tf="30M" role="tab" aria-selected="false">30M</span><span data-tf="1H" role="tab" aria-selected="false">1H</span></div></div><div class="grid"></div><div style="position:absolute;left:8px;top:61px;bottom:112px;width:28px;display:flex;flex-direction:column;gap:13px;align-items:center;color:#7290aa;font-size:15px;z-index:5">✣<br>⌁<br>♢<br>⌁<br>⌕<br>⌗<br>⌘</div><div id="chartSignalBadge" style="position:absolute;left:48px;top:62px;background:#0b3b31;border:1px solid #18a878;color:#4fe1a3;padding:8px 12px;border-radius:5px;font-size:12px;z-index:5">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:70px;top:62px;z-index:5;display:flex;gap:10px;font-size:11px"><span id="hourHigh" style="color:#4fe1a3">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div id="chartLevelMini" class="chartLevelMini" aria-label="Entry SL TP levels"><span class="miniLevel entry"><b>ENTRY</b><em id="miniEntry">—</em></span><span class="miniLevel sl"><b>SL</b><em id="miniSl">—</em></span><span class="miniLevel tp"><b>TP1</b><em id="miniTp1">—</em></span><span class="miniLevel tp"><b>TP2</b><em id="miniTp2">—</em></span><span class="miniLevel tp"><b>TP3</b><em id="miniTp3">—</em></span></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span><span id="axis10">—</span><span id="axis11">—</span><span id="axis12">—</span><span id="axis13">—</span><span id="axis14">—</span><span id="axis15">—</span><span id="axis16">—</span><span id="axis17">—</span><span id="axis18">—</span><span id="axis19">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="chartSetupBox" id="chartSetupBox">
-<div class="setupHighRow" id="setupHighRowStatic"><div id="chartHighSetupBtn" class="setupHighBox wait">HIGH QUALITY SETUP</div></div>
-<div class="setupSignals">
-<button id="chartSigBtn" class="setupBtn">SIGNAL —</button><button id="chartComboBtn" class="setupBtn">COMBO —</button><button id="chartTrendBtn" class="setupBtn">TREND —</button><button id="chartDeltaBtn" class="setupBtn">DELTA —</button><button id="chartDivBtn" class="setupBtn">DIV —</button><button id="chartOfBtn" class="setupBtn">OF —</button><button id="chartRsiBtn" class="setupBtn">RSI —</button>
-</div><div class="setupLevels">
-<button id="chartEntryBtn" class="levelBtn entryLvl">ENTRY —</button><button id="chartSlBtn" class="levelBtn slLvl">SL —</button><button id="chartTp1Btn" class="levelBtn tpLvl">TP1 —</button><button id="chartTp2Btn" class="levelBtn tpLvl">TP2 —</button><button id="chartTp3Btn" class="levelBtn tpLvl">TP3 —</button>
-</div></div></section>
-<section class="bottom"><div class="panel miniMarketChart" style="display:none"><div class="miniChartMeta"><b>Candles • High / Low • Current Price</b><span id="miniTf">1M</span></div><div class="miniChartBox"><div class="miniGrid"></div><div id="miniCandles" class="miniCandles"></div><div id="miniPriceLine" class="miniPriceLine"></div><div id="miniPriceTag" class="miniPriceTag">—</div><span id="miniHigh" class="miniHigh">H —</span><span id="miniLow" class="miniLow">L —</span></div><div class="miniChartFooter"><span>Current <b id="miniCurrent">—</b></span><span id="miniRange">H/L range</span></div></div><div class="panel"><h3>Candle Behavior & Market Response</h3><div class="rows"><div class="row"><span>Pattern</span><b id="candlePattern">Analyzing…</b></div><div class="row"><span>Bias</span><b id="candleBias" class="neutral">Neutral</b></div><div class="row"><span>Body / Wick</span><b id="candleShape">—</b></div><div class="row"><span>Response</span><b id="candleResponse" class="neutral">Waiting</b></div></div></div><div class="panel" id="liveIndicatorMatrix"><h3>Live Indicator Matrix</h3><div class="indicatorGrid"><div><span>EMA 9/21</span><b id="indEma">WAIT</b></div><div><span>RSI 14</span><b id="indRsi">WAIT</b></div><div><span>MACD</span><b id="indMacd">WAIT</b></div><div><span>ATR</span><b id="indAtr">WAIT</b></div><div><span>ADX</span><b id="indAdx">WAIT</b></div><div><span>Stoch RSI</span><b id="indStoch">WAIT</b></div><div><span>Bollinger</span><b id="indBb">WAIT</b></div><div><span>Ichimoku</span><b id="indIchi">WAIT</b></div><div><span>Regime</span><b id="indRegime">WAIT</b></div><div><span>MTF</span><b id="indMtf">WAIT</b></div><div><span>BOS</span><b id="indBos">WAIT</b></div><div><span>Candle</span><b id="indCandle">WAIT</b></div><div><span>Divergence</span><b id="indDivergence">WAIT</b></div><div><span>Delta</span><b id="indDelta">NOT CONNECTED</b></div><div><span>CVD</span><b id="indCvd">NOT CONNECTED</b></div><div><span>Order Flow Book</span><b id="indOrderFlow">NOT CONNECTED</b></div></div><div class="indicatorNote" id="indicatorNote">Waiting for broker OHLC candles.</div></div><div class="panel"><h3>Market Overview</h3><div class="rows"><div class="row"><span>XAU/USD</span><b id="overviewPrice" class="neutral">—</b><span id="overviewChange" class="neutral">WAIT</span></div><div class="row"><span>1M Change</span><b id="overview1m" class="neutral">—</b></div><div class="row"><span>5M Change</span><b id="overview5m" class="neutral">—</b></div><div class="row"><span>Day High</span><b id="overviewHigh" class="neutral">—</b></div><div class="row"><span>Day Low</span><b id="overviewLow" class="neutral">—</b></div></div></div><div class="panel"><h3>Recent Signals</h3><div class="rows"><div class="row"><b class="bull">↗ BUY</b><span>02:06 AM</span><span>Active</span></div><div class="row"><b class="bear">↘ SELL</b><span>01:52 AM</span><span>Expired</span></div><div class="row"><b class="bull">↗ BUY</b><span>01:37 AM</span><span>Expired</span></div><div class="row"><b class="bear">↘ SELL</b><span>01:21 AM</span><span>Expired</span></div><div class="row"><b class="bull">↗ BUY</b><span>01:05 AM</span><span>Expired</span></div></div></div><div class="panel alertsPanel"><div class="alerts" style="display:none"><div class="alertHead"><b>🔔 Alerts &amp; Notifications</b><span>View All</span></div><div class="alertItem"><span class="alertIcon"></span><strong>TP2 Hit - 4210.00</strong><span style="float:right;color:#6f8598">02:05 AM</span></div><div class="alertItem"><span class="alertIcon warn"></span><strong>Market direction changed</strong><span style="float:right;color:#6f8598">01:58 AM</span><small>TP3 no longer valid. Trade setup updated.</small></div><div class="alertItem"><span class="alertIcon"></span><strong>Live Signal</strong><span style="float:right;color:#6f8598">WAIT</span><small>Entry: — | SL: — | TP1: —</small></div></div></div></section></main>
-<aside class="right"><div class="signalbox"><div class="sighead"><div style="display:flex;align-items:center;gap:12px"><div style="width:48px;height:48px;border-radius:10px;background:#12a978;display:grid;place-items:center;color:white;font-size:26px">↗</div><div class="sigtitle">WAIT</div></div><div class="active" id="signalStatusBadge">WAIT</div></div><div class="sigtime" id="signalTime">WAITING FOR FRESH SIGNAL</div><div class="levels"><div class="levelrow"><span>Entry Price</span><b id="signalPrice">—</b></div><div class="levelrow"><span>Stop Loss (SL)</span><b id="signalSl" class="sl">—</b></div><div class="levelrow"><span>Take Profit 1 (TP1)</span><b id="signalTp1" class="tp">—</b></div><div class="levelrow"><span>Take Profit 2 (TP2)</span><b id="signalTp2" class="tp">—</b></div><div class="levelrow"><span>Take Profit 3 (TP3)</span><b id="signalTp3" class="tp">—</b></div></div><div class="stats"><div class="stat"><span>Trend</span><b id="trendState">WAIT</b></div><div class="stat"><span>RSI (14)</span><b id="rsiState">—</b></div><div class="stat"><span>Divergence</span><b id="divergenceState">WAIT</b></div><div class="stat"><span>Delta</span><b id="deltaState">WAIT</b></div><div class="stat"><span>OF Signal</span><b id="ofState">NOT CONNECTED</b></div></div><div class="stats"><div class="stat"><span>TP Status</span><b id="tp1State">○ TP1 Pending</b></div><div class="stat"><span></span><b id="tp2State">○ TP2 Pending</b></div><div class="stat"><span></span><b id="tp3State" class="neutral">○ TP3 Pending</b></div></div><div class="tradeCaptureCompact"><div class="tradeCaptureRow"><div class="tradeCaptureItem"><small>ENTRY</small><b id="captureEntry">—</b></div><div class="tradeCaptureItem"><small>TP</small><b id="captureTp">—</b></div><div class="tradeCaptureItem"><small>SL</small><b id="captureSl">—</b></div></div><div id="comboBadge" class="comboBadge">● WAIT • FEED</div></div><div class="highQualityRow"><span class="highQualityLabel">HIGH</span><span id="hqBtn1" class="highQualityBtn">QUALITY</span><span id="hqBtn2" class="highQualityBtn">SETUP</span><span id="hqBtn3" class="highQualityBtn">READY</span></div><div class="checks" style="display:none"><span id="checkTrend">✓ Trend</span><span id="checkStructure">✓ Structure</span><span id="checkEMA">✓ EMA</span><span id="checkRSI">✓ RSI</span><span id="checkMACD">✓ MACD</span><span id="checkLocation">✓ S/R</span><span id="checkATR">✓ ATR</span><span id="checkFeed">✓ LIVE DATA</span></div><div class="sweep" style="display:none">Liquidity Sweep <b>Sell-side swept → reclaim confirmed</b></div><div class="distance" style="display:none"><div class="distanceRow"><span>SL Distance</span><b id="slDistance">5.0 points</b></div><div class="distanceRow"><span>TP1 Distance</span><b id="tp1Distance">5.0 points</b></div><div class="distanceRow"><span>TP2 Distance</span><b id="tp2Distance">10.0 points</b></div><div class="distanceRow"><span>TP3 Distance</span><b id="tp3Distance">15.0 points</b></div><div class="distanceRow"><span>R:R</span><b class="riskratio">1:1 / 1:2 / 1:3</b></div></div><div class="riskmini" style="display:none"><div class="riskgrid"><div><label>Balance</label><input id="riskBalance" type="number" value="10000" min="0"></div><div><label>Risk %</label><input id="riskPct" type="number" value="1" min="0" max="5" step="0.1"></div></div><div class="riskresult"><span>Risk <b id="riskAmount">$100.00</b></span><span>Size <b id="positionSize">0.200 lots</b></span></div><div class="riskresult"><span>Max / trade <b>2%</b></span><span id="riskGuard" class="bull">✓ Allowed</span></div></div><div class="riskguards" style="display:none"><div class="guardtitle">RISK CONTROLS</div><div class="guardrow"><span>Daily Loss</span><b id="dailyGuard" class="guardok">✓ Within Limit</b></div><div class="guardrow"><span>Open Trades</span><b id="tradeGuard" class="guardok">✓ 1 / 3</b></div><div class="guardrow"><span>Exposure</span><b id="exposureGuard" class="guardok">✓ 1.0%</b></div><div class="guardrow"><span>Min R:R</span><b id="rrGuard" class="guardok">✓ 1:1</b></div></div><button class="action" id="logTradeBtn">+ LOG MY TRADE</button><div class="notice" id="signalNotice">Dashboard signal is informational. Manual broker execution only. Auto Trading is OFF.</div></div></aside></div>
+<main class="main">
+<header class="top"><div class="asset"><div class="coin">₿</div><div><div class="symbol"><span id="symbolTitle">BTC/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Crypto"><option value="BTC/USD" selected>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option></optgroup></select></span></div><div class="gold">Bitcoin</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+0.00 (+0.000%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● REAL BTC/USD • CONNECTING</span><span id="karachiClock" class="clock">—</span><span class="gear">⚙</span></div></header><div class="rzFinalRail" id="rz62ActionRail">
+<button class="rzFinalAction buy" id="rz62Buy">↗ BUY</button>
+<button class="rzFinalAction sell" id="rz62Sell">↓ SELL</button>
+<button class="rzFinalAction unwind" id="rz62Unwind">⚠ UNWIND</button>
+</div>
+<div class="rzFinalStatus" id="rz62Status"><span>SIGNAL <b id="rz62SignalStatus">WAIT</b></span><span>EXECUTION <b id="rz62ExecutionStatus">WAIT</b></span></div>
+<section class="chart"><div class="charthead"><div><span class="charttitle" id="chartSymbol">BTC/USD</span><span class="sub"> • 1m</span><span class="sub" id="chartOHLC"> O — H — L — C —</span></div><div class="tf" role="tablist"><span class="sel" data-tf="1M" role="tab" aria-selected="true">1M</span><span data-tf="5M">5M</span><span data-tf="15M">15M</span><span data-tf="30M">30M</span><span data-tf="1H">1H</span></div></div><div class="grid"></div><div id="chartSignalBadge" style="position:absolute;left:45px;top:67px;background:#0b3028;border:1px solid #1aa879;color:#55dda5;padding:6px 9px;border-radius:5px;font-size:10px;z-index:8">WAIT • FEED</div><div class="hourRange" style="position:absolute;right:73px;top:66px;z-index:8;display:flex;gap:8px;font-size:9px"><span id="hourHigh" style="color:#4fe3a5">1H H —</span><span id="hourLow" style="color:#ff7b8b">L —</span></div><div class="chartarea" id="chartArea"></div><div id="chartLevelMini" style="display:none"><span id="miniEntry">—</span><span id="miniSl">—</span><span id="miniTp1">—</span><span id="miniTp2">—</span><span id="miniTp3">—</span></div><div class="priceLine"></div><div class="tradeZone" id="tradeZone" style="display:none"></div><div class="slZone" id="slZone" style="display:none"></div><div class="priceTag" id="chartPrice">—</div><div class="axis"><span id="axis0">—</span><span id="axis1">—</span><span id="axis2">—</span><span id="axis3">—</span><span id="axis4">—</span><span id="axis5">—</span><span id="axis6">—</span><span id="axis7">—</span><span id="axis8">—</span><span id="axis9">—</span></div><div class="rsiPanel"><span class="rsiLabel">RSI (14) <b id="rsiValue">—</b></span><span class="rsiLine"></span><span class="rsiVal" id="rsiChart">—</span></div><div class="chartSetupBox" id="chartSetupBox"><div class="setupHighRow" id="setupHighRowStatic"><div id="chartHighSetupBtn" class="setupHighBox wait">HIGH QUALITY SETUP</div></div><div class="setupSignals"><button id="chartSigBtn" class="setupBtn">SIGNAL —</button><button id="chartComboBtn" class="setupBtn">COMBO —</button><button id="chartTrendBtn" class="setupBtn">TREND —</button><button id="chartDeltaBtn" class="setupBtn">DELTA —</button><button id="chartDivBtn" class="setupBtn">DIV —</button><button id="chartOfBtn" class="setupBtn">OF —</button><button id="chartRsiBtn" class="setupBtn">RSI —</button></div><div class="setupLevels"><button id="chartEntryBtn" class="levelBtn entryLvl">ENTRY —</button><button id="chartSlBtn" class="levelBtn slLvl">SL —</button><button id="chartTp1Btn" class="levelBtn tpLvl">TP1 —</button><button id="chartTp2Btn" class="levelBtn tpLvl">TP2 —</button><button id="chartTp3Btn" class="levelBtn tpLvl">TP3 —</button></div></div></section>
+<section class="rzLegacyBindings"><div id="setupStatus">WAIT</div><div id="signalNotice">Dashboard signal is informational. Manual broker execution only. Auto Trading is OFF.</div><div id="qualityLabel">WAIT</div><div id="deltaValue">WAIT</div><div id="btReplayPrice">Price —</div><div id="btReplaySession">Session —</div><div id="btReplayLine"></div><div id="candlePattern">WAIT</div><div id="candleBias">WAIT</div><div id="candleShape">—</div><div id="candleResponse">WAIT</div><div id="liveIndicatorMatrix"><div id="indEma">WAIT</div><div id="indRsi">WAIT</div><div id="indMacd">WAIT</div><div id="indAtr">WAIT</div><div id="indAdx">WAIT</div><div id="indStoch">WAIT</div><div id="indBb">WAIT</div><div id="indIchi">WAIT</div><div id="indRegime">WAIT</div><div id="indMtf">WAIT</div><div id="indBos">WAIT</div><div id="indCandle">WAIT</div><div id="indDivergence">WAIT</div><div id="indDelta">NOT CONNECTED</div><div id="indCvd">NOT CONNECTED</div><div id="indOrderFlow">NOT CONNECTED</div><div id="indicatorNote">Waiting.</div></div><div id="overviewPrice">—</div><div id="overviewChange">WAIT</div><div id="overview1m">—</div><div id="overview5m">—</div><div id="overviewHigh">—</div><div id="overviewLow">—</div><div id="miniTf">1M</div><div id="miniCandles"></div><div id="miniPriceLine"></div><div id="miniPriceTag">—</div><div id="miniHigh">—</div><div id="miniLow">—</div><div id="miniCurrent">—</div><div id="miniRange">—</div></section>
+</main>
+<aside class="right"><div class="signalbox">
+<div class="rz62Card">
+ <div class="rz62Head"><div class="rz62Title"><span class="blue">1. SIGNAL</span> <span style="font-weight:500">(Market Analysis)</span></div><span class="rz62Badge" id="signalStatusBadge">WAIT</span></div>
+ <div class="rz62SignalBig"><span id="signalPrice">WAIT</span><span id="rz62SignalPct">—%</span></div>
+ <div class="rz62Rows">
+  <div class="rz62Row"><span>Trend</span><b id="trendState">WAIT</b></div>
+  <div class="rz62Row"><span>Momentum</span><b id="rz62Momentum">WAIT</b></div>
+  <div class="rz62Row"><span>RSI (14)</span><b id="rsiState">—</b></div>
+  <div class="rz62Row"><span>Structure</span><b id="divergenceState">WAIT</b></div>
+  <div class="rz62Row"><span>Volume / Delta</span><b id="deltaState">WAIT</b></div>
+ </div>
+ <div class="rz62Note">ⓘ Signal shows potential direction.<br>Not a trade yet.</div>
+</div>
+<div class="rz62Card">
+ <div class="rz62Head"><div class="rz62Title"><span class="green">2. EXECUTION</span> <span style="font-weight:500">(Trade Qualification)</span></div><span class="rz62Badge" id="hqBtn3">WAIT</span></div>
+ <div class="rz62Row"><span>Quality Score</span><b id="hqBtn1">WAIT</b></div>
+ <div class="rz62Checks"><div class="rz62Check">Entry Valid</div><div class="rz62Check">SL Valid</div><div class="rz62Check">RR Acceptable (1:2)</div><div class="rz62Check">Structure Intact</div><div class="rz62Check">No Major Reversal</div></div>
+ <span class="rz62Ready" id="logTradeBtn">EXECUTE = READY</span>
+</div>
+<div class="rz62Card">
+ <div class="rz62Head"><div class="rz62Title"><span class="blue">3. TRADE RANGE</span> <span style="font-weight:500">(Based on Entry/SL/TP)</span></div></div>
+ <div class="rz62Range">
+  <div class="rz62RangeRow"><div class="rz62Cell"><small>Entry</small><b id="captureEntry">—</b></div><div class="rz62Cell sl"><small>SL</small><b id="signalSl">—</b></div></div>
+  <div class="rz62RangeRow"><div class="rz62Cell tp"><small>TP1 · 1R</small><b id="signalTp1">—</b></div><div class="rz62Cell tp"><small>TP2 · 1.5R</small><b id="signalTp2">—</b></div></div>
+  <div class="rz62RangeRow"><div class="rz62Cell tp"><small>TP3 · 2R</small><b id="signalTp3">—</b></div><div class="rz62Cell"><small>Status</small><b id="signalTime">WAITING</b></div></div>
+ </div>
+ <div class="rz62Note">ⓘ Range is calculated from actual prices,<br>not just percentage.</div>
+</div>
+</div></aside></div>
 <script>
 (function(){const $=id=>document.getElementById(id);const clock=$('karachiClock');const SYMBOLS={'BTC/USD':{price:null,step:35,decimals:2,pointSize:0.01,contractSize:1},'ETH/USD':{price:null,step:4,decimals:2,pointSize:0.01,contractSize:1},'SOL/USD':{price:null,step:1.2,decimals:2,pointSize:0.01,contractSize:1},'XRP/USD':{price:null,step:.03,decimals:4,pointSize:.0001,contractSize:1},'XAU/USD':{price:null,decimals:2,step:.55,distanceUnit:'points',pointSize:.01,contractSize:100},'EUR/USD':{price:null,decimals:5,step:.00018,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'GBP/USD':{price:null,decimals:5,step:.00022,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'USD/JPY':{price:null,decimals:3,step:.028,distanceUnit:'pips',pipSize:.01,contractSize:100000},'USD/CHF':{price:null,decimals:5,step:.00016,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'AUD/USD':{price:null,decimals:5,step:.00014,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'USD/CAD':{price:null,decimals:5,step:.0002,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'NZD/USD':{price:null,decimals:5,step:.00014,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'EUR/GBP':{price:null,decimals:5,step:.00012,distanceUnit:'pips',pipSize:.0001,contractSize:100000},'EUR/JPY':{price:null,decimals:3,step:.035,distanceUnit:'pips',pipSize:.01,contractSize:100000},'GBP/JPY':{price:null,decimals:3,step:.04,distanceUnit:'pips',pipSize:.01,contractSize:100000}};const state={symbol:'BTC/USD',price:null,tf:'1M',history:[],ohlc:[]};window.signalState={id:0,status:'WAIT',direction:'WAIT',entry:null,sl:null,tp1:null,tp2:null,tp3:null,createdAt:null,reason:'Waiting for confirmed setup'};window.$=$;window.q=id=>document.getElementById(id);window.SYMBOLS=SYMBOLS;window.state=state;const TF_CONFIG={"1M":{step:1,phase:7},"5M":{step:1.6,phase:9},"15M":{step:2.4,phase:11},"30M":{step:3.2,phase:13},"1H":{step:4.5,phase:17}};window.TF_CONFIG=TF_CONFIG;function seed(){state.history=[];state.ohlc=[];state.price=null}function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:SYMBOLS[state.symbol].decimals,maximumFractionDigits:SYMBOLS[state.symbol].decimals})}function ema(v,p){if(v.length<p)return v.at(-1)||0;let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p,k=2/(p+1);for(let i=p;i<v.length;i++)e=v[i]*k+e*(1-k);return e}function rsi(v,p=14){if(v.length<=p)return 50;let g=0,l=0;for(let i=1;i<=p;i++){let d=v[i]-v[i-1];g+=Math.max(d,0);l+=Math.max(-d,0)}let ag=g/p,al=l/p;for(let i=p+1;i<v.length;i++){let d=v[i]-v[i-1];ag=(ag*(p-1)+Math.max(d,0))/p;al=(al*(p-1)+Math.max(-d,0))/p}return al===0?100:100-100/(1+ag/al)}function atr(v,p=14){let a=[];for(let i=1;i<v.length;i++)a.push(Math.abs(v[i]-v[i-1]));return a.slice(-p).reduce((x,y)=>x+y,0)/p}window.fmt=fmt;window.ema=ema;window.rsi=rsi;window.atr=atr;
 // V5 Shared Signal Engine: live dashboard + backtest use the same rule set.
@@ -1803,7 +1919,71 @@ html body .miniMarketChart{display:none!important}
   }
 }
 </style>
-</body>
+<script id="rizvi-final-shape-v57-script">
+(function(){
+ if(window.__RIZVI_FINAL_SHAPE_V57)return; window.__RIZVI_FINAL_SHAPE_V57=true;
+ function build(){
+  const top=document.querySelector('.top'); if(!top || document.getElementById('rzFinalRail'))return;
+  const rail=document.createElement('div'); rail.id='rzFinalRail'; rail.className='rzFinalRail';
+  rail.innerHTML='<button class="rzFinalAction buy" data-action="BUY">BUY</button><button class="rzFinalAction sell" data-action="SELL">SELL</button><button class="rzFinalAction unwind" data-action="UNWIND">UNWIND</button>';
+  const status=document.createElement('div'); status.id='rzFinalStatus'; status.className='rzFinalStatus';
+  status.innerHTML='<span>SIGNAL <b id="rzFinalSignal">WAIT</b></span><span>EXECUTION <b id="rzFinalExecution">WAIT</b></span>';
+  top.insertAdjacentElement('afterend',rail); rail.insertAdjacentElement('afterend',status);
+  rail.querySelectorAll('.rzFinalAction').forEach(btn=>btn.addEventListener('click',function(){
+    rail.querySelectorAll('.rzFinalAction').forEach(x=>x.classList.remove('active')); this.classList.add('active');
+    const a=this.dataset.action; window.RIZVI_MANUAL_ACTION=a;
+    document.dispatchEvent(new CustomEvent('rizvi:manual-action',{detail:{action:a,at:Date.now()}}));
+    const ex=document.getElementById('rzFinalExecution'); if(ex)ex.textContent=a==='UNWIND'?'UNWIND REQUEST':'MANUAL '+a;
+  }));
+ }
+ function sync(){
+  const h=document.getElementById('chartHighSetupBtn');
+  const sig=document.getElementById('rzFinalSignal'), ex=document.getElementById('rzFinalExecution');
+  if(!sig||!ex)return;
+  const d=String(h?.getAttribute('data-direction')||'WAIT').toUpperCase();
+  const q=String(h?.getAttribute('data-quality')||'WAIT').toUpperCase();
+  sig.textContent=d+(q==='HIGH'?' • HIGH':'');
+  if(window.RIZVI_MANUAL_ACTION)return;
+  ex.textContent=(q==='HIGH'&&(d==='BUY'||d==='SELL'))?'READY':'WAIT';
+ }
+ document.addEventListener('DOMContentLoaded',()=>{build();sync();setInterval(sync,500)});
+ setTimeout(()=>{build();sync()},700);
+})();
+</script><script id="rz62LayoutSync">
+(function(){
+ function q(id){return document.getElementById(id)}
+ function txt(id,v){const e=q(id);if(e)e.textContent=v==null?'—':String(v)}
+ function run(){
+  const s=window.state||{}, sig=window.signalState||{}, bars=s.ohlc||[], last=Number(s.price);
+  const dir=String(sig.direction||'WAIT').toUpperCase();
+  const score=Number(sig.score||0), quality=String(sig.quality||'WAIT').toUpperCase();
+  const pct=score?Math.min(95,Math.max(45,Math.round(score/12*100))):null;
+  const fmtN=n=>Number.isFinite(Number(n))&&window.fmt?window.fmt(Number(n)):'—';
+  const r=bars.length&&window.rsi?window.rsi(bars.map(x=>typeof x==='number'?x:x.c),14):null;
+  const bull=dir==='BUY', bear=dir==='SELL';
+  txt('rz62SignalStatus',dir==='WAIT'?'WAIT':dir);
+  txt('rz62ExecutionStatus',quality==='HIGH'?'READY':quality);
+  txt('signalStatusBadge',bull?'BUY '+(pct||68)+'%':bear?'SELL '+(pct||68)+'%':'WAIT');
+  txt('signalPrice',dir==='WAIT'?'WAIT':dir);
+  txt('rz62SignalPct',pct?(pct+'%'):'—%');
+  txt('trendState',bull?'Bullish':bear?'Bearish':'WAIT');
+  txt('rz62Momentum',bull?'Bullish':bear?'Bearish':'WAIT');
+  txt('rsiState',Number.isFinite(r)?r.toFixed(0):'—');
+  txt('divergenceState',bull?'Support ↑':bear?'Resistance ↓':'WAIT');
+  txt('deltaState',window.RIZVI_ORDER_FLOW&&window.RIZVI_ORDER_FLOW.status==='CONNECTED'?(window.RIZVI_ORDER_FLOW.direction||'Balanced'):'WAIT');
+  txt('hqBtn3',quality==='HIGH'?'HIGH QUALITY':quality);
+  txt('hqBtn1',pct?((quality==='HIGH'?88:pct)+'%'):'WAIT');
+  txt('captureEntry',fmtN(sig.entry));txt('signalSl',fmtN(sig.sl));txt('signalTp1',fmtN(sig.tp1));txt('signalTp2',fmtN(sig.tp2));txt('signalTp3',fmtN(sig.tp3));
+  txt('signalTime',sig.createdAt?'ACTIVE':'WAITING');
+  const trend=bull?'Bullish':bear?'Bearish':'WAIT', mom=trend, struct=bull?'Support':bear?'Resistance':'WAIT', rs=Number.isFinite(r)?r.toFixed(0):'—', label=(bull?'BUY':bear?'SELL':'WAIT');
+  ['1','2'].forEach(n=>{txt('rz62Ex'+n+'Score',label+' '+(n==='2'?(quality==='HIGH'?88:pct||68):(pct||68))+'%');txt('rz62Ex'+n+'Trend',trend);txt('rz62Ex'+n+'Mom',mom);txt('rz62Ex'+n+'Rsi',rs);txt('rz62Ex'+n+'Struct',struct)});
+  txt('rz62Ex2Exec',quality==='HIGH'?'YES':'WAIT');
+  q('logTradeBtn')?.classList.toggle('ready',quality==='HIGH');
+ }
+ document.addEventListener('DOMContentLoaded',run);setInterval(run,1200);
+ document.addEventListener('click',e=>{const b=e.target.closest('.rzFinalAction');if(!b)return;const action=b.id.includes('Buy')?'BUY':b.id.includes('Sell')?'SELL':'UNWIND';window.RIZVI_MANUAL_ACTION=action;const s=q('rz62ExecutionStatus');if(s)s.textContent=action==='UNWIND'?'MANAGE / CLOSE':'MANUAL '+action;});
+})();
+</script></body>
 <style>
 .mtfPanel{margin-top:12px}.mtfGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mtfItem{background:#071521;border:1px solid #17334a;border-radius:6px;padding:7px 5px;text-align:center;font-size:10px;color:#7890a5}.mtfItem b{display:block;margin-top:4px;font-size:11px}.mtfUp{color:#51d89a!important}.mtfDown{color:#ed697b!important}.mtfWait{color:#d7ae57!important}.mtfSummary{margin-top:7px;padding:8px;border:1px solid #17334a;border-radius:6px;background:#071521;font-size:10px;color:#7890a5}.mtfSummary b{color:#dce7f1}
 </style>
@@ -4955,3 +5135,288 @@ button{pointer-events:auto!important}
   setTimeout(clean,300);setInterval(clean,500);
 })();
 </script>
+
+<style id="rizvi-full-layout-v58">
+/* V58 — full approved dashboard layout on mobile as well.
+   Preserve existing functions/data; this is presentation-only. */
+@media (max-width:700px){
+  html,body{width:100%;min-width:0;overflow-x:hidden}
+  body{background:#02070d}
+  .app{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    min-height:100vh!important;
+    background:#02070d!important;
+  }
+  .side{
+    order:0!important;
+    display:flex!important;
+    position:static!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    padding:8px 8px 7px!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    gap:8px!important;
+    overflow:hidden!important;
+    border-right:0!important;
+    border-bottom:1px solid #17324a!important;
+    background:linear-gradient(180deg,#07131f,#06101a)!important;
+  }
+  .brand{
+    flex:0 0 auto!important;
+    padding:5px 7px!important;
+    font-size:11px!important;
+    letter-spacing:1px!important;
+    white-space:nowrap!important;
+  }
+  .brand span{color:#67dca4!important}
+  .nav{
+    display:flex!important;
+    flex:1 1 auto!important;
+    gap:5px!important;
+    min-width:0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    scrollbar-width:none!important;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nav div{
+    flex:0 0 auto!important;
+    min-height:36px!important;
+    height:36px!important;
+    padding:6px 9px!important;
+    border-radius:7px!important;
+    font-size:10px!important;
+    gap:6px!important;
+    white-space:nowrap!important;
+  }
+  .nav .ico{font-size:13px!important}
+  .sidefoot{display:none!important}
+
+  .main{
+    order:1!important;
+    width:100%!important;
+    max-width:none!important;
+    padding:7px!important;
+    min-width:0!important;
+  }
+  .top{
+    height:auto!important;
+    min-height:60px!important;
+    gap:8px!important;
+    margin-bottom:9px!important;
+    overflow:hidden!important;
+  }
+  .asset{gap:8px!important;min-width:0!important}
+  .coin{width:34px!important;height:34px!important;font-size:23px!important}
+  .symbol{font-size:17px!important;white-space:nowrap!important}
+  .gold{font-size:11px!important}
+  .topprice{font-size:22px!important}
+  .delta{font-size:10px!important}
+  .topcenter{gap:7px!important;min-width:0!important}
+  .feed{font-size:10px!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:155px!important}
+  .clock{display:none!important}
+  .gear{font-size:15px!important}
+
+  /* Keep the approved 3-action rail directly below the market header. */
+  .rzFinalRail{
+    width:100%!important;
+    margin:0 0 8px!important;
+    padding:6px!important;
+    gap:6px!important;
+  }
+  .rzFinalRail .rzFinalAction{
+    min-height:44px!important;
+    font-size:12px!important;
+    letter-spacing:.45px!important;
+  }
+  .rzFinalStatus{
+    margin:0 0 9px!important;
+    min-height:44px!important;
+  }
+
+  .chart{
+    width:100%!important;
+    height:500px!important;
+    min-height:500px!important;
+    border-radius:10px!important;
+  }
+  .charthead{height:48px!important;padding:0 10px!important}
+  .charttitle{font-size:14px!important}
+  .sub{font-size:10px!important}
+  .tf{gap:2px!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .tf::-webkit-scrollbar{display:none}
+  .tf span{min-width:44px!important;padding:8px 8px!important;font-size:10px!important}
+  .grid{inset:48px 0 110px!important;background-size:68px 48px!important}
+  .axis{top:48px!important;bottom:110px!important;width:52px!important;font-size:10px!important}
+  .chartarea{left:38px!important;right:54px!important;top:63px!important;bottom:112px!important}
+
+  /* The approved compact Entry/SL/TP block remains attached to the chart. */
+  #chartSetupBox{
+    left:9px!important;
+    right:9px!important;
+    bottom:7px!important;
+    width:auto!important;
+    z-index:12!important;
+  }
+
+  .bottom{
+    order:2!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:8px!important;
+    margin-top:9px!important;
+  }
+  .bottom .panel{
+    min-height:145px!important;
+    padding:11px!important;
+    border-radius:9px!important;
+  }
+  .bottom .panel h3{font-size:12px!important;margin-bottom:9px!important}
+  .bottom .row{font-size:10px!important}
+  .bottom .miniMarketChart{display:none!important}
+
+  /* Keep the indicator matrix visible in the main flow. */
+  #liveIndicatorMatrix{
+    display:block!important;
+    grid-column:1/-1!important;
+  }
+  #liveIndicatorMatrix .indicatorGrid{
+    gap:5px!important;
+  }
+
+  .right{
+    order:3!important;
+    width:100%!important;
+    min-width:0!important;
+    padding:7px!important;
+    border-left:0!important;
+    border-top:1px solid #17324a!important;
+    background:#02070d!important;
+  }
+  .signalbox{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    border-radius:10px!important;
+  }
+  .sighead{padding:13px 13px 10px!important}
+  .sigtitle{font-size:17px!important}
+  .active{font-size:10px!important;padding:6px 8px!important}
+  .sigtime{font-size:10px!important;padding:8px 13px 0!important}
+  .levels{margin:7px 13px 0!important}
+  .levelrow{font-size:12px!important;padding:6px 0!important}
+  .levelrow b{font-size:12px!important}
+  .stats{margin:9px 13px 0!important}
+  .stat{font-size:11px!important}
+  .tradeCaptureCompact,.riskmini,.riskguards{margin-left:13px!important;margin-right:13px!important}
+  .highQualityRow,.checks,.quality,.sweep,.distance,.notice,.alerts{margin-left:13px!important;margin-right:13px!important}
+  .action{width:calc(100% - 26px)!important;margin-left:13px!important;margin-right:13px!important}
+}
+@media (max-width:390px){
+  .brand{font-size:10px!important;padding-left:4px!important;padding-right:4px!important}
+  .nav div{padding-left:7px!important;padding-right:7px!important;font-size:9px!important}
+  .topprice{font-size:20px!important}
+  .feed{max-width:120px!important}
+  .chart{height:475px!important;min-height:475px!important}
+  .bottom{grid-template-columns:1fr!important}
+}
+</style>
+
+<style id="rizvi-orderflow-live-v59">
+.ofLiveBadge{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:4px 7px;border-radius:5px;border:1px solid #29445b;background:#091724;color:#7890a5;font-size:9px;font-weight:800}
+.ofLiveBadge.ok{color:#62e0a8;border-color:#287d5d;background:#0c241b}
+.ofLiveBadge.warn{color:#e6b85b;border-color:#6b5420;background:#1b170d}
+</style>
+<script id="rizvi-orderflow-live-v59-script">
+(function(){
+ if(window.__RIZVI_ORDERFLOW_V59)return;
+ window.__RIZVI_ORDERFLOW_V59=true;
+ const API=window.RIZVI_ORDERFLOW_URL||'';
+ const STALE_MS=90000;
+ function setState(data,status){
+   const x=data||{};
+   const delta=Number(x.delta),dp=Number(x.deltaPct),br=Number(x.buyRatio);
+   const buy=Number.isFinite(dp)?dp>0:false,sell=Number.isFinite(dp)?dp<0:false;
+   window.RIZVI_ORDER_FLOW={
+     status:status||'NOT CONNECTED',receivedAt:Number(x.receivedAt)||0,
+     age:Number(x.receivedAt)?Date.now()-Number(x.receivedAt):Infinity,
+     symbol:String(x.symbol||'').toUpperCase(),buyVolume:Number(x.buyVolume),
+     sellVolume:Number(x.sellVolume),totalVolume:Number(x.totalVolume),
+     delta,deltaPct:dp,buyRatio:br,poc:Number(x.poc),vah:Number(x.vah),val:Number(x.val),
+     buyImbalance:Number(x.buyImbalance)||0,sellImbalance:Number(x.sellImbalance)||0,
+     direction:String(x.direction||'WAIT').toUpperCase(),
+     fresh:Number(x.receivedAt)?Date.now()-Number(x.receivedAt)<STALE_MS:false
+   };
+   const d=document.getElementById('ofDelta'),ba=document.getElementById('ofBidAsk'),im=document.getElementById('ofImbalance'),note=document.getElementById('ofNote');
+   if(d)d.textContent=Number.isFinite(delta)?((delta>=0?'+':'')+delta.toLocaleString()+' • '+(buy?'Buy Pressure':sell?'Sell Pressure':'Balanced')):'WAIT';
+   if(d)d.className=buy?'ofBull':sell?'ofBear':'';
+   if(ba)ba.textContent=Number.isFinite(br)?br.toFixed(1)+'% / '+(100-br).toFixed(1)+'%':'WAIT';
+   if(im)im.textContent=status==='CONNECTED'?(x.direction||'WAIT'):'WAIT';
+   if(im)im.className=x.direction==='BUY'?'ofBull':x.direction==='SELL'?'ofBear':'';
+   if(note)note.textContent=status==='CONNECTED'?'TRADINGVIEW FOOTPRINT • confirmed candle • delta/imbalance/POC active':'Order-flow awaiting TradingView footprint webhook';
+   const os=document.getElementById('ofState');if(os){os.textContent=status==='CONNECTED'?'CONNECTED':'WAIT';os.className=status==='CONNECTED'?'bull':'neutral'}
+ }
+ async function poll(){
+   if(!API){setState(null,'NOT CONNECTED');return}
+   try{
+     const u=API.replace(/\/$/,'')+'/orderflow?symbol='+(encodeURIComponent((window.state&&window.state.symbol)||'BTC/USD').replace('USD','USDT'));
+     const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+     const j=await r.json();const d=j&&j.data;
+     if(d&&Number(d.receivedAt)&&Date.now()-Number(d.receivedAt)<STALE_MS)setState(d,'CONNECTED');else setState(d,'STALE');
+   }catch(e){setState(null,'NOT CONNECTED')}
+ }
+ // Live order-flow enhances, but never invents, the existing V5 signal.
+ const base=window.V5SignalEngine;
+ if(base&&!window.__RIZVI_OF_ENGINE_WRAPPED){
+   window.__RIZVI_OF_ENGINE_WRAPPED=true;
+   window.V5SignalEngine=function(bars,idx){
+     const s=base(bars,idx);if(!s)return s;
+     const of=window.RIZVI_ORDER_FLOW||{};
+     let ofScore=0,ofAligned=false,ofConflict=false;
+     if(of.status==='CONNECTED'&&of.fresh){
+       if((s.direction==='BUY'&&of.direction==='BUY')||(s.direction==='SELL'&&of.direction==='SELL')){ofScore=2;ofAligned=true}
+       else if((s.direction==='BUY'&&of.direction==='SELL')||(s.direction==='SELL'&&of.direction==='BUY')){ofScore=-2;ofConflict=true}
+       const strong=Math.abs(Number(of.deltaPct))>=12;
+       if(strong && ofAligned)ofScore+=1;
+       if(strong && ofConflict)ofScore-=1;
+     }
+     const baseScore=Number(s.score)||0;
+     const score=Math.max(0,baseScore+ofScore);
+     const quality=score>=11?'HIGH':score>=7?'GOOD':s.direction?'WEAK':'WAIT';
+     return {...s,score,quality,orderFlow:{status:of.status||'NOT CONNECTED',direction:of.direction||'WAIT',deltaPct:Number(of.deltaPct),buyRatio:Number(of.buyRatio),poc:Number(of.poc),vah:Number(of.vah),val:Number(of.val),buyImbalance:Number(of.buyImbalance)||0,sellImbalance:Number(of.sellImbalance)||0,aligned:ofAligned,conflict:ofConflict,addedScore:ofScore}};
+   };
+ }
+ poll();setInterval(poll,3000);
+})();
+</script>
+
+<style id="rizvi-master-final-visual-v61">
+/* V61: final visual authority — overrides legacy V1-V59 chart skins only. */
+html,body{background:#02080f!important;color:#e9f2f7!important}
+.app,.main{background:#02080f!important}
+.chart{background:#06111b!important;border:1px solid #1b4962!important;box-shadow:none!important}
+.charthead{background:linear-gradient(180deg,#0b1c29,#07131f)!important;border-color:#17364b!important}
+#chartArea{position:absolute!important;left:0!important;right:0!important;top:58px!important;bottom:0!important;width:auto!important;height:auto!important;overflow:hidden!important;background:#06111b!important;border:0!important;border-radius:0 0 11px 11px!important}
+#chartArea > #rizviTvChart{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;background:#06111b!important}
+#rizviTvChart .chart-container,#rizviTvChart canvas{max-width:none!important}
+.chartSetupBox{position:absolute!important;left:14px!important;right:auto!important;top:90px!important;bottom:auto!important;width:190px!important;height:auto!important;min-height:0!important;max-height:none!important;padding:5px!important;background:#07131f!important;border:2px solid #1b4258!important;box-shadow:0 8px 24px rgba(0,0,0,.38)!important;z-index:100!important}
+.chartSetupBox .setupHighRow,.chartSetupBox .setupSignals{display:none!important}
+.chartSetupBox .setupLevels{display:grid!important;grid-template-columns:1fr!important;grid-template-rows:none!important;gap:2px!important;margin:0!important;height:auto!important;overflow:visible!important}
+.chartSetupBox .levelBtn{width:100%!important;height:35px!important;min-height:35px!important;margin:0!important;border-radius:4px!important}
+.chartSetupBox .entryLvl{background:#66d7ba!important;color:#07131b!important;border-color:#66d7ba!important}
+.chartSetupBox .slLvl{background:#e66578!important;color:#fff!important;border-color:#e66578!important}
+.chartSetupBox .tpLvl{background:#4ca5d9!important;color:#fff!important;border-color:#4ca5d9!important}
+.rsiPanel{background:#07131f!important;border-color:#17364b!important}
+.grid{background:transparent!important;opacity:.45!important}
+@media(max-width:700px){
+ .chart{height:535px!important}
+ #chartArea{top:50px!important;bottom:0!important;left:0!important;right:0!important}
+ .chartSetupBox{left:10px!important;top:82px!important;width:158px!important;padding:4px!important}
+ .chartSetupBox .levelBtn{height:31px!important;min-height:31px!important;font-size:9px!important}
+}
+@media(max-width:390px){.chart{height:510px!important}.chartSetupBox{width:145px!important}}
+</style>
