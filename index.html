@@ -73,7 +73,7 @@
  async function load(){
   try{
    const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
-   if(Array.isArray(d)){bars=d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));draw();}
+   if(Array.isArray(d)){bars=d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;draw();}
   }catch(e){}
  }
  load();setInterval(load,10000);addEventListener('resize',draw);
@@ -95,5 +95,12 @@
   return data;
  };
  tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS)));
+})();
+</script><script>
+(function(){
+ const originalDraw=window.RIZVI_DRAW_CHART;
+ window.RIZVI_DRAW_CHART=function(data){ if(Array.isArray(data)){bars=data;draw();} };
+ const baseSet=window.RIZVI_SET_TIMEFRAME;
+ if(baseSet) window.RIZVI_SET_TIMEFRAME=function(label,raw){const d=baseSet(label,raw);if(Array.isArray(d)){bars=d;draw();}return d;};
 })();
 </script></body></html>
