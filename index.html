@@ -1183,4 +1183,34 @@
   setInterval(()=>bindQualification(),2000);
   bindLive();bindQualification();
 })();
+<script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function syncOperational(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    const mr=window.RIZVI_MARKET_RANGE||{};
+    const tr=window.RIZVI_TRADE_RANGE||{};
+    const direction=q.marketDirection&&q.marketDirection!=='NEUTRAL'?q.marketDirection:(document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY');
+    const sig=document.querySelector('.right .card:first-child .big span:first-child');
+    const sigScore=document.querySelector('.right .card:first-child .big span:nth-child(2)');
+    if(sig)sig.textContent=direction;
+    if(sigScore&&Number.isFinite(q.patternConfidence))sigScore.innerHTML=fmt(q.patternConfidence).replace('.00','')+'% <em class="badge">'+(q.patternConfidence>=80?'HIGH QUALITY':q.patternConfidence>=60?'MEDIUM':'LOW')+'</em>';
+    const qual=document.querySelector('.right .gborder .row b');
+    if(qual&&Number.isFinite(q.liquidityScore))qual.innerHTML=q.liquidityScore+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    const ready=document.querySelector('.right .gborder .ready');
+    if(ready)ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    const trLabels=['ENTRY','SL','TP1','TP2','TP3'];
+    trLabels.forEach((label,i)=>{
+      const n=[...document.querySelectorAll('.right .rangeRow span')].find(x=>x.textContent.trim()===label);
+      if(n&&Number.isFinite(Number([tr.entry,tr.sl,tr.tp1,tr.tp2,tr.tp3][i])))n.nextElementSibling.textContent=fmt([tr.entry,tr.sl,tr.tp1,tr.tp2,tr.tp3][i]);
+    });
+    const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+    Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el&&Number.isFinite(Number(mr[key])))el.textContent=fmt(mr[key]);});
+  }
+  syncOperational();
+  setInterval(syncOperational,2000);
+  window.addEventListener('rizvi:liquidity-update',syncOperational);
+  window.addEventListener('rizvi:signal-qualification-update',syncOperational);
+  window.addEventListener('rizvi:market-range-update',syncOperational);
+})();
 </script></body></html>
