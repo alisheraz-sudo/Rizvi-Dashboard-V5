@@ -187,15 +187,35 @@
   function syncVisibleSignal(){
     const q=window.RIZVI_SIGNAL_QUALIFICATION;
     if(!q)return;
-    const right=document.querySelector('.right .card:nth-child(2)');
-    if(!right)return;
-    const score=right.querySelector('.row b');
-    const ready=right.querySelector('.ready');
-    if(score) score.innerHTML=(q.patternConfidence||0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
-    if(ready) ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    const right=document.querySelector('.right');
+    const head=document.querySelector('.signalHead');
+    if(!right||!head)return;
+    const direction=q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:null;
+    const confidence=Math.max(0,Math.min(100,Number(q.patternConfidence)||0));
+    const qualified=q.status==='QUALIFIED_CONTEXT' && !!direction;
+    const waitText=qualified?'HIGH QUALITY':'WAIT';
+    const visibleDirection=direction||'WAIT';
+    const headDirection=head.querySelector('div:first-child b');
+    const headQuality=head.querySelector('div:nth-child(2) b');
+    if(headDirection)headDirection.textContent=visibleDirection;
+    if(headQuality)headQuality.textContent=confidence+'%';
+    const headBadge=head.querySelector('.badge');
+    if(headBadge){headBadge.textContent=waitText;headBadge.style.background=qualified?'#10b875':'#173c75';headBadge.style.color=qualified?'#04150d':'#7fb8ff';}
+    const signalCard=right.querySelector('.card:first-child');
+    const signalBig=signalCard?.querySelector('.big span:first-child');
+    const signalPct=signalCard?.querySelector('.big span:nth-child(2)');
+    if(signalBig)signalBig.textContent=visibleDirection;
+    if(signalPct)signalPct.innerHTML=confidence+'% &nbsp; <em class="badge" style="background:#173c75;color:#7fb8ff">'+waitText+'</em>';
+    const execution=right.querySelector('.card:nth-child(2)');
+    const score=execution?.querySelector('.row b');
+    const ready=execution?.querySelector('.ready');
+    if(score)score.innerHTML=confidence+'% &nbsp; <em class="badge">'+waitText+'</em>';
+    if(ready)ready.textContent=qualified?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    window.RIZVI_VISIBLE_SIGNAL_STATE={direction:visibleDirection,confidence,qualified,status:q.status,updatedAt:Date.now()};
   }
   window.addEventListener('rizvi:signal-qualification-update',syncVisibleSignal);
   setInterval(syncVisibleSignal,2000);
+  syncVisibleSignal();
 })();</script><script>
 (function(){
  const symbols={
