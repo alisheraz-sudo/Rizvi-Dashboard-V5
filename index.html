@@ -84,6 +84,32 @@ body{background:radial-gradient(circle at 58% -10%,rgba(28,75,112,.18),transpare
 .chartarea{right:0!important}
 </style>
 <!-- RIZVI V49 TV BOTH ENGINE CLEANUP -->
+<style id="rizvi-v50-chart-box-layout">
+/* V50: TradingView is the only chart surface for XAU/USD and BTC/USD. */
+.chart{border-radius:12px!important;overflow:hidden!important}
+.chart > .grid{display:none!important}
+.chart > div[style*="left:8px"]{display:none!important}
+.chartSignalBadge,.hourRange{display:none!important}
+.chartarea{
+  left:0!important;
+  right:0!important;
+  top:48px!important;
+  bottom:0!important;
+  border:0!important;
+  border-radius:0 0 11px 11px!important;
+  overflow:hidden!important;
+}
+#chartArea > #rizviTvChart{
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+#rizviTvChart .rizviTvAttribution{left:8px!important;bottom:4px!important}
+</style>
+<!-- RIZVI V50 CHART BOX LAYOUT -->
 </head><body><div class="app">
 <aside class="side"><div class="brand">RIZVI<span>•</span></div><nav class="nav"><div class="on"><span class="ico">⌂</span>Dashboard</div><div id="backtestNav"><span class="ico">◫</span>Backtest</div><div><span class="ico">⌁</span>Signals</div><div><span class="ico">◷</span>Trade History</div><div><span class="ico">⚙</span>Settings</div></nav><div class="sidefoot">Better Analysis<br>Better Decisions</div></aside>
 <main class="main"><header class="top"><div class="asset"><div class="coin">Au</div><div><div class="symbol"><span id="symbolTitle">XAU/USD</span><span class="selectWrap"><select id="symbolSelect" class="symbolSelect"><optgroup label="Metals"><option value="XAU/USD">XAU/USD</option></optgroup><optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>USD/CHF</option><option>AUD/USD</option><option>USD/CAD</option><option>NZD/USD</option><option>EUR/GBP</option><option>EUR/JPY</option><option>GBP/JPY</option></optgroup><optgroup label="Crypto"><option>BTC/USD</option><option>ETH/USD</option><option>SOL/USD</option><option>XRP/USD</option></optgroup></select></span></div><div class="gold">Gold Spot</div></div><div><div id="livePrice" class="topprice">—</div><div class="delta">+12.36 (+0.30%)</div></div></div><div class="topcenter"><span class="tfTop" id="topTfLabel">1m</span><span id="topTfHint" style="font-size:13px;color:#9bb0c4">1m</span><span style="font-size:18px;color:#9bb0c4">⌄</span><span id="feedStatus" class="feed">● WAIT • FEED</span><span id="karachiClock" class="clock">02 Oct 2026 02:07 AM (PKT)</span><span class="gear">⚙</span></div></header>
