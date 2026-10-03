@@ -4449,3 +4449,49 @@ button{pointer-events:auto!important}
   setInterval(apply,700);
 })();
 </script>
+<!-- RIZVI STICKER HARD-FIX V44.3 -->
+<style id="rizvi-sticker-hard-fix">
+#rizviStickerHardFix{
+ position:absolute!important;left:10px!important;top:58px!important;
+ z-index:99999!important;display:flex!important;flex-direction:column!important;
+ gap:2px!important;padding:3px!important;background:rgba(2,8,13,.94)!important;
+ border:1px solid #29465d!important;border-radius:5px!important;
+ box-shadow:0 3px 12px rgba(0,0,0,.5)!important;pointer-events:none!important;
+ font-family:Inter,system-ui,sans-serif!important;
+}
+#rizviStickerHardFix .rh-row{display:grid!important;grid-template-columns:48px 92px!important;width:140px!important;height:21px!important;min-height:21px!important;border-radius:2px!important;overflow:hidden!important}
+#rizviStickerHardFix .rh-label,#rizviStickerHardFix .rh-value{display:flex!important;align-items:center!important;justify-content:center!important;font-size:9px!important;font-weight:900!important;line-height:1!important}
+#rizviStickerHardFix .rh-label{background:#09131d!important;color:#dce8f1!important}
+#rizviStickerHardFix .rh-entry .rh-label{color:#72e6bb!important}.rh-entry .rh-value{background:#69d9b2!important;color:#06120d!important}
+#rizviStickerHardFix .rh-sl .rh-label{color:#ff8797!important}.rh-sl .rh-value{background:#e96879!important;color:#fff!important}
+#rizviStickerHardFix .rh-tp .rh-label{color:#70c5f5!important}.rh-tp .rh-value{background:#4da8df!important;color:#06121b!important}
+@media(max-width:600px){
+ #rizviStickerHardFix{left:8px!important;top:56px!important}
+ #rizviStickerHardFix .rh-row{width:132px!important;grid-template-columns:46px 86px!important;height:20px!important;min-height:20px!important}
+ #rizviStickerHardFix .rh-label,#rizviStickerHardFix .rh-value{font-size:8.5px!important}
+}
+</style>
+<script id="rizvi-sticker-hard-fix-script">
+(function(){
+ function fmt(v){
+  const n=Number(v); if(!Number.isFinite(n)) return '—';
+  const s=window.state?.symbol, d=(window.SYMBOLS&&window.SYMBOLS[s]&&window.SYMBOLS[s].decimals)||2;
+  return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+ }
+ function mount(){
+  const chart=document.querySelector('.chart'); if(!chart)return;
+  let box=document.getElementById('rizviStickerHardFix');
+  if(!box){
+   box=document.createElement('div'); box.id='rizviStickerHardFix';
+   box.innerHTML='<div class="rh-row rh-entry"><span class="rh-label">ENTRY</span><span class="rh-value" id="rhEntry">—</span></div><div class="rh-row rh-sl"><span class="rh-label">SL</span><span class="rh-value" id="rhSl">—</span></div><div class="rh-row rh-tp"><span class="rh-label">TP1</span><span class="rh-value" id="rhTp1">—</span></div><div class="rh-row rh-tp"><span class="rh-label">TP2</span><span class="rh-value" id="rhTp2">—</span></div><div class="rh-row rh-tp"><span class="rh-label">TP3</span><span class="rh-value" id="rhTp3">—</span></div>';
+   chart.appendChild(box);
+  }
+  const ss=window.signalState||{}, dir=String(ss.direction||'WAIT').toUpperCase();
+  const active=dir==='BUY'||dir==='SELL';
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=active?fmt(v):'—'};
+  set('rhEntry',ss.entry);set('rhSl',ss.sl);set('rhTp1',ss.tp1);set('rhTp2',ss.tp2);set('rhTp3',ss.tp3);
+ }
+ document.addEventListener('DOMContentLoaded',()=>{mount();setInterval(mount,700)});
+ setTimeout(mount,500);setTimeout(mount,1500);
+})();
+</script>
