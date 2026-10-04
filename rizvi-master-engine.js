@@ -1,11 +1,13 @@
 /* Rizvi Dashboard V5 — Master Confirmation Engine
    Real-data confirmation layer. No synthetic data. Auto Trading stays OFF.
    Inputs: live OHLC, market range/liquidity context, BTC order flow when available.
+   V52: stability layer for fast/sideways markets. Weights unchanged.
 */
 (function(){
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,orderFlowSamples:[]};
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
@@ -16,7 +18,11 @@
     Object.values(b.bids||{}).forEach(x=>bid+=Number(x.size)||0);
     Object.values(b.asks||{}).forEach(x=>ask+=Number(x.size)||0);
     const total=bid+ask, im=total?((bid-ask)/total)*100:0;
-    return {signal:im>8?'BUY':im<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(im)*2),reason:'depth imbalance '+im.toFixed(1)+'%',imbalance:im,status:b.status};
+    const now=Date.now();
+    state.orderFlowSamples.push({t:now,im});
+    state.orderFlowSamples=state.orderFlowSamples.filter(x=>now-x.t<=15000);
+    const avg=state.orderFlowSamples.length?state.orderFlowSamples.reduce((s,x)=>s+x.im,0)/state.orderFlowSamples.length:im;
+    return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:b.status};
   }
   function run(){
     const symbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
@@ -38,10 +44,24 @@
     if(r!==null){if(r>=50&&r<75)buy+=10;if(r<=50&&r>25)sell+=10;}
     if(of.signal==='BUY')buy+=20;if(of.signal==='SELL')sell+=20;
     if(liq.status&&Number.isFinite(liqScore)){if(liqScore>=70){if(liq.direction==='SELL')sell+=15;else buy+=15;}}
-    const direction=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
+    const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell), conflict=Math.min(buy,sell);
-    let confidence=clamp(Math.round(50+(lead-conflict)*0.75));
-    if(direction==='WAIT')confidence=50;
+    let rawConfidence=clamp(Math.round(50+(lead-conflict)*0.75));
+    if(rawDirection==='WAIT')rawConfidence=50;
+
+    if(rawDirection===state.pendingDirection)state.pendingCount++;
+    else {state.pendingDirection=rawDirection;state.pendingCount=1;}
+    if(rawDirection==='WAIT'){
+      state.stableDirection='WAIT';
+      state.stableConfidence=Math.round(state.stableConfidence*0.7+50*0.3);
+    }else if(rawDirection===state.stableDirection){
+      state.stableConfidence=Math.round(state.stableConfidence*0.7+rawConfidence*0.3);
+    }else if(state.pendingCount>=2){
+      state.stableDirection=rawDirection;
+      state.stableConfidence=Math.round(state.stableConfidence*0.7+rawConfidence*0.3);
+    }
+    const direction=state.stableDirection;
+    const confidence=clamp(Math.round(state.stableConfidence));
     const confirmations=[trend===direction,structure===direction,momentum===direction,of.signal===direction,(liq.status&&liqScore>=70)].filter(Boolean).length;
     const qualified=direction!=='WAIT'&&confirmations>=3&&confidence>=70;
     const engines={
@@ -57,6 +77,7 @@
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
       confirmations,trend,structure,momentum,rsi:r,
+      rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000},
       engines,autoTrading:false
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
