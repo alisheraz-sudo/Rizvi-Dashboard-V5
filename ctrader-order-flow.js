@@ -10,6 +10,7 @@ const state = {
   lastDepthAt: 0,
   lastError: null,
   socket: null,
+  heartbeatTimer: null,
   reconnectTimer: null,
   accessToken: process.env.CTRADER_ACCESS_TOKEN || '',
   refreshToken: process.env.CTRADER_REFRESH_TOKEN || ''
@@ -221,7 +222,10 @@ function connect() {
     }
   });
 
+  state.heartbeatTimer = setInterval(() => { if (ws.readyState === WebSocket.OPEN) send(ws, PT.HEARTBEAT_EVENT, {}); }, 10000);
+
   ws.on('close', () => {
+    clearInterval(state.heartbeatTimer);
     state.connected = false;
     state.authorized = false;
     state.status = 'reconnecting';
