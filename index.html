@@ -2207,4 +2207,81 @@ function fix(){
 fix();new MutationObserver(fix).observe(document.body,{subtree:true,childList:true});
 setInterval(fix,1000);
 })();
+</script><style id="rizvi-v88-live-trade-range">
+.rizvi-live-trade-range{position:absolute;z-index:30;pointer-events:none;width:74px;min-width:74px;max-width:74px;overflow:visible;display:none}
+.rizvi-live-trade-range .zone{position:absolute;left:0;width:74px;border:1px solid;border-radius:2px}
+.rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.22);border-color:#00d991}
+.rizvi-live-trade-range .sl-zone{background:rgba(169,51,182,.28);border-color:#cf5aff}
+.rizvi-live-trade-range .line{position:absolute;left:0;width:74px;border-top:1px solid rgba(255,255,255,.65)}
+.rizvi-live-trade-range .label{position:absolute;left:-74px;right:auto;transform:translateY(-50%);white-space:nowrap;padding:2px 4px;border-radius:3px;font:800 10px/13px Arial,sans-serif;color:#fff}
+.rizvi-live-trade-range .entry{background:#087cb5}.rizvi-live-trade-range .sl{background:#8e34b0}.rizvi-live-trade-range .tp{background:#078b5c}
+</style>
+<script id="rizvi-v88-live-trade-range">
+(function(){
+'use strict';
+if(window.__RIZVI_TRADE_RANGE_V88)return;window.__RIZVI_TRADE_RANGE_V88=true;
+var host=null,box=null,series=null;
+function N(v){v=Number(v);return Number.isFinite(v)?v:NaN}
+function setup(){
+ host=document.querySelector('.chart');
+ series=window.RIZVI_TV_SERIES;
+ if(!host||!series)return false;
+ if(!box){box=document.createElement('div');box.className='rizvi-live-trade-range';box.innerHTML=
+ '<div class="zone tp-zone"></div><div class="zone sl-zone"></div>'+
+ '<div class="line entry"></div><div class="line sl"></div><div class="line tp1"></div><div class="line tp2"></div><div class="line tp3"></div>'+
+ '<div class="label entry">Entry</div><div class="label sl">SL</div><div class="label tp tp1">TP1</div><div class="label tp tp2">TP2</div><div class="label tp tp3">TP3</div>';
+ host.appendChild(box);}
+ return true;
+}
+function levels(){
+ var m=window.RIZVI_MASTER_SIGNAL||{}, d=m.direction;
+ if(d!=='BUY'&&d!=='SELL')return null;
+ var p=N(m.entry)||N(window.RIZVI_LIVE_CHART_PRICE);
+ if(!Number.isFinite(p))return null;
+ var out=null;
+ try{if(typeof window.RIZVI_SIGNAL_LEVELS==='function')out=window.RIZVI_SIGNAL_LEVELS(p,d)}catch(e){}
+ var sl=N(out?.sl),tp1=N(out?.tp1),tp2=N(out?.tp2),tp3=N(out?.tp3),entry=N(out?.entry);
+ if(!Number.isFinite(entry))entry=p;
+ if(!Number.isFinite(sl)||!Number.isFinite(tp1)||!Number.isFinite(tp2)||!Number.isFinite(tp3)){
+   var risk=Number(window.RIZVI_TRADE_RISK);
+   if(!Number.isFinite(risk)||risk<=0)risk=Math.max(Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0),Math.abs(p)*0.0015);
+   if(!Number.isFinite(risk)||risk<=0)risk=Math.max(1,Math.abs(p)*0.0015);
+   if(d==='BUY'){sl=entry-risk;tp1=entry+risk;tp2=entry+risk*1.5;tp3=entry+risk*2}
+   else{sl=entry+risk;tp1=entry-risk;tp2=entry-risk*1.5;tp3=entry-risk*2}
+ }
+ if(d==='BUY' && !(sl<entry&&entry<tp1&&tp1<tp2&&tp2<tp3))return null;
+ if(d==='SELL' && !(sl>entry&&entry>tp1&&tp1>tp2&&tp2>tp3))return null;
+ return {d:d,sl:sl,entry:entry,tp1:tp1,tp2:tp2,tp3:tp3};
+}
+function render(){
+ if(!setup())return;
+ var L=levels();
+ if(!L){box.style.display='none';return}
+ var vals=[L.sl,L.entry,L.tp1,L.tp2,L.tp3], ys={};
+ for(var k of ['sl','entry','tp1','tp2','tp3'])ys[k]=series.priceToCoordinate(L[k]);
+ if(vals.some(function(v){return !Number.isFinite(v)})||Object.values(ys).some(function(v){return !Number.isFinite(v)})){box.style.display='none';return}
+ var top=Math.min(ys.sl,ys.entry,ys.tp3),bottom=Math.max(ys.sl,ys.entry,ys.tp3),height=Math.max(24,bottom-top);
+ var rect=host.getBoundingClientRect(),chartEl=document.getElementById('rizviTvChartV55'),cr=chartEl?chartEl.getBoundingClientRect():rect;
+ box.style.left=Math.max(40,cr.width-150)+'px';
+ box.style.top=(cr.top-rect.top+top)+'px';
+ box.style.height=height+'px';box.style.display='block';
+ var tpTop=Math.min(ys.entry,ys.tp3),tpBottom=Math.max(ys.entry,ys.tp3);
+ var slTop=Math.min(ys.entry,ys.sl),slBottom=Math.max(ys.entry,ys.sl);
+ var tpz=box.querySelector('.tp-zone'),slz=box.querySelector('.sl-zone');
+ tpz.style.top=(tpTop-top)+'px';tpz.style.height=Math.max(2,tpBottom-tpTop)+'px';
+ slz.style.top=(slTop-top)+'px';slz.style.height=Math.max(2,slBottom-slTop)+'px';
+ ['entry','sl','tp1','tp2','tp3'].forEach(function(k){
+   var y=ys[k]-top;
+   box.querySelector('.line.'+k).style.top=y+'px';
+   var lab=box.querySelector('.label.'+k);lab.style.top=y+'px';
+   var price=L[k].toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+   lab.textContent=(k==='entry'?'Entry ':k.toUpperCase()+' ')+price;
+ });
+}
+function boot(){
+ if(setup()){render();setInterval(render,250);addEventListener('rizvi:signal-engine-update',render);addEventListener('rizvi:candle-update',render);addEventListener('resize',render)}
+ else setTimeout(boot,500);
+}
+boot();
+})();
 </script></body></html>
