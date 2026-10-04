@@ -497,6 +497,7 @@
       symbol:r.symbol,updatedAt:Date.now(),levels:r,
       latestBar:{t:latest.t,h:latest.h,l:latest.l,c:latest.c},
       sweeps,grabs,breakouts,direction,score,liquidityScore:score,
+      microBars:bars.slice(-12),
       status:eventCount?'EVENTS_DETECTED':'NO_EVENT',
       useFor:['liquidity sweep','liquidity grab','high/low raid','breakout detection','structure qualification']
     };
@@ -531,13 +532,17 @@
   }
   async function btc(){
     try{
-      const rows=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200',{cache:'no-store'}).then(r=>r.json());
-      if(!Array.isArray(rows))throw new Error('bad response');
-      const bars=rows.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
-      const v=buildRange(bars,'BTCUSD','BINANCE 15M');
-      if(v){publish(v);attachLiquidityEngine(v,bars);}
+      const [r15,r1]=await Promise.all([
+        fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200',{cache:'no-store'}).then(r=>r.json()),
+        fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=120',{cache:'no-store'}).then(r=>r.json())
+      ]);
+      if(!Array.isArray(r15)||!Array.isArray(r1))throw new Error('bad response');
+      const bars15=r15.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const bars1=r1.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const v=buildRange(bars15,'BTCUSD','BINANCE 15M + 1M MICRO');
+      if(v){publish(v);attachLiquidityEngine(v,bars1);window.RIZVI_LIQUIDITY_ENGINE.microTimeframe='1M';}
     }catch(e){
-      window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 15M'});
+      window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 15M + 1M MICRO'});
     }
   }
   async function gold(){
@@ -555,7 +560,7 @@
     if(sym==='XAU/USD')gold(); else if(sym==='BTCUSD')btc();
   }
   window.RIZVI_REFRESH_MARKET_RANGE=refresh;
-  refresh(); setInterval(refresh,30000);
+  refresh(); setInterval(refresh,5000);
   document.addEventListener('rizvi:symbol-change',refresh);
 })();
 </script><script>
@@ -601,6 +606,13 @@
     const range=Math.max(0,(latest.h||0)-(latest.l||0));
     const follow=range>0 && breakouts.some(x=>(x.side==='UP'&&latest.c>x.price+range*.10)||(x.side==='DOWN'&&latest.c<x.price-range*.10));
     if(follow)score+=15;
+    const micro=Array.isArray(e.microBars)?e.microBars:[];
+    if(micro.length>=4){
+      const mc=micro[micro.length-1].c, m3=micro[micro.length-4].c;
+      const move=Number.isFinite(mc)&&Number.isFinite(m3)?(mc-m3)/m3:0;
+      if(move>0.0006){score+=15; bullish+=1}
+      if(move<-0.0006){score+=15; bearish+=1}
+    }
     const direction=bullish>bearish?'BUY':bearish>bullish?'SELL':'NEUTRAL';
     window.RIZVI_SIGNAL_DIRECTION=direction==='NEUTRAL'?(window.RIZVI_SIGNAL_DIRECTION||'BUY'):direction;
     const signalText=document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
@@ -612,7 +624,7 @@
       symbol:e.symbol,updatedAt:Date.now(),signalDirection:signalText,
       liquidityScore,patternConfidence,marketDirection:direction,
       aligned,confirmedSweep:sweeps.length>0,confirmedBreakout:follow,
-      multiTimeframe:tfs.size>=2,status:liquidityScore>=70?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
+      multiTimeframe:tfs.size>=2,status:liquidityScore>=60?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
     };
     const qualityEl=document.querySelector('.card.gborder .row b');
     const readyEl=document.querySelector('.card.gborder .ready');
