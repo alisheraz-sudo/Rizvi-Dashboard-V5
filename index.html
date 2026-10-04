@@ -2360,4 +2360,40 @@ function normalize(){
 setInterval(normalize,500);
 normalize();
 })();
+</script><script id="rizvi-v91-signal-stability-lock">
+(function(){
+"use strict";
+if(window.__RIZVI_V91_STABILITY_LOCK)return;window.__RIZVI_V91_STABILITY_LOCK=true;
+const MIN=70,CONFIRM=75,HOLD_MS=15000,FLIP_CONFIRM=3;
+let state={dir:"WAIT",score:0,candidate:"WAIT",count:0,lastChange:0};
+function calc(){
+ const m=window.RIZVI_MASTER_SIGNAL||{},q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+ const score=Math.max(0,Math.min(100,Number.isFinite(Number(m.quality))?Number(m.quality):Number(q.patternConfidence)||0));
+ const trend=String(m.trend||q.trend||"").toUpperCase();
+ const raw=(m.direction==="BUY"||m.direction==="SELL")?m.direction:((q.marketDirection==="BUY"||q.marketDirection==="SELL")?q.marketDirection:"WAIT");
+ const counter=(trend==="BULLISH"&&raw==="SELL")||(trend==="BEARISH"&&raw==="BUY");
+ const dir=score>=CONFIRM&&!counter?raw:"WAIT";
+ return {score,trend,raw,dir,counter};
+}
+function apply(){
+ const v=calc(),now=Date.now();
+ if(v.dir!==state.candidate){state.candidate=v.dir;state.count=1}else state.count++;
+ if(state.dir==="WAIT"){
+  if(v.dir!=="WAIT"&&state.count>=FLIP_CONFIRM){state.dir=v.dir;state.lastChange=now}
+ }else if(v.dir!==state.dir){
+  if(v.dir==="WAIT"){
+   if(now-state.lastChange>=HOLD_MS){state.dir="WAIT";state.lastChange=now}
+  }else if(state.count>=FLIP_CONFIRM&&now-state.lastChange>=HOLD_MS){state.dir=v.dir;state.lastChange=now}
+ }
+ const ready=state.dir!=="WAIT"&&v.score>=CONFIRM;
+ window.RIZVI_FINAL_SIGNAL={direction:state.dir,quality:Math.round(v.score),trend:v.trend,counterTrend:v.counter,entryReady:ready,updatedAt:now};
+ window.RIZVI_SIGNAL_GATE=Object.assign({},window.RIZVI_SIGNAL_GATE||{},{minConfidence:MIN,confirmConfidence:CONFIRM,direction:state.dir,qualified:ready,counterTrend:v.counter,updatedAt:now});
+ const h=document.querySelector(".signalHead");
+ if(h){const b=h.querySelectorAll("b");if(b[0])b[0].textContent=state.dir;if(b[1])b[1].textContent=Math.round(v.score)+"%";const badge=h.querySelector(".badge");if(badge)badge.textContent=ready?"HIGH QUALITY":v.counter?"PULLBACK / WAIT":"WAIT";}
+ const card=document.querySelector(".right .card:first-child"),big=card&&card.querySelector(".big");
+ if(big){const a=big.querySelector("span:first-child"),b=big.querySelector("span:nth-child(2)");if(a)a.textContent=state.dir;if(b){const badge=b.querySelector(".badge");if(badge){b.childNodes[0].nodeValue=Math.round(v.score)+"% ";badge.textContent=ready?"HIGH QUALITY":v.counter?"PULLBACK / WAIT":"WAIT";}}}
+ const readyBox=document.querySelector(".gborder .ready");if(readyBox){readyBox.textContent=ready?"SIGNAL QUALIFIED":v.counter?"WAIT — TREND PULLBACK":"WAIT FOR CONFIRMATION";readyBox.style.background=ready?"#087e58":"#73540b";readyBox.style.borderColor=ready?"#11e091":"#d6a62b";}
+}
+setInterval(apply,1000);apply();
+})();
 </script></body></html>
