@@ -6,6 +6,9 @@ const state = {
   authorized: false,
   accountId: null,
   symbols: {},
+  symbolMeta: {},
+  lastQuotes: {},
+  bars: {},
   levels: new Map(),
   lastDepthAt: 0,
   lastError: null,
@@ -26,6 +29,13 @@ const PT = {
   DEPTH_EVENT: 2155,
   SUBSCRIBE_DEPTH_REQ: 2156,
   SUBSCRIBE_DEPTH_RES: 2157,
+  SUB_SPOTS_REQ: 2127,
+  SUB_SPOTS_RES: 2128,
+  SPOT_EVENT: 2131,
+  SUB_TB_REQ: 2135,
+  SUB_TB_RES: 2165,
+  GET_TB_REQ: 2137,
+  GET_TB_RES: 2138,
   GET_ACCOUNTS_BY_TOKEN_REQ: 2149,
   GET_ACCOUNTS_BY_TOKEN_RES: 2150,
   HEARTBEAT_EVENT: 51
@@ -111,13 +121,44 @@ function subscribeMatchingSymbols(ws, symbols) {
     if (!id || !name) continue;
     if (wanted.some(w => name === w || name.includes(w) || w.includes(name))) {
       state.symbols[id] = name;
+      state.symbolMeta[id] = {digits:Number(s.digits ?? 5), name};
       if (!state.levels.has(String(id))) state.levels.set(String(id), new Map());
-      send(ws, PT.SUBSCRIBE_DEPTH_REQ, {
-        ctidTraderAccountId: state.accountId,
-        symbolId: [id]
-      });
+      send(ws, PT.SUBSCRIBE_DEPTH_REQ, {ctidTraderAccountId: state.accountId, symbolId: [id]});
+      send(ws, PT.SUB_SPOTS_REQ, {ctidTraderAccountId: state.accountId, symbolId: [id], subscribeToSpotTimestamp:true});
+      send(ws, PT.SUB_TB_REQ, {ctidTraderAccountId: state.accountId, period:1, symbolId:id});
+      requestTrendbars(ws,id,1,500);
     }
   }
+}
+function requestTrendbars(ws,symbolId,period=1,count=500){
+  const now=Date.now(), from=now-7*24*60*60*1000;
+  send(ws, PT.GET_TB_REQ, {ctidTraderAccountId:state.accountId,symbolId:Number(symbolId),period,fromTimestamp:from,toTimestamp:now,count});
+}
+function decodeTrendbar(b,symbolId){
+  if(!b || b.low==null)return null;
+  const digits=Number(state.symbolMeta[symbolId]?.digits);
+  const scale=Math.pow(10,Number.isFinite(digits)?digits:5);
+  const low=Number(b.low)/scale;
+  const o=low+Number(b.deltaOpen||0)/scale;
+  const h=low+Number(b.deltaHigh||0)/scale;
+  const c=low+Number(b.deltaClose||0)/scale;
+  const t=Number(b.utcTimestampInMinutes||0)*60000;
+  return {t,o,h,l:low,c,v:Number(b.volume||0)};
+}
+function handleSpot(p){
+  const id=Number(p.symbolId), digits=Number(state.symbolMeta[id]?.digits), scale=Math.pow(10,Number.isFinite(digits)?digits:5);
+  const bid=p.bid!=null?Number(p.bid)/scale:null, ask=p.ask!=null?Number(p.ask)/scale:null;
+  const price=Number.isFinite(bid)&&Number.isFinite(ask)?(bid+ask)/2:(Number.isFinite(bid)?bid:ask);
+  if(Number.isFinite(price)){
+    state.lastQuotes[id]={symbol:state.symbols[id]||String(id),symbolId:id,bid,ask,price,timestamp:Number(p.timestamp||Date.now())};
+  }
+  if(Array.isArray(p.trendbar)){
+    for(const b of p.trendbar){const x=decodeTrendbar(b,id);if(!x)continue;const a=state.bars[id]||[];const i=a.findIndex(y=>y.t===x.t);if(i>=0)a[i]=x;else a.push(x);state.bars[id]=a.slice(-500);}
+  }
+}
+function handleTrendbars(p){
+  const id=Number(p.symbolId), a=(p.trendbar||[]).map(b=>decodeTrendbar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);
+  if(a.length)state.bars[id]=a.slice(-500);
 }
 
 function handleDepth(p) {
@@ -208,10 +249,9 @@ function connect() {
       return;
     }
 
-    if (m.payloadType === PT.DEPTH_EVENT) {
-      handleDepth(p);
-      return;
-    }
+    if (m.payloadType === PT.SPOT_EVENT) { handleSpot(p); return; }
+    if (m.payloadType === PT.GET_TB_RES) { handleTrendbars(p); return; }
+    if (m.payloadType === PT.DEPTH_EVENT) { handleDepth(p); return; }
 
     if (m.payloadType === PT.HEARTBEAT_EVENT) {
       return;
@@ -257,6 +297,8 @@ function status() {
     symbols: state.symbols,
     depthLevels: Array.from(state.levels.entries()).reduce((n,[,v]) => n + v.size, 0),
     lastDepthAt: state.lastDepthAt || null,
+    quotes: state.lastQuotes,
+    bars: state.bars,
     lastError: state.lastError,
     source: 'CTRADER_LEVEL2'
   };
