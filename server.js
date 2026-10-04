@@ -131,12 +131,7 @@ const server=http.createServer(async(req,res)=>{
         return send(res,400,'text/plain; charset=utf-8','cTrader authorization failed: '+(data.description||data.errorCode||'unknown error'));
       }catch(e){return send(res,500,'text/plain; charset=utf-8','cTrader authorization error: '+e.message);}
     }
-    const code=url.searchParams.get('code');
-    const error=url.searchParams.get('error');
-    const target=code
-      ? '/?ctrader_code='+encodeURIComponent(code)
-      : '/?ctrader_error='+encodeURIComponent(error||'authorization_failed');
-    return res.writeHead(302,{Location:target,'Cache-Control':'no-store'}).end();
+    return res.writeHead(302,{Location:'/?ctrader_error=authorization_failed','Cache-Control':'no-store'}).end();
   }
 
   if(url.pathname==='/login' && req.method==='GET'){
