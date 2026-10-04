@@ -2555,4 +2555,53 @@ function tests(){let full=build(), names=Object.keys(full.components),out={versi
 W.RIZVI_RUN_INDICATOR_TESTS=tests;W.RIZVI_GET_INDICATOR_CONFLUENCE=build;setTimeout(tests,2500);setInterval(tests,5000);
 })();
 </script>
+
+<script id="rizvi-v5-multi-algorithm-validation-v1">
+(function(){
+'use strict';
+const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x)), now=()=>Date.now();
+const num=x=>Number.isFinite(Number(x))?Number(x):NaN;
+function bars(){const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);return a.map(b=>({time:num(b.time??b.timestamp??b.t),open:num(b.open??b.o),high:num(b.high??b.h),low:num(b.low??b.l),close:num(b.close??b.c),volume:num(b.volume??b.v)})).filter(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite))}
+function ema(a,n){if(a.length<n)return NaN;let k=2/(n+1),e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function sma(a,n){if(a.length<n)return NaN;return a.slice(-n).reduce((s,x)=>s+x,0)/n}
+function rsi(c,n=14){if(c.length<=n)return NaN;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){let d=c[i]-c[i-1];if(d>0)g+=d;else l-=d}return l?100-100/(1+g/l):100}
+function features(bs){
+ const c=bs.map(x=>x.close),last=c.at(-1),e20=ema(c,20),e50=ema(c,50),rv=rsi(c),vwap=(()=>{let pv=0,v=0;bs.slice(-100).forEach(b=>{let q=num(b.volume);q=Number.isFinite(q)&&q>0?q:1;pv+=(b.high+b.low+b.close)/3*q;v+=q});return v?pv/v:NaN})();
+ const trend=last>e20&&e20>e50?1:last<e20&&e20<e50?-1:0;
+ const mom=c.length>=6?(last-c.at(-6)>0?1:last-c.at(-6)<0?-1:0):0;
+ const rb=rv>=55?1:rv<=45?-1:0;
+ const vb=Number.isFinite(vwap)?last>vwap?1:last<vwap?-1:0:0;
+ const d=bs.slice(-20).reduce((s,b)=>s+(b.close-b.open)/Math.max(b.high-b.low,1e-9)*(num(b.volume)||1),0), db=d>0?1:d<0?-1:0;
+ const pat=bs.length>=2?(last>bs.at(-1).open?1:-1):0;
+ const li=W.RIZVI_LIQUIDITY_ENGINE||{}, lb=li.direction==='bullish'?1:li.direction==='bearish'?-1:0;
+ const of=W.RIZVI_ORDER_FLOW||W.RIZVI_CTRADER_ORDER_FLOW||{}, depth=W.RIZVI_ORDER_FLOW_DEPTH||[], sums=depth.reduce((z,x)=>[z[0]+(num(x.bid)||0),z[1]+(num(x.ask)||0)],[0,0]), im=sums[0]+sums[1]?(sums[0]-sums[1])/(sums[0]+sums[1]):0, ob=im>.08?1:im<-.08?-1:0;
+ const div=(c.length>=30&&rv>50&&c.at(-1)>c.at(-11))?-1:(c.length>=30&&rv<50&&c.at(-1)<c.at(-11))?1:0;
+ const vp=Number.isFinite(vwap)?vb:0;
+ return {trend,momentum:mom,rsi:rb,vwap:vb,delta:db,candle:pat,liquidity:lb,orderflow:ob,divergence:div,volumeProfile:vp,raw:{ema20:e20,ema50:e50,rsi:rv,vwap,delta:d,orderflow:im,liquidity:li,of:of}};
+}
+const algos={
+ A_TREND:{weights:{trend:30,vwap:25,momentum:20,rsi:15,candle:10}},
+ B_MOMENTUM:{weights:{momentum:30,rsi:25,delta:20,trend:15,candle:10}},
+ C_LIQUIDITY:{weights:{liquidity:35,candle:20,trend:15,momentum:10,vwap:10,divergence:10}},
+ D_ORDERFLOW:{weights:{orderflow:40,delta:25,volumeProfile:15,vwap:10,trend:10}},
+ E_REVERSAL:{weights:{divergence:35,liquidity:25,rsi:20,candle:15,vwap:5}},
+ F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,delta:10,candle:10,liquidity:12,orderflow:12,divergence:7,volumeProfile:7}}
+};
+function runAlgo(name,f){const w=algos[name].weights;let total=0,ws=0,agree=0,active=0;for(const k in w){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Object.keys(w).length)*100),activeIndicators:active,weights:w}}
+function test(){const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
+ const ranked=Object.values(results).sort((a,b)=>b.confidence-a.confidence||b.agreement-a.agreement);
+ const master=ranked[0]||{action:'WAIT',confidence:0};
+ const report={version:'v1',timestamp:new Date().toISOString(),bars:bs.length,method:'independent-algorithms + weighted confluence',algorithms:results,ranking:ranked.map(x=>({name:x.name,action:x.action,confidence:x.confidence,agreement:x.agreement})),master:{action:master.action,confidence:master.confidence,algorithm:master.name},note:'Accuracy is measured only after outcome labels are collected; confidence is not claimed as historical accuracy.'};
+ W.RIZVI_MULTI_ALGORITHM_REPORT=report;
+ W.RIZVI_MASTER_ALGORITHM=report.master;
+ W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
+ W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'RUNNING',algorithms:Object.keys(algos),master:report.master};
+ W.dispatchEvent(new CustomEvent('rizvi:multi-algorithm-update',{detail:report}));
+ return report;
+}
+W.RIZVI_RUN_MULTI_ALGORITHM_TESTS=test;
+W.RIZVI_ALGORITHM_DEFINITIONS=algos;
+setTimeout(test,3000);setInterval(test,5000);
+})();
+</script>
 </body></html>
