@@ -1309,4 +1309,47 @@
   window.addEventListener('rizvi:signal-qualification-update',apply);
   if(window.RIZVI_SIGNAL_QUALIFICATION)apply({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
+</script><script>
+(function(){
+  const quotePrice=document.getElementById('quotePrice');
+  const quoteSymbol=document.getElementById('quoteSymbol');
+  const chartClose=document.getElementById('chartClose');
+  const chartTag=document.getElementById('chartPriceTag');
+  const signalDir=document.querySelector('.signalHead div:first-child b');
+  const quality=document.querySelector('.signalHead div:nth-child(2) b');
+  const execCard=[...document.querySelectorAll('.card')].find(x=>x.textContent.includes('EXECUTION'));
+  const execScore=execCard?.querySelector('.row b');
+  const ready=execCard?.querySelector('.ready');
+  const signalCard=[...document.querySelectorAll('.card')].find(x=>x.textContent.includes('1. SIGNAL'));
+  const signalBig=signalCard?.querySelector('.big span:first-child');
+  const signalQuality=signalCard?.querySelector('.big span:nth-child(2)');
+  function fmt(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function applyPrice(e){
+    const d=e?.detail||{}, p=Number(d.price);
+    if(!Number.isFinite(p))return;
+    if(quotePrice)quotePrice.textContent=fmt(p);
+    if(chartClose)chartClose.textContent=fmt(p);
+    if(chartTag)chartTag.textContent=fmt(p);
+    window.RIZVI_SIGNAL_LEVELS?.(p,signalDir?.textContent?.trim()||'BUY');
+  }
+  function applyQualification(e){
+    const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;
+    if(!q)return;
+    const dir=q.marketDirection==='NEUTRAL'?(signalDir?.textContent?.trim()||'BUY'):q.marketDirection;
+    const score=Number(q.patternConfidence);
+    if(signalDir&&q.marketDirection!=='NEUTRAL')signalDir.textContent=dir;
+    if(quality&&Number.isFinite(score))quality.textContent=score+'%';
+    if(signalBig&&q.marketDirection!=='NEUTRAL')signalBig.textContent=dir;
+    if(signalQuality&&Number.isFinite(score))signalQuality.firstChild.textContent=score+'% ';
+    if(execScore&&Number.isFinite(q.liquidityScore))execScore.textContent=q.liquidityScore+'%';
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6b4b08';
+    }
+  }
+  window.addEventListener('rizvi:price-update',applyPrice);
+  window.addEventListener('rizvi:signal-qualification-update',applyQualification);
+  if(Number.isFinite(Number(window.RIZVI_LIVE_PRICE)))applyPrice({detail:{price:Number(window.RIZVI_LIVE_PRICE),symbol:'BTCUSD'}});
+  if(window.RIZVI_SIGNAL_QUALIFICATION)applyQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
+})();
 </script></body></html>
