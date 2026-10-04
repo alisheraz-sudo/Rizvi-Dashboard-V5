@@ -1501,4 +1501,40 @@
   document.addEventListener('rizvi:symbol-change',()=>setTimeout(draw,50));
   setTimeout(draw,100);
 })();
+</script><script>
+(function(){
+  const qCard=document.querySelector('.right .card');
+  const execCard=document.querySelector('.right .card.gborder');
+  function bind(e){
+    if(!e)return;
+    const dir=e.marketDirection==='SELL'?'SELL':e.marketDirection==='BUY'?'BUY':'WAIT';
+    const signalBig=qCard?.querySelector('.big span:first-child');
+    const signalScore=qCard?.querySelector('.big span:nth-child(2)');
+    const execScore=execCard?.querySelector('.row b');
+    const ready=execCard?.querySelector('.ready');
+    if(signalBig)signalBig.textContent=dir;
+    if(signalScore)signalScore.innerHTML=(Number.isFinite(e.patternConfidence)?e.patternConfidence:0)+'% <em class="badge">'+(e.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(execScore)execScore.innerHTML=(Number.isFinite(e.liquidityScore)?e.liquidityScore:0)+'%';
+    if(ready){ready.textContent=e.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=e.status==='QUALIFIED_CONTEXT'?'#087e58':'#6d5710';}
+    window.RIZVI_OPERATIONAL_SIGNAL=e;
+  }
+  window.addEventListener('rizvi:signal-qualification-update',ev=>bind(ev.detail));
+  if(window.RIZVI_SIGNAL_QUALIFICATION)bind(window.RIZVI_SIGNAL_QUALIFICATION);
+})();
+</script>
+<script>
+(function(){
+  const live=document.getElementById('quoteLive');
+  const sym=document.getElementById('quoteSymbol');
+  const price=document.getElementById('quotePrice');
+  function bind(){
+    const s=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+    const p=window.RIZVI_LIVE_PRICES?.[s] ?? (s==='BTCUSD'?window.RIZVI_LIVE_PRICE:null);
+    if(sym)sym.textContent=s;
+    if(Number.isFinite(Number(p))&&price)price.textContent=Number(p).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(live)live.textContent=Number.isFinite(Number(p))?'LIVE':'DATA WAIT';
+  }
+  bind();setInterval(bind,2000);
+  document.addEventListener('rizvi:symbol-change',bind);
+})();
 </script></body></html>
