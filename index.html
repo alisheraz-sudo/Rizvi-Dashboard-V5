@@ -389,7 +389,7 @@
      return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};
    });
    if(!bars.length)return;
-   window.RIZVI_RAW_BARS=bars;window.RIZVI_CANDLE_SOURCE='XAUS';window.RIZVI_CANDLE_SYMBOL='XAU/USD';
+   window.RIZVI_RAW_BARS=bars;window.RIZVI_CANDLE_SOURCE='cTrader';window.RIZVI_CANDLE_SYMBOL='XAU/USD';
    window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
    window.dispatchEvent(new CustomEvent('rizvi:gold-bars-update',{detail:{bars}}));
   }catch(e){}
@@ -2610,19 +2610,23 @@ const allowed=new Set(['BTCUSD','XAU/USD','USOIL']);
 function get(){try{const s=localStorage.getItem(KEY);return allowed.has(s)?s:'BTCUSD'}catch(e){return 'BTCUSD'}}
 function set(sym){try{localStorage.setItem(KEY,sym)}catch(e){}}
 function fire(sym){window.RIZVI_CURRENT_SYMBOL=sym;const sel=document.getElementById('symbolSelect');if(sel)sel.value=sym;const q=document.getElementById('quoteSymbol');if(q)q.textContent=sym;document.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));window.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));}
-function loadGoldBars(){
- return fetch('/market/xau/intraday?hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
-  if(Array.isArray(d?.bars)&&d.bars.length)return d.bars.map(x=>({t:Number(x.t),o:Number(x.o),h:Number(x.h),l:Number(x.l),c:Number(x.c)}))
-    .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite));
-  const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
-  const pts=a.map(x=>Array.isArray(x)
-    ? {t:+x[0],p:+x[1]}
-    : {t:+(x.timestamp||x.time||x.t),p:+(x.p??x.price??x.close??x.c)}
-  ).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
-  const bars=pts.map((x,i)=>{const prev=i?pts[i-1].p:x.p;return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};});
-  if(!bars.length)throw new Error('XAU intraday unavailable');
-  return bars;
- });
+async function loadGoldBars(){
+ const r=await fetch('/market/ctrader?symbol=XAUUSD&fresh='+Date.now(),{cache:'no-store'});
+ const d=await r.json();
+ if(!d.ok||!d.authorized)throw new Error(d.error||'cTrader XAU not authorized');
+ const bars=Array.isArray(d.bars)?d.bars.filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)):[];
+ if(!bars.length)throw new Error('cTrader XAU M1 bars unavailable');
+ window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+ if(Number.isFinite(Number(d.price)))window.RIZVI_LIVE_PRICES['XAU/USD']=Number(d.price);
+ return bars;
+}
+async function refreshXauDirect(){
+ if(window.RIZVI_CURRENT_SYMBOL!=='XAU/USD')return;
+ try{
+  const r=await fetch('/market/ctrader?symbol=XAUUSD&fresh='+Date.now(),{cache:'no-store'}); const d=await r.json();
+  if(Number.isFinite(Number(d.price))){const p=Number(d.price);window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};window.RIZVI_LIVE_PRICES['XAU/USD']=p;window.RIZVI_LIVE_PRICE=p;document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));}
+  if(Array.isArray(d.bars)&&d.bars.length){window.RIZVI_RAW_BARS=d.bars;window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',d.bars):d.bars;window.RIZVI_CANDLE_SOURCE='cTrader';document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:'XAU/USD',bars:d.bars.length}}));}
+ }catch(e){console.warn('cTrader XAU refresh',e);}
 }
 async function switchSymbol(sym){
  if(!allowed.has(sym))return;
@@ -2638,10 +2642,10 @@ async function switchSymbol(sym){
    window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
    const last=bars.at(-1)?.c;
    if(Number.isFinite(last)){window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};window.RIZVI_LIVE_PRICES['XAU/USD']=last;window.RIZVI_LIVE_PRICE=last;}
-   document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{symbol:'XAU/USD',source:'xaus',bars}}));
+   document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{symbol:'XAU/USD',source:'cTrader',bars}}));
    window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:'XAU/USD',bars:bars.length}}));
    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:last,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
-  }catch(e){window.RIZVI_CHART_DATA=window.RIZVI_CHART_DATA||{};window.RIZVI_CHART_DATA['XAU/USD']={source:'xaus',status:'unavailable',error:String(e?.message||e)};}
+  }catch(e){window.RIZVI_CHART_DATA=window.RIZVI_CHART_DATA||{};window.RIZVI_CHART_DATA['XAU/USD']={source:'cTrader',status:'unavailable',error:String(e?.message||e)};}
  }
 }
 const sel=document.getElementById('symbolSelect');
@@ -2651,4 +2655,4 @@ window.RIZVI_SET_SYMBOL=function(sym){if(!allowed.has(sym))return false;set(sym)
 window.addEventListener('rizvi:symbol-change',e=>{const s=e.detail?.symbol;if(allowed.has(s))set(s)});
 const initial=get();setTimeout(()=>switchSymbol(initial),0);
 })();
-</script></body></html>
+</script><script src="/ctrader-adapter.js"></script></body></html>
