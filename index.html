@@ -1843,13 +1843,36 @@
     const raw=(window.RIZVI_RAW_BARS||[]);
     const label=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
     const mins=TF[label]||1;
-    /* Prefer the canonical timeframe pipeline when available. */
     let data=aggregate(raw,mins);
     if(Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_CANDLE_TIMEFRAME===label&&window.RIZVI_AGG_BARS.length){
       data=window.RIZVI_AGG_BARS.map(b=>({time:Math.floor(num(b.t)/1000),open:num(b.o),high:num(b.h),low:num(b.l),close:num(b.c)}))
         .filter(b=>Number.isFinite(b.time)&&[b.open,b.high,b.low,b.close].every(Number.isFinite));
     }
     return data;
+  }
+
+  async function ensureCandles(){
+    try{
+      const r=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000',{cache:'no-store'});
+      const d=await r.json();
+      if(!Array.isArray(d)||!d.length)throw new Error('Binance candle feed empty');
+      const bars=d.map(x=>({t:Number(x[0]),o:Number(x[1]),h:Number(x[2]),l:Number(x[3]),c:Number(x[4])}))
+        .filter(b=>[b.t,b.o,b.h,b.l,b.c].every(Number.isFinite));
+      if(!bars.length)throw new Error('No valid BTC candles');
+      window.RIZVI_RAW_BARS=bars;
+      window.RIZVI_CANDLE_SOURCE='BINANCE_BTCUSDT';
+      window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',timeframe:'1m',source:'Binance BTCUSDT klines',live:true,bars:bars.length,updatedAt:Date.now()};
+      const label=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
+      const mins=TF[label]||1;
+      window.RIZVI_AGG_BARS=aggregate(bars,mins).map(b=>({t:b.time*1000,o:b.open,h:b.high,l:b.low,c:b.close}));
+      document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
+      document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{source:'Binance BTCUSDT klines',live:true,bars:bars.length}}));
+      refresh(true);
+      return true;
+    }catch(e){
+      window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',timeframe:'1m',source:'Binance BTCUSDT klines',live:false,error:String(e),updatedAt:Date.now()};
+      return false;
+    }
   }
 
   function init(){
@@ -1887,6 +1910,8 @@
       });
       ready=true;
       refresh(true);
+      ensureCandles();
+      setInterval(ensureCandles,30000);
       window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(_){}});
       setInterval(()=>refresh(false),700);
       window.addEventListener('rizvi:price-update',()=>refresh(false));
