@@ -53,12 +53,7 @@
     if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
     document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction}}));
     window.dispatchEvent(new CustomEvent('rizvi:signal-levels-update',{detail:window.RIZVI_TRADE_RANGE||null}));
-    window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
-    window.RIZVI_LIVE_PRICES.BTCUSD=p;
-    const direction=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
-    if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
-    window.dispatchEvent(new CustomEvent('rizvi:signal-levels-update',{detail:window.RIZVI_TRADE_RANGE||null}));
-    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction}}));
+
   }
   async function btc(){
     try{
