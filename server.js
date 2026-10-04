@@ -58,6 +58,32 @@ function readJson(req){
 }
 function normalizedSymbol(x){return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
 function ofKey(x){return normalizedSymbol(x.symbol||x.ticker||'BTCUSDT');}
+async function fetchXauJson(endpoint){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),10000);
+  try{
+    const r=await fetch('https://xaus.com'+endpoint,{headers:{Accept:'application/json'},signal:ctrl.signal});
+    if(!r.ok)throw new Error('XAUS HTTP '+r.status);
+    return await r.json();
+  }finally{clearTimeout(timer);}
+}
+function normalizeXauBars(data){
+  const rows=Array.isArray(data)?data:(data?.data||data?.prices||data?.points||data?.bars||[]);
+  const pts=[];
+  for(const x of rows){
+    let t,p,o,h,l,c;
+    if(Array.isArray(x)){t=Number(x[0]);o=Number(x[1]);h=Number(x[2]);l=Number(x[3]);c=Number(x[4]);p=Number(x[1]);}
+    else {t=Number(x.timestamp??x.time??x.t);o=Number(x.open??x.o);h=Number(x.high??x.h);l=Number(x.low??x.l);c=Number(x.close??x.c);p=Number(x.p??x.price);}
+    if(!Number.isFinite(t))continue;
+    if(t<1e12)t*=1000;
+    if([o,h,l,c].every(Number.isFinite))pts.push({t,o,h,l,c});
+    else if(Number.isFinite(p))pts.push({t,p});
+  }
+  pts.sort((a,b)=>a.t-b.t);
+  if(pts.length && 'p' in pts[0])return pts.map((x,i)=>{const prev=i?pts[i-1].p:x.p;return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};});
+  return pts;
+}
+
 function ofReply(res,status,obj){
   return send(res,status,'application/json; charset=utf-8',JSON.stringify(obj),{
     'Access-Control-Allow-Origin':'*',
@@ -85,6 +111,22 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/orderflow' && req.method==='GET'){
     const key=String(url.searchParams.get('symbol')||'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g,'');
     return ofReply(res,200,{ok:true,symbol:key,data:RIZVI_OF_LATEST.get(key)||null,history:(RIZVI_OF_HISTORY.get(key)||[]).slice(-30)});
+  }
+
+  if(url.pathname==='/market/xau/spot' && req.method==='GET'){
+    try{
+      const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());
+      return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data});
+    }catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}
+  }
+  if(url.pathname==='/market/xau/intraday' && req.method==='GET'){
+    try{
+      const hours=Math.min(72,Math.max(1,Number(url.searchParams.get('hours')||12)));
+      const data=await fetchXauJson('/api/v1/intraday?symbol=xau&hours='+hours+'&fresh='+Date.now());
+      const bars=normalizeXauBars(data);
+      if(!bars.length)return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:'No XAU bars returned'});
+      return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',bars,updatedAt:Date.now()});
+    }catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}
   }
 
   if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
