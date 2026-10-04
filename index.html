@@ -1649,4 +1649,47 @@
   run();setInterval(run,30000);
 })();
 </script><script src="orderflow-client.js"></script><script src="rizvi-master-engine.js"></script><script src="signal-learning-journal.js"></script><script src="rizvi-test-monitor.js"></script>
-</body></html>
+<script>
+(function(){
+  'use strict';
+  function renderMaster(m){
+    if(!m)return;
+    const dir=m.direction==='BUY'?'BUY':m.direction==='SELL'?'SELL':'WAIT';
+    const score=Math.round(Number(m.confidence)||0);
+    const qualified=!!m.qualified;
+    const headDir=document.querySelector('.signalHead div:first-child b');
+    const headScore=document.querySelector('.signalHead div:nth-child(2) b');
+    const card=document.querySelector('.right .card:nth-child(1)');
+    const exec=document.querySelector('.right .card:nth-child(2)');
+    const bigDir=card?.querySelector('.big span:first-child');
+    const bigScore=card?.querySelector('.big span:nth-child(2)');
+    const execScore=exec?.querySelector('.row b');
+    const ready=exec?.querySelector('.ready');
+    const rows=card?.querySelectorAll('.rows .row b')||[];
+    if(headDir)headDir.textContent=dir;
+    if(headScore)headScore.textContent=score+'%';
+    if(bigDir)bigDir.textContent=dir;
+    if(bigScore)bigScore.innerHTML=score+'% <em class="badge" style="background:#173c75;color:#7fb8ff">'+(score>=80?'HIGH QUALITY':score>=65?'MEDIUM':'WAIT')+'</em>';
+    if(execScore)execScore.innerHTML=score+'% &nbsp; <em class="badge">'+(qualified?'HIGH QUALITY':score>=65?'MEDIUM':'WAIT')+'</em>';
+    if(ready){
+      ready.textContent=qualified?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=qualified?'#087e58':'#6d5510';
+      ready.style.borderColor=qualified?'#11e091':'#d99b18';
+    }
+    if(rows[0])rows[0].textContent=m.trend==='BUY'?'Bullish ↑':m.trend==='SELL'?'Bearish ↓':'Neutral';
+    if(rows[1])rows[1].textContent=m.momentum==='BUY'?'Bullish ↑':m.momentum==='SELL'?'Bearish ↓':'Neutral';
+    if(rows[2] && Number.isFinite(Number(m.rsi)))rows[2].textContent=Math.round(Number(m.rsi));
+    if(rows[3])rows[3].textContent=m.structure==='BUY'?'Support ↑':m.structure==='SELL'?'Resistance ↓':'Neutral';
+    if(rows[4]){
+      const of=m.engines?.orderFlow;
+      rows[4].textContent=of?.signal==='BUY'?'Positive ↑':of?.signal==='SELL'?'Negative ↓':'Neutral';
+    }
+    window.RIZVI_VISIBLE_MASTER_STATE={direction:dir,confidence:score,qualified,confirmations:m.confirmations,updatedAt:m.updatedAt};
+  }
+  window.addEventListener('rizvi:master-confirmation-update',e=>renderMaster(e.detail));
+  window.addEventListener('rizvi:signal-qualification-update',e=>{
+    if(window.RIZVI_MASTER_CONFIRMATION)renderMaster(window.RIZVI_MASTER_CONFIRMATION);
+  });
+  setTimeout(()=>{if(window.RIZVI_MASTER_CONFIRMATION)renderMaster(window.RIZVI_MASTER_CONFIRMATION);},250);
+})();
+</script></body></html>
