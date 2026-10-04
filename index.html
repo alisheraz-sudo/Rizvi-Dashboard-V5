@@ -1440,4 +1440,27 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>setQualification(e.detail));
   if(window.RIZVI_SIGNAL_QUALIFICATION)setQualification(window.RIZVI_SIGNAL_QUALIFICATION);
 })();
+</script><script>
+(function(){
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function bindMarket(e){
+    const r=e?.detail||window.RIZVI_MARKET_RANGE;if(!r)return;
+    const map={dayHigh:'dayHigh',dayLow:'dayLow',h4High:'h4High',h4Low:'h4Low',h1High:'h1High',h1Low:'h1Low',m30High:'m30High',m30Low:'m30Low',m15High:'m15High',m15Low:'m15Low'};
+    Object.keys(map).forEach(k=>{const el=document.getElementById(map[k]);if(el)el.textContent=fmt(r[k]);});
+  }
+  function bindQualification(e){
+    const q=e?.detail||window.RIZVI_SIGNAL_QUALIFICATION;if(!q)return;
+    const quality=document.querySelector('.signalHead div:nth-child(2) b');
+    const signal=document.querySelector('.signalHead div:first-child b');
+    const execScore=document.querySelector('.right .card:nth-child(2) .row b');
+    const ready=document.querySelector('.right .card:nth-child(2) .ready');
+    if(signal&&q.marketDirection&&q.marketDirection!=='NEUTRAL')signal.textContent=q.marketDirection;
+    if(quality)quality.textContent=(q.patternConfidence||q.liquidityScore||0)+'%';
+    if(execScore)execScore.innerHTML=(q.liquidityScore||0)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#5d4910';}
+  }
+  window.addEventListener('rizvi:market-range-update',e=>bindMarket(e));
+  window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e));
+  setTimeout(()=>{bindMarket();bindQualification();},100);
+})();
 </script></body></html>
