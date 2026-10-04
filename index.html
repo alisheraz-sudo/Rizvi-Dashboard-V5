@@ -2516,4 +2516,20 @@ function render(){
 setInterval(render,1000);
 })();
 </script>
-</body></html>
+<script id="rizvi-ctrader-live-bridge">
+(function(){
+  const symbols=['XAUUSD','BTCUSD'];
+  async function pull(symbol){
+    try{
+      const r=await fetch('/ctrader/orderflow?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
+      const j=await r.json();
+      if(j&&j.data&&Array.isArray(j.data.levels)&&typeof window.RIZVI_SET_ORDER_FLOW_DEPTH==='function'){
+        window.RIZVI_SET_ORDER_FLOW_DEPTH(j.data.levels,'CTRADER_LEVEL2');
+        window.RIZVI_CTRADER_LIVE=j.data;
+      }
+    }catch(e){}
+  }
+  setInterval(function(){symbols.forEach(pull)},1000);
+  symbols.forEach(pull);
+})();
+</script></body></html>
