@@ -132,3 +132,44 @@
 (function(){'use strict';if(window.__RIZVI_XAU_LOCK)return;window.__RIZVI_XAU_LOCK=true;let active=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';window.addEventListener('rizvi:symbol-change',e=>{active=e.detail&&e.detail.symbol||'BTCUSD';if(active==='XAU/USD'){window.RIZVI_RAW_BARS=[];window.RIZVI_AGG_BARS=[];}});})();
 /* XAU/BTC HARD CHART SOURCE LOCK V2 */
 (function(){'use strict';if(window.__RIZVI_XAU_BTC_HARD_LOCK)return;window.__RIZVI_XAU_BTC_HARD_LOCK=true;let active=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';let raw=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];const original=Object.getOwnPropertyDescriptor(window,'RIZVI_RAW_BARS');function isXAU(){return active==='XAU/USD'}function setRaw(v){if(!Array.isArray(v))return;if(isXAU()){const p=v.slice(-5).map(x=>Number(x&&x.c)).filter(Number.isFinite);const avg=p.length?p.reduce((a,b)=>a+b,0)/p.length:NaN;if(!Number.isFinite(avg)||avg>20000)return;}raw=v}try{Object.defineProperty(window,'RIZVI_RAW_BARS',{configurable:true,enumerable:true,get:()=>raw,set:setRaw});}catch(e){}function switchTo(s){active=s||'BTCUSD';window.RIZVI_CURRENT_SYMBOL=active;if(isXAU()){raw=[];window.RIZVI_AGG_BARS=[];window.RIZVI_LIVE_CHART_PRICE=NaN;setTimeout(()=>{fetch('/market/ctrader?symbol=XAUUSD&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{if(active!=='XAU/USD')return;const b=Array.isArray(d&&d.bars)?d.bars.filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)):[];if(!b.length)return;window.RIZVI_CANDLE_SYMBOL='XAU/USD';raw=b;window.RIZVI_AGG_BARS=typeof window.RIZVI_SET_TIMEFRAME==='function'?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',b):b;window.RIZVI_LIVE_CHART_PRICE=Number(b[b.length-1].c);document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:'XAU/USD',bars:b.length,source:'XAU_HARD_LOCK'}}));}).catch(()=>{})},50)}}window.addEventListener('rizvi:symbol-change',e=>switchTo(e.detail&&e.detail.symbol));setInterval(()=>{if(isXAU())switchTo('XAU/USD')},5000);switchTo(active)})();
+/* RIZVI PAGE STABILITY GOVERNOR V1
+   Keep Lightweight Charts as the only active renderer.
+   Remove detached legacy chart DOM and coalesce high-frequency layout pressure.
+*/
+(function(){
+  'use strict';
+  if(window.__RIZVI_PAGE_STABILITY_V1)return;
+  window.__RIZVI_PAGE_STABILITY_V1=true;
+
+  function stabilize(){
+    try{
+      ['rizviCandleCanvasV66','rizviSvgChartV73','rizviLiveSvgV78'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.remove();
+      });
+      const chart=document.querySelector('.chart');
+      if(chart){
+        chart.style.contain='layout paint';
+        chart.style.isolation='isolate';
+      }
+      const tv=document.getElementById('rizviTvChartV55');
+      if(tv){
+        tv.style.contain='layout paint size';
+        tv.style.willChange='contents';
+      }
+      const axis=document.getElementById('rizviLiveTimeAxisV71');
+      if(axis)axis.remove();
+    }catch(e){}
+  }
+
+  function boot(){
+    stabilize();
+    /* Re-assert after legacy engines finish their delayed initialization. */
+    setTimeout(stabilize,250);
+    setTimeout(stabilize,1000);
+    setTimeout(stabilize,2500);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
