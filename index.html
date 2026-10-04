@@ -989,7 +989,7 @@
   window.addEventListener('rizvi:signal-qualification-update',e=>bindQualification(e));
   if(window.RIZVI_SIGNAL_QUALIFICATION)bindQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
-</script></script>
+</script>
 <script>
 (function(){
   const fmt=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';
@@ -1120,7 +1120,7 @@
   window.addEventListener('rizvi:liquidity-update',()=>setTimeout(bind,0));
   setInterval(bind,2000);
 })();
-<script id="rizvi-live-qualification-ui">
+</script><script id="rizvi-live-qualification-ui">
 (function(){
   const head=document.querySelector('.signalHead div:first-child b');
   const signalBig=document.querySelector('.card .big span:first-child');
@@ -1160,7 +1160,7 @@
   }
   setInterval(render,1000);render();
 })();
-</script></script><script>
+</script><script>
 (function(){
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function bindLive(){
@@ -1192,7 +1192,7 @@
   setInterval(()=>bindQualification(),2000);
   bindLive();bindQualification();
 })();
-<script>
+</script><script>
 (function(){
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function syncOperational(){
@@ -1222,7 +1222,7 @@
   window.addEventListener('rizvi:signal-qualification-update',syncOperational);
   window.addEventListener('rizvi:market-range-update',syncOperational);
 })();
-<script>
+</script><script>
 (function(){
   const q=id=>document.getElementById(id);
   const fmt=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';
@@ -1259,7 +1259,7 @@
   document.addEventListener('rizvi:price-update',bind);
   bind(); setInterval(bind,2000);
 })();
-<script>
+</script><script>
 (function(){
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
   function syncRange(){
