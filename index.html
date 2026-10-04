@@ -1877,4 +1877,29 @@ function draw(){
 }
 draw();addEventListener('rizvi:candle-update',draw);addEventListener('resize',draw);setInterval(draw,1000);
 })();
+</script><style id="rizvi-chart-v77">
+#rizviLiveTimeAxisV71{font-variant-numeric:tabular-nums}
+</style>
+<script id="rizvi-chart-v77">
+(function(){
+'use strict';
+var axis=document.getElementById('rizviLiveTimeAxisV71');
+if(!axis)return;
+function fmt(ts){
+ var n=Number(ts);if(n<100000000000)n*=1000;
+ return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(n));
+}
+var lastKey='';
+function syncAxis(){
+ var a=window.RIZVI_RAW_BARS;
+ if(!Array.isArray(a)||!a.length)return;
+ var v=a.slice(-90),key=String(v[v.length-1].t);
+ if(key===lastKey)return;
+ lastKey=key;
+ var n=Math.min(6,v.length),q=v.slice(-n);
+ axis.innerHTML=q.map(function(b,i){return '<span'+(i===q.length-1?' class="live"':'')+'>'+fmt(b.t)+'</span>';}).join('');
+}
+syncAxis();
+addEventListener('rizvi:candle-update',syncAxis);
+})();
 </script></body></html>
