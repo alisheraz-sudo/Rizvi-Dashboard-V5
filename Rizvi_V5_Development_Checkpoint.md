@@ -147,3 +147,18 @@ Add → Test → Fix → Save → Next
 - Kept Auto Trading OFF and the approved dashboard layout unchanged.
 - Railway was not redeployed; source changes are saved in GitHub pending the user's explicit deployment request.
 - Latest source commit: c4f517a4.
+
+
+## 2026-10-04 Operational Signal Batch
+- Live dashboard signal synchronization completed in the web build.
+- BTC live price updates now refresh the signal/trade-range state instead of leaving the approved values permanently static.
+- BUY trade range now uses a protective SL below entry; SELL uses SL above entry.
+- Market Range engine remains connected to Day / 4H / 1H / 30M / 15M levels.
+- Liquidity sweep / grab / breakout engine remains connected to the signal-qualification layer.
+- Visible SIGNAL, EXECUTION qualification, and TRADE RANGE fields now consume the live qualification/range state.
+- Signal qualification remains a heuristic/context layer and is not claimed as validated strategy performance.
+- Auto Trading remains OFF.
+- USOIL remains feed-gated until an authorized cTrader symbol/feed is available.
+- Real FxPro/cTrader authorization and Apple signing/TestFlight still require external account credentials/actions and are not claimed complete.
+- JavaScript syntax validation of the latest index.html passed across all embedded script blocks.
+- Latest operational source commit: bb73630dede2873477f4e61d581b507884bbe103.
