@@ -2396,4 +2396,27 @@ function apply(){
 }
 setInterval(apply,1000);apply();
 })();
+</script><script id="rizvi-trade-lock-v92">
+(function(){
+"use strict";
+let t=null,lastDir="WAIT";
+function p(){return Number(window.RIZVI_LIVE_CHART_PRICE||window.RIZVI_LIVE_PRICE)}
+function s(){return window.RIZVI_FINAL_SIGNAL||window.RIZVI_MASTER_SIGNAL||{}}
+function tick(){
+ const x=s(),d=x.direction;
+ if(d!=="BUY"&&d!=="SELL"){if(t&&t.hit){} return}
+ if(d!==lastDir){t=null;lastDir=d}
+ if(!t&&Number(x.quality)>=75){
+  const e=p();if(!Number.isFinite(e))return;
+  let r=Number(window.RIZVI_TRADE_RISK);
+  if(!Number.isFinite(r)||r<=0)r=Math.max(Math.abs(e)*0.00035,Math.min(Math.abs(e)*0.00075,Math.abs(e)*0.0005));
+  t={d,entry:e,risk:r,sl:d==="SELL"?e+r:e-r,tp1:d==="SELL"?e-r:e+r,tp2:d==="SELL"?e-r*1.5:e+r*1.5,tp3:d==="SELL"?e-r*2:e+r*2,hit:false};
+ }
+ if(!t||t.hit)return;
+ const a=window.RIZVI_RAW_BARS,b=Array.isArray(a)&&a.length?a[a.length-1]:null;
+ const hit=t.d==="SELL"?(b&&Number(b.h)>=t.sl)||(p()>=t.sl):(b&&Number(b.l)<=t.sl)||(p()<=t.sl);
+ if(hit)t.hit=true;
+}
+setInterval(tick,250);
+})();
 </script></body></html>
