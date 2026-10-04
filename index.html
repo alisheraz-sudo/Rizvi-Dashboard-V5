@@ -2210,8 +2210,8 @@ setInterval(fix,1000);
 </script><style id="rizvi-v88-live-trade-range">
 .rizvi-live-trade-range{position:absolute;z-index:30;pointer-events:none;width:74px;min-width:74px;max-width:74px;overflow:visible;display:none}
 .rizvi-live-trade-range .zone{position:absolute;left:0;width:74px;border:1px solid;border-radius:2px}
-.rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.22);border-color:#00d991}
-.rizvi-live-trade-range .sl-zone{background:rgba(169,51,182,.28);border-color:#cf5aff}
+.rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.07);border-color:rgba(0,217,145,.45)}
+.rizvi-live-trade-range .sl-zone{background:rgba(169,51,182,.07);border-color:rgba(207,90,255,.45)}
 .rizvi-live-trade-range .line{position:absolute;left:0;width:74px;border-top:1px solid rgba(255,255,255,.65)}
 .rizvi-live-trade-range .label{position:absolute;left:-74px;right:auto;transform:translateY(-50%);white-space:nowrap;padding:2px 4px;border-radius:3px;font:800 10px/13px Arial,sans-serif;color:#fff}
 .rizvi-live-trade-range .entry{background:#087cb5}.rizvi-live-trade-range .sl{background:#8e34b0}.rizvi-live-trade-range .tp{background:#078b5c}
@@ -2227,7 +2227,7 @@ function setup(){
  series=window.RIZVI_TV_SERIES;
  if(!host||!series)return false;
  if(!box){box=document.createElement('div');box.className='rizvi-live-trade-range';box.innerHTML=
- '<div class="zone tp-zone"></div><div class="zone sl-zone"></div>'+
+ '<div class="zone tp-zone"></div>'+
  '<div class="line entry"></div><div class="line sl"></div><div class="line tp1"></div><div class="line tp2"></div><div class="line tp3"></div>'+
  '<div class="label entry">Entry</div><div class="label sl">SL</div><div class="label tp tp1">TP1</div><div class="label tp tp2">TP2</div><div class="label tp tp3">TP3</div>';
  host.appendChild(box);}
