@@ -2244,7 +2244,7 @@ function levels(){
  if(!Number.isFinite(entry))entry=p;
  if(!Number.isFinite(sl)||!Number.isFinite(tp1)||!Number.isFinite(tp2)||!Number.isFinite(tp3)){
    var risk=Number(window.RIZVI_TRADE_RISK);
-   if(!Number.isFinite(risk)||risk<=0)risk=Math.max(Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0),Math.abs(p)*0.0015);
+   if(!Number.isFinite(risk)||risk<=0)risk=Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0); risk=Math.min(Math.max(risk,Math.abs(p)*0.00035),Math.abs(p)*0.00075);
    if(!Number.isFinite(risk)||risk<=0)risk=Math.max(1,Math.abs(p)*0.0015);
    if(d==='BUY'){sl=entry-risk;tp1=entry+risk;tp2=entry+risk*1.5;tp3=entry+risk*2}
    else{sl=entry+risk;tp1=entry-risk;tp2=entry-risk*1.5;tp3=entry-risk*2}
@@ -2260,7 +2260,7 @@ function render(){
  var vals=[L.sl,L.entry,L.tp1,L.tp2,L.tp3], ys={};
  for(var k of ['sl','entry','tp1','tp2','tp3'])ys[k]=series.priceToCoordinate(L[k]);
  if(vals.some(function(v){return !Number.isFinite(v)})||Object.values(ys).some(function(v){return !Number.isFinite(v)})){box.style.display='none';return}
- var top=Math.min(ys.sl,ys.entry,ys.tp3),bottom=Math.max(ys.sl,ys.entry,ys.tp3),height=Math.max(24,bottom-top);
+ var top=Math.min(ys.sl,ys.entry,ys.tp3),bottom=Math.max(ys.sl,ys.entry,ys.tp3),height=Math.max(18,bottom-top);
  var rect=host.getBoundingClientRect(),chartEl=document.getElementById('rizviTvChartV55'),cr=chartEl?chartEl.getBoundingClientRect():rect;
  box.style.left=Math.max(40,cr.width-150)+'px';
  box.style.top=(cr.top-rect.top+top)+'px';
