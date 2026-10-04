@@ -128,3 +128,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installUI);else installUI();
   setStatus('NOT CONFIGURED',false);
 })();
+/* XAU/BTC chart isolation */
+(function(){'use strict';if(window.__RIZVI_XAU_LOCK)return;window.__RIZVI_XAU_LOCK=true;let active=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';window.addEventListener('rizvi:symbol-change',e=>{active=e.detail&&e.detail.symbol||'BTCUSD';if(active==='XAU/USD'){window.RIZVI_RAW_BARS=[];window.RIZVI_AGG_BARS=[];}});})();
