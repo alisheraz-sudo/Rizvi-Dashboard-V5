@@ -113,7 +113,7 @@
 <div class="main"><main>
 <section class="chart"><div class="head"><div>BTCUSD · <b>1m</b> &nbsp; <small>O 68,321.40 &nbsp; H 68,512.90 &nbsp; L 68,210.15 &nbsp; C <span id="chartClose">68,432.50</span> &nbsp; <span id="chartChange" class="up">+112.35 (+0.16%)</span></small></div><div class="tf"><span>1H</span><span class="sel">1M</span><span>5M</span><span>15M</span><span>30M</span><span>2H</span><span>4H</span><span>1D</span></div></div><div class="grid"></div><div class="candles">
 <i class="c g" style="left:2%;top:78%;height:12%"></i><i class="c g" style="left:6%;top:68%;height:13%"></i><i class="c r" style="left:10%;top:63%;height:10%"></i><i class="c g" style="left:14%;top:57%;height:13%"></i><i class="c g" style="left:18%;top:53%;height:12%"></i><i class="c r" style="left:22%;top:55%;height:10%"></i><i class="c g" style="left:26%;top:45%;height:16%"></i><i class="c g" style="left:30%;top:40%;height:15%"></i><i class="c r" style="left:34%;top:43%;height:9%"></i><i class="c g" style="left:38%;top:35%;height:15%"></i><i class="c g" style="left:42%;top:30%;height:16%"></i><i class="c r" style="left:46%;top:35%;height:10%"></i><i class="c g" style="left:50%;top:28%;height:16%"></i><i class="c g" style="left:54%;top:22%;height:14%"></i><i class="c r" style="left:58%;top:27%;height:10%"></i><i class="c g" style="left:62%;top:18%;height:15%"></i><i class="c g" style="left:66%;top:13%;height:14%"></i><i class="c r" style="left:70%;top:19%;height:9%"></i><i class="c g" style="left:74%;top:12%;height:13%"></i><i class="c r" style="left:78%;top:16%;height:9%"></i></div>
-<div class="range"><div class="sl"></div><span class="lev ls">SL<br>68,720.00</span><span class="lev le">Entry<br>68,480.00</span><span class="lev l1">TP1<br>68,230.00</span><span class="lev l2">TP2<br>67,980.00</span><span class="lev l3">TP3<br>67,650.00</span></div><div class="price"></div><div class="tag" id="chartPriceTag">68,432.50</div><div class="axis"><span>69,000.00</span><span>68,800.00</span><span>68,600.00</span><span>68,400.00</span><span>68,200.00</span><span>68,000.00</span><span>67,800.00</span><span>67,600.00</span><span>67,400.00</span><span>67,200.00</span></div></section>
+<div class="price"></div><div class="tag" id="chartPriceTag">68,432.50</div><div class="axis"><span>69,000.00</span><span>68,800.00</span><span>68,600.00</span><span>68,400.00</span><span>68,200.00</span><span>68,000.00</span><span>67,800.00</span><span>67,600.00</span><span>67,400.00</span><span>67,200.00</span></div></section>
 <div class="legend"><div><b>↗ BUY / ↓ SELL</b>Signal Direction<br>(Market Analysis)</div><div><b>🛡 HIGH QUALITY</b>Qualified Signal<br>(80–95%)</div><div><b>⚠ UNWIND</b>Exit / Reversal Signal</div><div><b>▣ TRADE RANGE</b>Entry / SL / TP<br>(Based on actual prices)</div></div></main>
 <aside class="right"><section class="card"><div class="title">1. <b>SIGNAL</b> <small>(Market Analysis)</small></div><div class="big"><span>BUY</span><span>68% <em class="badge" style="background:#173c75;color:#7fb8ff">MEDIUM</em></span></div><div class="rows"><div class="row"><span>Trend</span><b>Bullish ↑</b></div><div class="row"><span>Momentum</span><b>Bullish ↑</b></div><div class="row"><span>RSI (14)</span><b>61</b></div><div class="row"><span>Structure</span><b>Support ↑</b></div><div class="row"><span>Volume / Delta</span><b>Positive ↑</b></div></div><div class="note">ⓘ Signal shows potential direction.<br>Not a trade yet.</div></section>
 <section class="card gborder"><div class="title">2. <b class="green">EXECUTION</b> <small>(Trade Qualification)</small></div><div class="row"><span>Quality Score</span><b>88% &nbsp; <em class="badge">HIGH QUALITY</em></b></div><div class="checks"><div class="check">Entry Valid</div><div class="check">SL Valid</div><div class="check">RR Acceptable (1:2)</div><div class="check">Structure Intact</div><div class="check">No Major Reversal</div></div><div class="ready">SIGNAL QUALIFIED</div></section>
@@ -2191,30 +2191,14 @@ wait();
   setInterval(tick,1000);
   tick();
 })();
-</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){const h=document.querySelector('.signalHead');if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=d;if(b[1])b[1].textContent=q+'%'}}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87">
-(function(){
-'use strict';
-if(window.__RIZVI_TRADE_RANGE_V87)return;window.__RIZVI_TRADE_RANGE_V87=true;
-function fix(){
- document.querySelectorAll('.range').forEach(function(el){
-   el.classList.add('rizvi-trade-overlay');
-   el.style.width='74px';el.style.maxWidth='74px';el.style.right='96px';
-   el.style.pointerEvents='none';
-   el.querySelectorAll('.lev').forEach(function(x){x.style.left='-68px';x.style.right='auto';});
- });
- document.querySelectorAll('.range .lev').forEach(function(x){x.style.transform='translateX(0)';});
-}
-fix();new MutationObserver(fix).observe(document.body,{subtree:true,childList:true});
-setInterval(fix,1000);
-})();
-</script><style id="rizvi-v88-live-trade-range">
+</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){const h=document.querySelector('.signalHead');if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=d;if(b[1])b[1].textContent=q+'%'}}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87-disabled">/* V87 legacy range disabled; V88 is the only live trade-range renderer. */</script><style id="rizvi-v88-live-trade-range">
 .rizvi-live-trade-range{position:absolute;z-index:30;pointer-events:none;width:74px;min-width:74px;max-width:74px;overflow:visible;display:none}
 .rizvi-live-trade-range .zone{position:absolute;left:0;width:74px;border:1px solid;border-radius:2px}
 .rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.07);border-color:rgba(0,217,145,.45)}
 .rizvi-live-trade-range .sl-zone{background:rgba(169,51,182,.07);border-color:rgba(207,90,255,.45)}
 .rizvi-live-trade-range .line{position:absolute;left:0;width:74px;border-top:1px solid rgba(255,255,255,.65)}
 .rizvi-live-trade-range .label{position:absolute;left:-74px;right:auto;transform:translateY(-50%);white-space:nowrap;padding:2px 4px;border-radius:3px;font:800 10px/13px Arial,sans-serif;color:#fff}
-.rizvi-live-trade-range .entry{background:#087cb5}.rizvi-live-trade-range .sl{background:#8e34b0}.rizvi-live-trade-range .tp{background:#078b5c}
+.rizvi-live-trade-range .entry{background:#087cb5}.rizvi-live-trade-range .sl{background:#263746}.rizvi-live-trade-range .tp{background:#078b5c}
 </style>
 <script id="rizvi-v88-live-trade-range">
 (function(){
