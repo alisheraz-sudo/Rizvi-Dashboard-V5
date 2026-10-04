@@ -100,7 +100,13 @@
 #rizviSvgChartV73,#rizviLiveSvgV78{display:none!important}
 #rizviTvChartV55{position:absolute!important;left:0!important;right:0!important;top:47px!important;bottom:0!important;width:auto!important;height:auto!important;z-index:10!important;touch-action:none!important;background:#031421!important}
 #rizviTvChartV55 canvas{touch-action:none!important}
-</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script></head>
+</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><style id="rizvi-trade-range-v87">
+/* V87: slim trade range; labels live on the LEFT because the chart price scale is on the right. */
+.rizvi-trade-overlay{position:absolute;z-index:25;pointer-events:none;width:74px!important;min-width:74px!important;max-width:74px!important;border-radius:3px!important;overflow:visible!important}
+.rizvi-trade-overlay .trade-level{position:absolute;left:-68px!important;right:auto!important;white-space:nowrap;padding:2px 4px;font-size:10px;line-height:14px;border-radius:3px;font-weight:800}
+.rizvi-trade-overlay .trade-entry,.rizvi-trade-overlay .trade-sl,.rizvi-trade-overlay .trade-tp1,.rizvi-trade-overlay .trade-tp2,.rizvi-trade-overlay .trade-tp3{left:-68px!important;right:auto!important}
+.rizvi-trade-overlay .trade-price{position:absolute;left:-68px!important;right:auto!important;font-size:10px;font-weight:900}
+</style></head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b><small>V5 - Signal Dashboard</small></div><div class="quote"><select id="symbolSelect" style="background:#061727;color:#e9f2f8;border:1px solid #1c4a70;border-radius:6px;padding:7px;font-weight:800"><option value="BTCUSD">BTCUSD</option><option value="XAU/USD">XAU/USD</option><option value="USOIL" disabled>USOIL — pending</option></select><span class="coin">₿</span><span id="quoteSymbol">BTCUSD</span><span id="quotePrice">68,432.50</span><span id="quoteChange" class="up">+324.75 (+0.48%)</span><span id="quoteLive" class="green">● Live</span></div><div class="clock" id="liveClock">--<br>--</div></header>
 <section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div><span>Signal Direction</span><b>BUY</b></div><div><span>Setup Quality</span><b>88%</b> <em class="badge">HIGH QUALITY</em></div></div></section>
@@ -2185,4 +2191,20 @@ wait();
   setInterval(tick,1000);
   tick();
 })();
-</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){const h=document.querySelector('.signalHead');if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=d;if(b[1])b[1].textContent=q+'%'}}}}setInterval(tick,1000);tick()})();</script></body></html>
+</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){const h=document.querySelector('.signalHead');if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=d;if(b[1])b[1].textContent=q+'%'}}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87">
+(function(){
+'use strict';
+if(window.__RIZVI_TRADE_RANGE_V87)return;window.__RIZVI_TRADE_RANGE_V87=true;
+function fix(){
+ document.querySelectorAll('.range').forEach(function(el){
+   el.classList.add('rizvi-trade-overlay');
+   el.style.width='74px';el.style.maxWidth='74px';el.style.right='96px';
+   el.style.pointerEvents='none';
+   el.querySelectorAll('.lev').forEach(function(x){x.style.left='-68px';x.style.right='auto';});
+ });
+ document.querySelectorAll('.range .lev').forEach(function(x){x.style.transform='translateX(0)';});
+}
+fix();new MutationObserver(fix).observe(document.body,{subtree:true,childList:true});
+setInterval(fix,1000);
+})();
+</script></body></html>
