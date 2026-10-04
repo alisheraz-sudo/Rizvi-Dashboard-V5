@@ -356,7 +356,7 @@
 (function(){
  async function gold(){
   try{
-   const d=await fetch('/market/xau/spot,{cache:'no-store'}).then(r=>r.json());
+   const d=await fetch('/market/xau/spot',{cache:'no-store'}).then(r=>r.json());
    const p=Number(d?.data?.spot_usd_oz ?? d?.spot_usd_oz);
    if(!Number.isFinite(p))return;
    window.RIZVI_GOLD_FEED={price:p,status:d?.data_state?.status||'unknown',price_as_of:d?.price_as_of||d?.updated_at,source:d?.price_source||d?.source};
@@ -377,7 +377,7 @@
  async function goldBars(){
   if((window.RIZVI_CURRENT_SYMBOL||'BTCUSD')!=='XAU/USD')return;
   try{
-   const d=await fetch('/market/xau/intraday?hours=12,{cache:'no-store'}).then(r=>r.json());
+   const d=await fetch('/market/xau/intraday?hours=12',{cache:'no-store'}).then(r=>r.json());
    const rows=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
    /* XAUS intraday is a real recorded price series: {t,p}, not OHLC. Build candles from consecutive real observations. */
    const pts=rows.map(x=>Array.isArray(x)
@@ -408,7 +408,7 @@
     return d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));
   }
   async function gold(){
-    const d=await fetch('/market/xau/intraday?hours=12,{cache:'no-store'}).then(r=>r.json());
+    const d=await fetch('/market/xau/intraday?hours=12',{cache:'no-store'}).then(r=>r.json());
     const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
     const pts=a.map(x=>Array.isArray(x)
       ? {t:+x[0],p:+x[1]}
@@ -1719,7 +1719,7 @@
   }
   async function goldCheck(){
     try{
-      const d=await fetch('/market/xau/spot,{cache:'no-store'}).then(r=>r.json());
+      const d=await fetch('/market/xau/spot',{cache:'no-store'}).then(r=>r.json());
       const p=Number(d?.data?.spot_usd_oz ?? d?.spot_usd_oz);
       if(!Number.isFinite(p))throw new Error('Gold price unavailable');
       window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
@@ -2613,11 +2613,18 @@ function fire(sym){window.RIZVI_CURRENT_SYMBOL=sym;const sel=document.getElement
 async function loadGoldBars(){
  const r=await fetch('/market/ctrader?symbol=XAUUSD&fresh='+Date.now(),{cache:'no-store'});
  const d=await r.json();
- if(!d.ok||!d.authorized)throw new Error(d.error||'cTrader XAU not authorized');
- const bars=Array.isArray(d.bars)?d.bars.filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)):[];
- if(!bars.length)throw new Error('cTrader XAU M1 bars unavailable');
- window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
- if(Number.isFinite(Number(d.price)))window.RIZVI_LIVE_PRICES['XAU/USD']=Number(d.price);
+ const ctraderBars=Array.isArray(d.bars)?d.bars.filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)):[];
+ if(d.ok&&d.authorized&&ctraderBars.length){
+   window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+   if(Number.isFinite(Number(d.price)))window.RIZVI_LIVE_PRICES['XAU/USD']=Number(d.price);
+   window.RIZVI_CANDLE_SOURCE='cTrader';
+   return ctraderBars;
+ }
+ const xa=await fetch('/market/xau/intraday?hours=12',{cache:'no-store'});
+ const xd=await xa.json();
+ const bars=Array.isArray(xd?.bars)?xd.bars.filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)):[];
+ if(!bars.length)throw new Error(d.error||xd.error||'XAU direct chart bars unavailable');
+ window.RIZVI_CANDLE_SOURCE='XAUS';
  return bars;
 }
 async function refreshXauDirect(){
