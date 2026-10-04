@@ -1,0 +1,75 @@
+//@version=6
+strategy("Rizvi Independent Backtest v1", overlay=true, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.percent, commission_value=0.02, slippage=1)
+
+// Independent research script — does NOT modify the Rizvi dashboard.
+// Modeled components: EMA20/50 trend, RSI, momentum, 70% gate, 75% confirmation,
+// 3-bar confirmation, counter-trend protection, ATR volatility SL/TP.
+// Structure/liquidity levels are approximated from recent swing highs/lows.
+
+minGate = input.float(70, "Minimum gate", minval=0, maxval=100)
+confirmGate = input.float(75, "Confirmed entry", minval=0, maxval=100)
+atrLen = input.int(14, "ATR length", minval=1)
+atrSL = input.float(1.2, "ATR SL multiplier", minval=0.1, step=0.1)
+rr1 = input.float(1.0, "TP1 R", minval=0.2, step=0.1)
+rr2 = input.float(1.8, "TP2 R", minval=0.3, step=0.1)
+rr3 = input.float(2.6, "TP3 R", minval=0.5, step=0.1)
+swingLen = input.int(10, "Structure lookback", minval=2)
+confirmBars = input.int(3, "Confirmation bars", minval=1, maxval=5)
+
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+rsi = ta.rsi(close, 14)
+atr = ta.atr(atrLen)
+mom = close - close[5]
+
+bull = close > ema20 and ema20 > ema50
+bear = close < ema20 and ema20 < ema50
+momBull = mom > 0
+momBear = mom < 0
+
+scoreBull = 50 + (bull ? 15 : 0) + (momBull ? 15 : 0) + (rsi > 55 and rsi < 70 ? 8 : 0) + (bull and close > ema20 ? 10 : 0)
+scoreBear = 50 + (bear ? 15 : 0) + (momBear ? 15 : 0) + (rsi < 45 and rsi > 30 ? 8 : 0) + (bear and close < ema20 ? 10 : 0)
+
+rawBull = scoreBull >= minGate
+rawBear = scoreBear >= minGate
+
+bullCount = rawBull ? ta.barssince(not rawBull) : na
+bearCount = rawBear ? ta.barssince(not rawBear) : na
+
+longReady = scoreBull >= confirmGate and bull and momBull and nz(bullCount, 0) + 1 >= confirmBars
+shortReady = scoreBear >= confirmGate and bear and momBear and nz(bearCount, 0) + 1 >= confirmBars
+
+recentLow = ta.lowest(low, swingLen)
+recentHigh = ta.highest(high, swingLen)
+
+longSL = math.min(recentLow, close - atr * atrSL)
+shortSL = math.max(recentHigh, close + atr * atrSL)
+longRisk = close - longSL
+shortRisk = shortSL - close
+
+longTP1 = close + longRisk * rr1
+longTP2 = close + longRisk * rr2
+longTP3 = close + longRisk * rr3
+shortTP1 = close - shortRisk * rr1
+shortTP2 = close - shortRisk * rr2
+shortTP3 = close - shortRisk * rr3
+
+if longReady and strategy.position_size <= 0
+    strategy.entry("BUY", strategy.long)
+if shortReady and strategy.position_size >= 0
+    strategy.entry("SELL", strategy.short)
+
+if strategy.position_size > 0
+    strategy.exit("TP1/SL", "BUY", limit=longTP1, stop=longSL, qty_percent=33)
+    strategy.exit("TP2/SL", "BUY", limit=longTP2, stop=longSL, qty_percent=33)
+    strategy.exit("TP3/SL", "BUY", limit=longTP3, stop=longSL, qty_percent=34)
+
+if strategy.position_size < 0
+    strategy.exit("TP1/SL", "SELL", limit=shortTP1, stop=shortSL, qty_percent=33)
+    strategy.exit("TP2/SL", "SELL", limit=shortTP2, stop=shortSL, qty_percent=33)
+    strategy.exit("TP3/SL", "SELL", limit=shortTP3, stop=shortSL, qty_percent=34)
+
+plot(ema20, "EMA20")
+plot(ema50, "EMA50")
+plotshape(longReady, title="Rizvi BUY", style=shape.triangleup, location=location.belowbar, size=size.tiny)
+plotshape(shortReady, title="Rizvi SELL", style=shape.triangledown, location=location.abovebar, size=size.tiny)
