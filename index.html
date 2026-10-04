@@ -1594,4 +1594,22 @@
   const poll=()=>{if(window.RIZVI_SIGNAL_QUALIFICATION)render(window.RIZVI_SIGNAL_QUALIFICATION);};
   poll();setInterval(poll,2000);
 })();
+</script><script>
+(function(){
+  window.RIZVI_TEST_MODE=true; window.RIZVI_AUTO_TRADING=false;
+  window.RIZVI_OPERATIONAL_STATUS={mode:'TESTING',symbol:'BTCUSD',livePrice:false,candles:false,marketRange:false,liquidity:false,qualification:false};
+  function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function direction(){return document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';}
+  function bindRange(){const r=window.RIZVI_TRADE_RANGE;if(!r)return;const rows=[...document.querySelectorAll('.right .card:nth-child(3) .rangeRow')],vals=[r.entry,r.sl,r.tp1,r.tp2,r.tp3];rows.forEach((row,i)=>{const b=row.querySelector('b');if(b&&Number.isFinite(Number(vals[i])))b.textContent=fmt(vals[i]);});}
+  function bindQualification(){const q=window.RIZVI_SIGNAL_QUALIFICATION;if(!q)return;const exec=document.querySelector('.right .card.gborder');if(!exec)return;const score=exec.querySelector('.row b');if(score)score.innerHTML=fmt(q.patternConfidence)+'% &nbsp; <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';const ready=exec.querySelector('.ready');if(ready)ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';}
+  function bindLive(){const sym=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';const p=sym==='XAU/USD'?window.RIZVI_LIVE_PRICES?.['XAU/USD']:window.RIZVI_LIVE_PRICE;if(Number.isFinite(Number(p))){const n=Number(p),s=fmt(n);['quotePrice','chartClose','chartPriceTag'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=s;});if(window.RIZVI_SIGNAL_LEVELS)window.RIZVI_SIGNAL_LEVELS(n,direction());window.RIZVI_OPERATIONAL_STATUS.livePrice=true;document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:sym,price:n,direction:direction()}}));bindRange();}}
+  function bindStatus(){const s=window.RIZVI_OPERATIONAL_STATUS;s.symbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';s.candles=Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_AGG_BARS.length>0;s.marketRange=!!window.RIZVI_MARKET_RANGE&&!window.RIZVI_MARKET_RANGE.status;s.liquidity=!!window.RIZVI_LIQUIDITY_ENGINE;s.qualification=!!window.RIZVI_SIGNAL_QUALIFICATION;s.updatedAt=Date.now();}
+  addEventListener('rizvi:chart-source',()=>window.RIZVI_OPERATIONAL_STATUS.candles=true);
+  addEventListener('rizvi:market-range-update',()=>window.RIZVI_OPERATIONAL_STATUS.marketRange=true);
+  addEventListener('rizvi:liquidity-update',()=>window.RIZVI_OPERATIONAL_STATUS.liquidity=true);
+  addEventListener('rizvi:signal-qualification-update',()=>{window.RIZVI_OPERATIONAL_STATUS.qualification=true;bindQualification();});
+  addEventListener('rizvi:symbol-change',()=>bindStatus());
+  setInterval(()=>{bindLive();bindRange();bindQualification();bindStatus();},2000);
+  bindLive();bindStatus();
+})();
 </script></body></html>
