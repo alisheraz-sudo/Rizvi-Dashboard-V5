@@ -1378,4 +1378,21 @@
   update();
   setInterval(update,3000);
 })();
-</script></script></body></html>
+</script></script><script>
+(function(){
+ function sync(){
+  var q=window.RIZVI_SIGNAL_QUALIFICATION;
+  if(!q)return;
+  var ex=document.querySelector('.right .card.gborder');
+  if(!ex)return;
+  var ready=ex.querySelector('.ready');
+  if(ready)ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+  var row=[].slice.call(ex.querySelectorAll('.row')).find(function(x){return x.textContent.indexOf('Quality Score')>=0});
+  var b=row&&row.querySelector('b');
+  if(b)b.firstChild.textContent=(q.liquidityScore||0)+'% ';
+ }
+ window.addEventListener('rizvi:signal-qualification-update',sync);
+ window.addEventListener('rizvi:liquidity-update',sync);
+ setInterval(sync,2000);
+})();
+</script></body></html>
