@@ -1659,53 +1659,84 @@
   });
   setTimeout(()=>{if(window.RIZVI_MASTER_CONFIRMATION)renderMaster(window.RIZVI_MASTER_CONFIRMATION);},250);
 })();
-</script><script id="rizvi-old-approved-canvas-chart-v66">
+</script><script id="rizvi-live-canvas-chart-v72">
 (function(){
- const host=document.querySelector('.chart');
- if(!host)return;
- let c=document.getElementById('rizviCandleCanvasV66'); if(c)return; c=document.createElement('canvas'); c.id='rizviCandleCanvasV66'; c.width=1200;c.height=500;
- c.style.cssText='position:absolute;left:0;right:0;top:47px;width:100%;height:calc(100% - 47px);display:block;z-index:1;pointer-events:none';
- host.appendChild(c);
- const ctx=c.getContext('2d');
- let bars=[];
- function draw(){
-   const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
-   ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;
-   for(let i=1;i<6;i++){let y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-   const n=Math.min(70,bars.length), step=w/n, body=Math.max(4,step*.55);
-   const start=Math.max(0,bars.length-n); let max=0,min=Infinity;
-   bars.slice(start).forEach(b=>{max=Math.max(max,b.h,b.l);min=Math.min(min,b.h,b.l)});
-   const sy=v=>h-30-(v-min)/(max-min||1)*(h-60);
-   bars.slice(start).forEach((b,i)=>{
-    const x=i*step+step*.5, yo=sy(b.o),yc=sy(b.c),yh=sy(b.h),yl=sy(b.l);
-    ctx.strokeStyle=b.c>=b.o?'#31d17c':'#ff5b68';ctx.beginPath();ctx.moveTo(x,yh);ctx.lineTo(x,yl);ctx.stroke();
-    ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(x-body/2,Math.min(yo,yc),body,Math.max(2,Math.abs(yc-yo)));
-   });
- }
- async function load(){
-  try{
-   const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
-   if(Array.isArray(d)){bars=d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',source:'COINBASE 1M',bars:bars.length,updatedAt:Date.now(),live:true};document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));draw();}
-  }catch(e){}
- }
- load();setInterval(load,10000);addEventListener('resize',draw);
+'use strict';
+const host=document.querySelector('.chart'); if(!host)return;
+let c=document.getElementById('rizviCandleCanvasV66');
+if(!c){
+  c=document.createElement('canvas'); c.id='rizviCandleCanvasV66';
+  c.style.cssText='position:absolute;left:0;right:82px;top:47px;width:calc(100% - 82px);height:calc(100% - 75px);display:block;z-index:1;pointer-events:none';
+  host.appendChild(c);
+}
+const ctx=c.getContext('2d');
+let raw=[];
+function visible(){const a=window.RIZVI_AGG_BARS;return Array.isArray(a)&&a.length?a:raw;}
+function resize(){
+  const rect=c.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1);
+  const w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h;ctx.setTransform(dpr,0,0,dpr,0,0);}
+  draw();
+}
+function draw(){
+  const rect=c.getBoundingClientRect(),w=rect.width,h=rect.height;
+  ctx.clearRect(0,0,w,h);
+  const data=visible(), view=data.slice(-70);
+  if(!view.length)return;
+  let max=-Infinity,min=Infinity;
+  view.forEach(b=>{max=Math.max(max,Number(b.h));min=Math.min(min,Number(b.l));});
+  if(!Number.isFinite(max)||!Number.isFinite(min)||max<=min)return;
+  ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;
+  for(let i=1;i<6;i++){const y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  const padTop=14,padBottom=12,step=w/view.length,body=Math.max(3,Math.min(10,step*.58));
+  const sy=v=>padTop+(max-v)/(max-min)*(h-padTop-padBottom);
+  view.forEach((b,i)=>{
+    const o=Number(b.o),cl=Number(b.c),hi=Number(b.h),lo=Number(b.l),x=i*step+step/2;
+    const up=cl>=o;ctx.strokeStyle=up?'#31d17c':'#ff5b68';ctx.lineWidth=Math.max(1,Math.min(2,step*.16));
+    ctx.beginPath();ctx.moveTo(x,sy(hi));ctx.lineTo(x,sy(lo));ctx.stroke();
+    const y=Math.min(sy(o),sy(cl)),bh=Math.max(2,Math.abs(sy(cl)-sy(o)));
+    ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(x-body/2,y,body,bh);
+  });
+}
+function sync(){draw();}
+async function load(){
+ try{
+  const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
+  if(!Array.isArray(d)||!d.length)return;
+  raw=d.slice().reverse().map(x=>({t:Number(x[0]),l:Number(x[1]),h:Number(x[2]),o:Number(x[3]),c:Number(x[4])})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite));
+  window.RIZVI_RAW_BARS=raw;
+  const tf=window.RIZVI_CANDLE_TIMEFRAME||'1M';
+  if(typeof window.RIZVI_SET_TIMEFRAME==='function')window.RIZVI_SET_TIMEFRAME(tf,raw);
+  else window.RIZVI_AGG_BARS=raw;
+  window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',source:'COINBASE 1M',bars:raw.length,updatedAt:Date.now(),live:true};
+  document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
+  draw();
+ }catch(e){}
+}
+addEventListener('resize',resize);
+addEventListener('rizvi:candle-update',sync);
+addEventListener('rizvi:timeframe-update',sync);
+setTimeout(resize,0);load();setInterval(load,10000);
 })();
-</script><script id="rizvi-old-approved-timeframe-v66">
+</script><script id="rizvi-live-timeframe-v72">
 (function(){
- const tfEls=[...document.querySelectorAll('.tf span')];
- const map={'1M':1,'3M':3,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
- let selected=1;
- function aggregate(raw,m){
-  const out=[]; for(let i=0;i<raw.length;i+=m){const a=raw.slice(i,i+m);if(!a.length)continue;
-   out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
-  } return out;
+'use strict';
+const tfEls=[...document.querySelectorAll('.tf span')];
+const map={'1H':60,'1M':1,'5M':5,'15M':15,'30M':30,'2H':120,'4H':240,'1D':1440};
+function aggregate(raw,m){
+ const out=[];
+ for(let i=0;i<raw.length;i+=m){
+  const a=raw.slice(i,i+m); if(!a.length)continue;
+  out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
  }
- window.RIZVI_SET_TIMEFRAME=function(label,raw){
-  selected=map[label]||1;
-  const data=aggregate(raw||window.RIZVI_RAW_BARS||[],selected);
-  window.RIZVI_CANDLE_TIMEFRAME=label; window.RIZVI_AGG_BARS=data;
-  return data;
- };
- tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS)));
+ return out;
+}
+window.RIZVI_SET_TIMEFRAME=function(label,raw){
+ const m=map[label]||1,data=aggregate(raw||window.RIZVI_RAW_BARS||[],m);
+ window.RIZVI_CANDLE_TIMEFRAME=label;window.RIZVI_AGG_BARS=data;
+ window.dispatchEvent(new CustomEvent('rizvi:timeframe-update',{detail:{label,data}}));
+ return data;
+};
+tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS||[])));
 })();
-</script><style id="rizvi-live-time-axis-v71">.rizvi-live-time-axis{position:absolute;left:0;right:82px;bottom:0;height:28px;z-index:5;display:flex;align-items:center;justify-content:space-around;padding:0 6px;color:#8fa3b4;font-size:10px;background:linear-gradient(transparent,#031421 45%);pointer-events:none}.rizvi-live-time-axis span{white-space:nowrap}.rizvi-live-time-axis .live{color:#00e39a;font-weight:800}</style><script id="rizvi-live-time-axis-v71">(function(){'use strict';const host=document.querySelector('.chart');if(!host)return;let axis=document.getElementById('rizviLiveTimeAxisV71');if(!axis){axis=document.createElement('div');axis.id='rizviLiveTimeAxisV71';axis.className='rizvi-live-time-axis';host.appendChild(axis);}function fmt(ts){const d=new Date(Number(ts)*1000);return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);}function draw(){const bars=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];if(!Array.isArray(bars)||!bars.length){axis.innerHTML='<span>--:--</span>';return;}const n=Math.min(6,bars.length);const view=bars.slice(-n);axis.innerHTML=view.map((b,i)=>'<span'+(i===view.length-1?' class="live"':'')+'>'+fmt(b.t)+'</span>').join('');}draw();addEventListener('rizvi:candle-update',draw);addEventListener('rizvi:timeframe-update',draw);setInterval(draw,5000);})();</script></body></html>
+</script>.rizvi-v72-ready{}<style id="rizvi-live-time-axis-v71">.rizvi-live-time-axis{position:absolute;left:0;right:82px;bottom:0;height:28px;z-index:5;display:flex;align-items:center;justify-content:space-around;padding:0 6px;color:#8fa3b4;font-size:10px;background:linear-gradient(transparent,#031421 45%);pointer-events:none}.rizvi-live-time-axis span{white-space:nowrap}.rizvi-live-time-axis .live{color:#00e39a;font-weight:800}</style><script id="rizvi-live-time-axis-v71">(function(){'use strict';const host=document.querySelector('.chart');if(!host)return;let axis=document.getElementById('rizviLiveTimeAxisV71');if(!axis){axis=document.createElement('div');axis.id='rizviLiveTimeAxisV71';axis.className='rizvi-live-time-axis';host.appendChild(axis);}function fmt(ts){const d=new Date(Number(ts)*1000);return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);}function draw(){const bars=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];if(!Array.isArray(bars)||!bars.length){axis.innerHTML='<span>--:--</span>';return;}const n=Math.min(6,bars.length);const view=bars.slice(-n);axis.innerHTML=view.map((b,i)=>'<span'+(i===view.length-1?' class="live"':'')+'>'+fmt(b.t)+'</span>').join('');}draw();addEventListener('rizvi:candle-update',draw);addEventListener('rizvi:timeframe-update',draw);setInterval(draw,5000);})();</script></body></html>
