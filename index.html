@@ -2228,6 +2228,11 @@ function levels(){
  var d=(s.direction==='BUY'||s.direction==='SELL')?s.direction:((q.marketDirection==='BUY'||q.marketDirection==='SELL')?q.marketDirection:m.direction);
  var quality=Number(s.quality); if(!Number.isFinite(quality))quality=Number(q.patternConfidence); if(!Number.isFinite(quality))quality=Number(m.quality);
  if(!Number.isFinite(quality)||quality<75||d!=='BUY'&&d!=='SELL')return null;
+ var now=Date.now(), stable=window.__RIZVI_BOX_STABLE||{on:false,since:0,dir:null};
+ if(stable.dir!==d){stable.dir=d;stable.on=false;stable.since=now}
+ if(quality>=75){if(!stable.on){if(!stable.since)stable.since=now;if(now-stable.since>=1500)stable.on=true}}else{stable.on=false;stable.since=now}
+ window.__RIZVI_BOX_STABLE=stable;
+ if(!stable.on)return null;
  var p=N(window.RIZVI_LIVE_CHART_PRICE)||N(window.RIZVI_LIVE_PRICE)||N(m.entry);
  if(!Number.isFinite(p))return null;
  var risk=Number(window.RIZVI_TRADE_RISK);
