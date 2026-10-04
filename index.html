@@ -1761,7 +1761,8 @@
       window.RIZVI_AGG_BARS=aggregate(bars,mins).map(b=>({t:b.time*1000,o:b.open,h:b.high,l:b.low,c:b.close}));
       document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
       document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{source:'Binance BTCUSDT klines',live:true,bars:bars.length}}));
-      refresh(true);
+      /* V61: live refresh must preserve the user's chart viewport/zoom. */
+      refresh(false);
       return true;
     }catch(e){
       window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',timeframe:'1m',source:'Binance BTCUSDT klines',live:false,error:String(e),updatedAt:Date.now()};
