@@ -139,38 +139,37 @@
 (function(){
   const priceEl=document.getElementById('quotePrice');
   const live=document.getElementById('quoteLive');
-  function applyPrice(p){
-    if(!Number.isFinite(p)) return;
+  let timer=null, requestSeq=0;
+  function currentSymbol(){return window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD';}
+  function applyPrice(p,s){
+    if(s!==currentSymbol()||!Number.isFinite(p))return;
     const text=p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    if(priceEl) priceEl.textContent=text;
-    const cc=document.getElementById('chartClose'); if(cc) cc.textContent=text;
-    const ct=document.getElementById('chartPriceTag'); if(ct) ct.textContent=text;
-    if(live) live.textContent='LIVE';
+    if(priceEl)priceEl.textContent=text;
+    const cc=document.getElementById('chartClose');if(cc)cc.textContent=text;
+    const ct=document.getElementById('chartPriceTag');if(ct)ct.textContent=text;
+    if(live)live.textContent='● Live';
     window.RIZVI_LIVE_PRICE=p;
-      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
-      window.RIZVI_SIGNAL_LEVELS(p,window.RIZVI_SIGNAL_DIRECTION||'BUY');
-      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
-      window.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}})); document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
     window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
-    window.RIZVI_LIVE_PRICES.BTCUSD=p;
-    const direction=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
-    if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
-    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction}}));
+    window.RIZVI_LIVE_PRICES[s]=p;
+    const direction=window.RIZVI_SIGNAL_DIRECTION||'BUY';
+    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:s,price:p,direction}}));
+    window.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:s,price:p,direction}}));
+    if(typeof window.RIZVI_SIGNAL_LEVELS==='function')window.RIZVI_SIGNAL_LEVELS(p,direction);
     window.dispatchEvent(new CustomEvent('rizvi:signal-levels-update',{detail:window.RIZVI_TRADE_RANGE||null}));
-
   }
   async function btc(){
+    if(currentSymbol()!=='BTCUSD')return;
+    const seq=++requestSeq;
     try{
       const x=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());
       const p=Number(x?.data?.amount);
-      if(Number.isFinite(p)) applyPrice(p);
-    }catch(e){
-      if(live) live.textContent='OFFLINE';
-    }
+      if(seq===requestSeq&&currentSymbol()==='BTCUSD')applyPrice(p,'BTCUSD');
+    }catch(e){if(currentSymbol()==='BTCUSD'&&live)live.textContent='● Offline';}
   }
-  btc();
-  setInterval(btc,5000);
-})();
+  function start(){clearInterval(timer);timer=setInterval(btc,5000);btc();}
+  function stop(){requestSeq++;clearInterval(timer);timer=null;}
+  window.addEventListener('rizvi:symbol-change',e=>{e.detail?.symbol==='BTCUSD'?start():stop();});
+  if(currentSymbol()==='BTCUSD')start();else stop();
 </script><script id="rizvi-default-timeframe-v65">
 (function(){ window.RIZVI_CANDLE_TIMEFRAME='1M'; })();
 </script><script>
