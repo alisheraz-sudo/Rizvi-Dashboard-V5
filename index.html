@@ -177,6 +177,8 @@
   if(lv){
    setByLabel('SL',Number(lv.sl).toFixed(2));setByLabel('TP1',Number(lv.tp1).toFixed(2));
    setByLabel('TP2',Number(lv.tp2).toFixed(2));setByLabel('TP3',Number(lv.tp3).toFixed(2));
+   const rr=document.querySelectorAll('.right .card:nth-child(3) .rangeRow');
+   if(rr.length>=5){[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3].forEach((v,i)=>{const b=rr[i]?.querySelector('b');if(b)b.textContent=Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});});}
   }
   const d=document.querySelector('.signalHead div:first-child b');
   if(d&&window.RIZVI_SIGNAL_DIRECTION)d.textContent=window.RIZVI_SIGNAL_DIRECTION;
