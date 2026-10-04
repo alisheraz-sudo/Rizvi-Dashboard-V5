@@ -385,11 +385,16 @@
       if(brokeUp)breakouts.push({timeframe:x.tf,side:'UP',price:x.high});
       if(brokeDn)breakouts.push({timeframe:x.tf,side:'DOWN',price:x.low});
     });
+    const bullish=sweeps.filter(x=>x.side==='LOW').length+breakouts.filter(x=>x.side==='UP').length;
+    const bearish=sweeps.filter(x=>x.side==='HIGH').length+breakouts.filter(x=>x.side==='DOWN').length;
+    const eventCount=sweeps.length+grabs.length+breakouts.length;
+    const direction=bullish>bearish?'BUY':bearish>bullish?'SELL':'NEUTRAL';
+    const score=clamp(Math.round(Math.min(100,eventCount?50+eventCount*10+(tfsCount=>tfsCount>=3?15:tfsCount>=2?8:0)(new Set([...sweeps,...breakouts].map(x=>x.timeframe))):0)));
     window.RIZVI_LIQUIDITY_ENGINE={
       symbol:r.symbol,updatedAt:Date.now(),levels:r,
       latestBar:{t:latest.t,h:latest.h,l:latest.l,c:latest.c},
-      sweeps,grabs,breakouts,
-      status:(sweeps.length||grabs.length||breakouts.length)?'EVENTS_DETECTED':'NO_EVENT',
+      sweeps,grabs,breakouts,direction,score,liquidityScore:score,
+      status:eventCount?'EVENTS_DETECTED':'NO_EVENT',
       useFor:['liquidity sweep','liquidity grab','high/low raid','breakout detection','structure qualification']
     };
     window.dispatchEvent(new CustomEvent('rizvi:liquidity-update',{detail:window.RIZVI_LIQUIDITY_ENGINE}));
