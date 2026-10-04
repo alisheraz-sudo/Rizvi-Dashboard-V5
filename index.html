@@ -378,11 +378,16 @@
   if((window.RIZVI_CURRENT_SYMBOL||'BTCUSD')!=='XAU/USD')return;
   try{
    const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-   const rows=Array.isArray(d)?d:(d?.data||d?.prices||[]);
-   const bars=rows.map(x=>{
-    if(Array.isArray(x)) return {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]};
-    return {t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)};
-   }).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
+   const rows=Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]);
+   /* XAUS intraday is a real recorded price series: {t,p}, not OHLC. Build candles from consecutive real observations. */
+   const pts=rows.map(x=>Array.isArray(x)
+     ? {t:+x[0],p:+x[1]}
+     : {t:+(x.timestamp||x.time||x.t),p:+(x.p??x.price??x.close??x.c)}
+   ).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
+   const bars=pts.map((x,i)=>{
+     const prev=i?pts[i-1].p:x.p;
+     return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};
+   });
    if(!bars.length)return;
    window.RIZVI_RAW_BARS=bars;window.RIZVI_CANDLE_SOURCE='XAUS';window.RIZVI_CANDLE_SYMBOL='XAU/USD';
    window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
@@ -404,8 +409,12 @@
   }
   async function gold(){
     const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-    const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
-    return a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
+    const a=Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]);
+    const pts=a.map(x=>Array.isArray(x)
+      ? {t:+x[0],p:+x[1]}
+      : {t:+(x.timestamp||x.time||x.t),p:+(x.p??x.price??x.close??x.c)}
+    ).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
+    return pts.map((x,i)=>{const prev=i?pts[i-1].p:x.p;return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};});
   }
   async function select(sym){
     clearInterval(timer);
