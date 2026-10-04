@@ -1716,7 +1716,7 @@ async function load(){
 addEventListener('resize',resize);
 addEventListener('rizvi:candle-update',sync);
 addEventListener('rizvi:timeframe-update',sync);
-setTimeout(resize,0);load();setInterval(load,10000);
+setTimeout(resize,0);load();window.RIZVI_V72_HISTORY_LOADER=load;
 })();
 </script><script id="rizvi-live-timeframe-v72">
 (function(){
