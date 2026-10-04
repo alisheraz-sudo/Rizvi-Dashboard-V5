@@ -2038,9 +2038,14 @@ function host(){
 }
 function rows(){
  const raw=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];
- return raw.map(b=>({t:N(b.t),o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)}))
-   .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite))
-   .sort((a,b)=>a.t-b.t);
+ return raw.map(b=>{
+   let t=N(b.t);
+   /* Normalize feed timestamps: Coinbase/XAUS may return seconds, while some feeds return milliseconds. */
+   if(Number.isFinite(t)&&t<100000000000)t*=1000;
+   return {t,o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)};
+ })
+ .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite))
+ .sort((a,b)=>a.t-b.t);
 }
 function aggregate(a,m){
  if(m===1)return a.slice(-520).map(b=>({time:Math.floor(b.t/1000),open:b.o,high:b.h,low:b.l,close:b.c}));
