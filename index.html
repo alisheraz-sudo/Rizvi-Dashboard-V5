@@ -1352,4 +1352,32 @@
   if(Number.isFinite(Number(window.RIZVI_LIVE_PRICE)))applyPrice({detail:{price:Number(window.RIZVI_LIVE_PRICE),symbol:'BTCUSD'}});
   if(window.RIZVI_SIGNAL_QUALIFICATION)applyQualification({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
-</script></body></html>
+<script id="rizvi-operational-core">
+(function(){
+  const state={price:false,candles:false,marketRange:false,liquidity:false,qualification:false,symbol:false,updatedAt:null};
+  function finite(v){return Number.isFinite(Number(v));}
+  function update(){
+    const p=window.RIZVI_CURRENT_SYMBOL==='XAU/USD'?window.RIZVI_LIVE_PRICES?.['XAU/USD']:window.RIZVI_LIVE_PRICE;
+    const bars=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
+    const mr=window.RIZVI_MARKET_RANGE||{};
+    const li=window.RIZVI_LIQUIDITY_ENGINE||{};
+    const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    state.price=finite(p);
+    state.candles=Array.isArray(bars)&&bars.length>0;
+    state.marketRange=finite(mr.dayHigh)&&finite(mr.dayLow);
+    state.liquidity=!!li.symbol&&Array.isArray(li.levels);
+    state.qualification=!!q.symbol&&finite(q.patternConfidence)&&finite(q.liquidityScore);
+    state.symbol=!!window.RIZVI_CURRENT_SYMBOL;
+    state.updatedAt=Date.now();
+    window.RIZVI_OPERATIONAL_HEALTH={...state,ready:Object.values(state).filter(v=>typeof v==='boolean').every(Boolean)};
+    window.dispatchEvent(new CustomEvent('rizvi:operational-health',{detail:window.RIZVI_OPERATIONAL_HEALTH}));
+  }
+  window.RIZVI_OPERATIONAL_CHECK=function(){update();return {...window.RIZVI_OPERATIONAL_HEALTH};};
+  ['rizvi:price-update','rizvi:symbol-change','rizvi:chart-source','rizvi:market-range-update','rizvi:liquidity-update','rizvi:signal-qualification-update'].forEach(name=>{
+    document.addEventListener(name,update);
+    window.addEventListener(name,update);
+  });
+  update();
+  setInterval(update,3000);
+})();
+</script></script></body></html>
