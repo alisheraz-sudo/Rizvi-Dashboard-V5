@@ -2117,4 +2117,58 @@ function refresh(force){
 function wait(){if(window.LightweightCharts)init();else if(++attempts<120)setTimeout(wait,250)}
 wait();
 })();
-</script><script id="rizvi-live-signal-engine-v80">(function(){'use strict';if(window.__RIZVI_SIGNAL_ENGINE_V80)return;window.__RIZVI_SIGNAL_ENGINE_V80=true;function A(){return Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS.slice(-200):[]}function E(a,n){if(a.length<n)return null;let x=a.slice(0,n).reduce((s,b)=>s+b.c,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)x=a[i].c*k+x*(1-k);return x}function R(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i].c-a[i-1].c;if(d>0)g+=d;else l-=d}return l?100-100/(1+(g/14)/(l/14)):100}function U(){let a=A();if(a.length<20)return;let e20=E(a,20),e50=E(a,50),r=R(a),p=a[a.length-1].c,t=p>e20&&e20>e50?'BULLISH':p<e20&&e20<e50?'BEARISH':p>e20?'BULLISH':'BEARISH',m=p>a[a.length-6].c?'BULLISH':p<a[a.length-6].c?'BEARISH':'NEUTRAL',q=Math.max(0,Math.min(95,Math.round(50+(t===m?15:0)+(r>55&&r<70?8:0)+(t==='BULLISH'&&p>e20||t==='BEARISH'&&p<e20?10:0))));let d=q>=60?(t==='BEARISH'?'SELL':'BUY'):'WAIT',hq=q>=80;window.RIZVI_MASTER_SIGNAL={direction:d,quality:q,trend:t,momentum:m,rsi:r,ema20:e20,ema50:e50,entry:p,highQuality:hq,updatedAt:Date.now()};window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.indicators=true;window.RIZVI_OPERATIONAL_STATUS.signalEngine=true;let h=document.querySelector('.signalHead');if(h){let bs=h.querySelectorAll('b');if(bs[0])bs[0].textContent=d;if(bs[1])bs[1].textContent=q+'%';let z=h.querySelector('.badge');if(z)z.textContent=hq?'HIGH QUALITY':q>=60?'WATCH':'WAIT'}document.dispatchEvent(new CustomEvent('rizvi:signal-engine-update',{detail:window.RIZVI_MASTER_SIGNAL}))}addEventListener('rizvi:candle-update',U);setInterval(U,1500);setTimeout(U,2000)})();</script></body></html>
+</script><script id="rizvi-live-signal-engine-v80">(function(){'use strict';if(window.__RIZVI_SIGNAL_ENGINE_V80)return;window.__RIZVI_SIGNAL_ENGINE_V80=true;function A(){return Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS.slice(-200):[]}function E(a,n){if(a.length<n)return null;let x=a.slice(0,n).reduce((s,b)=>s+b.c,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)x=a[i].c*k+x*(1-k);return x}function R(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i].c-a[i-1].c;if(d>0)g+=d;else l-=d}return l?100-100/(1+(g/14)/(l/14)):100}function U(){let a=A();if(a.length<20)return;let e20=E(a,20),e50=E(a,50),r=R(a),p=a[a.length-1].c,t=p>e20&&e20>e50?'BULLISH':p<e20&&e20<e50?'BEARISH':p>e20?'BULLISH':'BEARISH',m=p>a[a.length-6].c?'BULLISH':p<a[a.length-6].c?'BEARISH':'NEUTRAL',q=Math.max(0,Math.min(95,Math.round(50+(t===m?15:0)+(r>55&&r<70?8:0)+(t==='BULLISH'&&p>e20||t==='BEARISH'&&p<e20?10:0))));let d=q>=60?(t==='BEARISH'?'SELL':'BUY'):'WAIT',hq=q>=80;window.RIZVI_MASTER_SIGNAL={direction:d,quality:q,trend:t,momentum:m,rsi:r,ema20:e20,ema50:e50,entry:p,highQuality:hq,updatedAt:Date.now()};window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.indicators=true;window.RIZVI_OPERATIONAL_STATUS.signalEngine=true;let h=document.querySelector('.signalHead');if(h){let bs=h.querySelectorAll('b');if(bs[0])bs[0].textContent=d;if(bs[1])bs[1].textContent=q+'%';let z=h.querySelector('.badge');if(z)z.textContent=hq?'HIGH QUALITY':q>=60?'WATCH':'WAIT'}document.dispatchEvent(new CustomEvent('rizvi:signal-engine-update',{detail:window.RIZVI_MASTER_SIGNAL}))}addEventListener('rizvi:candle-update',U);setInterval(U,1500);setTimeout(U,2000)})();</script><script id="rizvi-v85-signal-stability">
+(function(){
+  'use strict';
+  /* V85: stabilize the visible signal so multiple engines cannot make the dashboard flicker. */
+  if(window.__RIZVI_SIGNAL_STABILITY_V85)return;
+  window.__RIZVI_SIGNAL_STABILITY_V85=true;
+  let lastDir='WAIT', dirCandidate='WAIT', dirCount=0;
+  let scores=[], stableScore=0, lastRender=0;
+  function source(){
+    const q=window.RIZVI_SIGNAL_QUALIFICATION;
+    const m=window.RIZVI_MASTER_SIGNAL;
+    let d=q?.marketDirection==='BUY'||q?.marketDirection==='SELL'?q.marketDirection:
+          q?.signalDirection==='BUY'||q?.signalDirection==='SELL'?q.signalDirection:
+          m?.direction==='BUY'||m?.direction==='SELL'?m.direction:'WAIT';
+    let s=Number(q?.patternConfidence);
+    if(!Number.isFinite(s))s=Number(m?.quality);
+    if(!Number.isFinite(s))s=0;
+    return {d,s:Math.max(0,Math.min(100,s))};
+  }
+  function paint(d,s){
+    const head=document.querySelector('.signalHead');
+    if(head){
+      const bs=head.querySelectorAll('b');
+      if(bs[0])bs[0].textContent=d;
+      if(bs[1])bs[1].textContent=Math.round(s)+'%';
+      const badge=head.querySelector('.badge');
+      if(badge)badge.textContent=s>=80?'HIGH QUALITY':s>=60?'WATCH':'WAIT';
+    }
+    const card=document.querySelector('.right .card:first-child');
+    const big=card?.querySelector('.big');
+    if(big){
+      const a=big.querySelector('span:first-child'), b=big.querySelector('span:nth-child(2)');
+      if(a)a.textContent=d;
+      if(b){
+        const badge=b.querySelector('.badge');
+        if(badge){b.childNodes[0].nodeValue=Math.round(s)+'% ';badge.textContent=s>=80?'HIGH QUALITY':s>=60?'WATCH':'WAIT';}
+      }
+    }
+    window.RIZVI_STABLE_VISIBLE_SIGNAL={direction:d,quality:Math.round(s),updatedAt:Date.now()};
+  }
+  function tick(){
+    const v=source();
+    if(v.d!==dirCandidate){dirCandidate=v.d;dirCount=1}else dirCount++;
+    if(dirCandidate!==lastDir && dirCount>=3)lastDir=dirCandidate;
+    if(!Number.isFinite(stableScore))stableScore=v.s;
+    scores.push(v.s); if(scores.length>5)scores.shift();
+    const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+    stableScore=stableScore*0.65+avg*0.35;
+    const now=Date.now();
+    if(now-lastRender>=1200){paint(lastDir,stableScore);lastRender=now}
+  }
+  setInterval(tick,500);
+  tick();
+})();
+</script></body></html>
