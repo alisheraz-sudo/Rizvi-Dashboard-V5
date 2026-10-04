@@ -1843,8 +1843,8 @@
     const px=Number.isFinite(live)?live:data[data.length-1].close;
     if(Number.isFinite(px)){
       if(!liveLine)liveLine=series.createPriceLine({
-        price:px,color:'#62e6b0',lineWidth:1,lineStyle:L.LineStyle.Dashed,
-        axisLabelVisible:true,title:'LIVE'
+        price:px,color:'#62e6b0',lineWidth:2,lineStyle:L.LineStyle.Dashed,
+        axisLabelVisible:true,title:'LIVE PRICE'
       });
       else liveLine.applyOptions({price:px});
     }
