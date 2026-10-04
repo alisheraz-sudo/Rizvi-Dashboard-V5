@@ -16,7 +16,8 @@
     "@capacitor/android": "7.4.3",
     "@capacitor/ios": "7.4.3",
     "@capacitor/app": "7.1.0",
-    "@capacitor/browser": "7.0.2"
+    "@capacitor/browser": "7.0.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@capacitor/cli": "7.4.3",
