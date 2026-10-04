@@ -1,14 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rizvi Dashboard V5</title><style>
-*{box-sizing:border-box}body{margin:0;padding:14px;min-width:1100px;background:#020d18;color:#e9f2f8;font:14px Arial,sans-serif}.app{max-width:1280px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 14px;border-bottom:1px solid #173650}.brand{font-size:27px;font-weight:800}.brand b{color:#1689ff}.brand small{font-size:16px;color:#aab8c5;margin-left:28px}.quote{display:flex;gap:16px;align-items:center;font-weight:800}.coin{color:#f6a800;font-size:24px}.up,.green{color:#00e39a}.clock{text-align:right;color:#a9bac8;font-size:12px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.btn{height:44px;border-radius:7px;color:#fff;font-size:15px;font-weight:900;border:1px solid}.signalHead{justify-content:flex-start;gap:34px;padding:0 16px}.signalHead>div{display:flex;align-items:center;gap:10px}.signalHead>div span{margin-bottom:0}.signalHead>div b{font-size:20px}.buy{background:#08b45e;border-color:#20f18e}.sell{background:#d72c3d;border-color:#ff5c69}.unwind{background:#e69a0b;border-color:#ffc83e}.signalHead{border:1px solid #1c4a70;border-radius:9px;display:flex;align-items:center;justify-content:space-around;background:#061727}.signalHead span{display:block;color:#b8c8d4;font-size:13px;margin-bottom:5px}.signalHead b{font-size:23px;color:#00e39a}.badge{font-size:10px!important;background:#10b875;color:#04150d!important;padding:6px 9px;border-radius:5px;display:inline-block!important}.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}.chart{height:550px;border:1px solid #1d4666;border-radius:9px;position:relative;overflow:hidden;background:#031421}.head{height:47px;padding:13px;border-bottom:1px solid #102c44;display:flex;justify-content:space-between}.tf span{font-size:10px;color:#7990a3;padding:5px}.tf .sel{color:#fff;border-bottom:2px solid #1689ff}.grid{position:absolute;inset:47px 0 0;background:linear-gradient(#0a253a 1px,transparent 1px),linear-gradient(90deg,#0a253a 1px,transparent 1px);background-size:12.5% 12.5%}.candles{position:absolute;left:8px;right:82px;top:80px;bottom:45px}.c{position:absolute;width:7px}.c:after{content:"";position:absolute;left:3px;top:-9px;width:1px;height:calc(100% + 18px);background:currentColor}.g{background:#19d6c0;color:#19d6c0}.r{background:#ff4755;color:#ff4755}.range{position:absolute;right:112px;top:80px;width:136px;height:335px;background:#008b5a55;border:1px solid #00df91;z-index:3}.sl{position:absolute;inset:0 0 auto;height:82px;background:#a933b655;border:1px solid #cf5aff}.lev{position:absolute;right:-78px;padding:4px 6px;border-radius:4px;font-weight:800;font-size:12px}.ls{top:-1px;background:#8e34b0}.le{top:73px;background:#087cb5}.l1{top:144px;background:#078b5c}.l2{top:219px;background:#08734e}.l3{top:294px;background:#075d43}.price{position:absolute;left:0;right:0;top:178px;border-top:1px dotted #00caa0;z-index:3}.tag{position:absolute;right:0;top:167px;z-index:3;background:#05b878;color:#03151b;padding:5px 8px;border-radius:4px;font-weight:900}.axis{position:absolute;right:7px;z-index:3;top:78px;bottom:40px;display:flex;flex-direction:column;justify-content:space-between;color:#8fa3b4;font-size:11px}.right{display:flex;flex-direction:column;gap:12px}.card{border:1px solid #1c6fca;border-radius:9px;background:#041725;padding:12px}.card.gborder{border-color:#00b87a}.title{font-size:17px;font-weight:800;margin-bottom:11px}.title b{color:#1689ff}.big{display:flex;justify-content:space-between;font-size:23px;font-weight:900;color:#00e39a;border-bottom:1px solid #173650;padding-bottom:9px}.rows{display:grid;gap:8px;margin-top:10px}.row{display:flex;justify-content:space-between;font-size:13px}.row b{color:#00e39a}.note{border-top:1px solid #173650;margin-top:11px;padding-top:9px;color:#8fa5b8;font-size:11px;line-height:1.5}.checks{display:grid;gap:7px;margin:12px 0}.check:before{content:"✓";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:7px;background:#12b96c;color:#00150c;border-radius:50%;font-weight:900}.ready{text-align:center;background:#087e58;border:1px solid #11e091;border-radius:6px;padding:10px;font-weight:900}.rangeRows{display:grid;gap:9px}.marketRange{border-color:#7a5a18}.marketRange .rangeRow b{color:#5fc8ff}.marketRange .title b{color:#5fc8ff}.rangeRow{display:flex;justify-content:space-between;font-size:13px}.rangeRow b{color:#00e39a}.rangeRow .risk{color:#e967ff}.bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px}.bottom .example{box-shadow:inset 0 1px 0 #ffffff08}.example{min-height:190px;border:1px solid;border-radius:9px;padding:13px;background:#061823}.ex1{border-color:#e22e42}.ex2{border-color:#00bf83}.ex3{border-color:#d99b18}.exBig{font-size:21px;font-weight:900;margin:16px 0 10px;color:#00e39a}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:11px;color:#8fa5b7}.meta b{color:#dce8ef}.exAction{margin-top:14px;text-align:center;border:1px solid;border-radius:5px;padding:7px;font-weight:800}.legend{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #173c58;border-radius:9px;margin-top:12px;padding:12px;text-align:center;background:#04131f}.legend div{border-right:1px solid #31506a;padding:0 8px;color:#9db0c0;font-size:11px;line-height:1.5}.legend div:last-child{border:0}.legend b{display:block;color:#00e39a}.foot{text-align:center;color:#71889b;font-size:11px;margin-top:10px}.signalHead{min-height:48px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.right{display:flex;flex-direction:column;gap:12px}.chart{height:550px}.range{right:112px;width:136px}.lev{right:-78px}.legend{grid-template-columns:repeat(4,1fr)}.legend div{border-right:1px solid #31506a;border-bottom:0;padding:0 8px}}@media(max-width:900px){body{padding:0;min-width:0;width:100vw;overflow-x:hidden}.app{width:1280px;max-width:none;margin:0;transform-origin:top left;transform:scale(.30)}.top{width:1280px;padding:8px 6px 12px}.actions{grid-template-columns:82px 82px 82px minmax(270px,1fr);gap:7px;margin:8px 0 5px}.btn{height:38px;font-size:13px;border-radius:7px}.signalHead{min-height:44px;padding:5px 10px;justify-content:flex-start;gap:24px}.signalHead span{font-size:9px}.signalHead b{font-size:16px}.badge{font-size:7px!important;padding:3px 5px}.main{grid-template-columns:minmax(0,1fr) 320px;gap:10px}.main>main{position:relative;top:-8px}.chart{height:500px}.bottom{grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:7px}.example{min-height:155px;padding:8px}.exBig{font-size:16px;margin:8px 0 6px}.right{gap:9px}.card{padding:9px}.legend{grid-template-columns:repeat(4,1fr);margin-top:9px;padding:10px}.foot{margin:8px 0}}</style><style id="rizvi-tv-chart-v57-css">
-/* RIZVI V57 — proper TradingView Lightweight Charts interaction layer */
-#rizviTvChart{position:absolute!important;left:0!important;right:0!important;top:47px!important;bottom:0!important;width:auto!important;height:auto!important;z-index:20!important;background:#031421}
-#rizviTvChart canvas{touch-action:none!important}
-.chart>.grid,.chart>.candles,.chart>.range,.chart>.price,.chart>.tag,.chart>.axis{display:none!important}
-#rizviTvChart .tvAttrib{position:absolute;left:8px;bottom:4px;z-index:10;font:9px/1.2 system-ui,sans-serif;opacity:.55;pointer-events:auto}
-#rizviTvChart .tvAttrib a{color:#8da4b8;text-decoration:none}
-@media(max-width:900px){#rizviTvChart .tvAttrib{font-size:8px}}
-</style>
-<script id="rizvi-tv-chart-v57-lib" src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script></head>
+*{box-sizing:border-box}body{margin:0;padding:14px;min-width:1100px;background:#020d18;color:#e9f2f8;font:14px Arial,sans-serif}.app{max-width:1280px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 14px;border-bottom:1px solid #173650}.brand{font-size:27px;font-weight:800}.brand b{color:#1689ff}.brand small{font-size:16px;color:#aab8c5;margin-left:28px}.quote{display:flex;gap:16px;align-items:center;font-weight:800}.coin{color:#f6a800;font-size:24px}.up,.green{color:#00e39a}.clock{text-align:right;color:#a9bac8;font-size:12px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.btn{height:44px;border-radius:7px;color:#fff;font-size:15px;font-weight:900;border:1px solid}.signalHead{justify-content:flex-start;gap:34px;padding:0 16px}.signalHead>div{display:flex;align-items:center;gap:10px}.signalHead>div span{margin-bottom:0}.signalHead>div b{font-size:20px}.buy{background:#08b45e;border-color:#20f18e}.sell{background:#d72c3d;border-color:#ff5c69}.unwind{background:#e69a0b;border-color:#ffc83e}.signalHead{border:1px solid #1c4a70;border-radius:9px;display:flex;align-items:center;justify-content:space-around;background:#061727}.signalHead span{display:block;color:#b8c8d4;font-size:13px;margin-bottom:5px}.signalHead b{font-size:23px;color:#00e39a}.badge{font-size:10px!important;background:#10b875;color:#04150d!important;padding:6px 9px;border-radius:5px;display:inline-block!important}.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}.chart{height:550px;border:1px solid #1d4666;border-radius:9px;position:relative;overflow:hidden;background:#031421}.head{height:47px;padding:13px;border-bottom:1px solid #102c44;display:flex;justify-content:space-between}.tf span{font-size:10px;color:#7990a3;padding:5px}.tf .sel{color:#fff;border-bottom:2px solid #1689ff}.grid{position:absolute;inset:47px 0 0;background:linear-gradient(#0a253a 1px,transparent 1px),linear-gradient(90deg,#0a253a 1px,transparent 1px);background-size:12.5% 12.5%}.candles{position:absolute;left:8px;right:82px;top:80px;bottom:45px}.c{position:absolute;width:7px}.c:after{content:"";position:absolute;left:3px;top:-9px;width:1px;height:calc(100% + 18px);background:currentColor}.g{background:#19d6c0;color:#19d6c0}.r{background:#ff4755;color:#ff4755}.range{position:absolute;right:112px;top:80px;width:136px;height:335px;background:#008b5a55;border:1px solid #00df91;z-index:3}.sl{position:absolute;inset:0 0 auto;height:82px;background:#a933b655;border:1px solid #cf5aff}.lev{position:absolute;right:-78px;padding:4px 6px;border-radius:4px;font-weight:800;font-size:12px}.ls{top:-1px;background:#8e34b0}.le{top:73px;background:#087cb5}.l1{top:144px;background:#078b5c}.l2{top:219px;background:#08734e}.l3{top:294px;background:#075d43}.price{position:absolute;left:0;right:0;top:178px;border-top:1px dotted #00caa0;z-index:3}.tag{position:absolute;right:0;top:167px;z-index:3;background:#05b878;color:#03151b;padding:5px 8px;border-radius:4px;font-weight:900}.axis{position:absolute;right:7px;z-index:3;top:78px;bottom:40px;display:flex;flex-direction:column;justify-content:space-between;color:#8fa3b4;font-size:11px}.right{display:flex;flex-direction:column;gap:12px}.card{border:1px solid #1c6fca;border-radius:9px;background:#041725;padding:12px}.card.gborder{border-color:#00b87a}.title{font-size:17px;font-weight:800;margin-bottom:11px}.title b{color:#1689ff}.big{display:flex;justify-content:space-between;font-size:23px;font-weight:900;color:#00e39a;border-bottom:1px solid #173650;padding-bottom:9px}.rows{display:grid;gap:8px;margin-top:10px}.row{display:flex;justify-content:space-between;font-size:13px}.row b{color:#00e39a}.note{border-top:1px solid #173650;margin-top:11px;padding-top:9px;color:#8fa5b8;font-size:11px;line-height:1.5}.checks{display:grid;gap:7px;margin:12px 0}.check:before{content:"✓";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:7px;background:#12b96c;color:#00150c;border-radius:50%;font-weight:900}.ready{text-align:center;background:#087e58;border:1px solid #11e091;border-radius:6px;padding:10px;font-weight:900}.rangeRows{display:grid;gap:9px}.marketRange{border-color:#7a5a18}.marketRange .rangeRow b{color:#5fc8ff}.marketRange .title b{color:#5fc8ff}.rangeRow{display:flex;justify-content:space-between;font-size:13px}.rangeRow b{color:#00e39a}.rangeRow .risk{color:#e967ff}.bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px}.bottom .example{box-shadow:inset 0 1px 0 #ffffff08}.example{min-height:190px;border:1px solid;border-radius:9px;padding:13px;background:#061823}.ex1{border-color:#e22e42}.ex2{border-color:#00bf83}.ex3{border-color:#d99b18}.exBig{font-size:21px;font-weight:900;margin:16px 0 10px;color:#00e39a}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:11px;color:#8fa5b7}.meta b{color:#dce8ef}.exAction{margin-top:14px;text-align:center;border:1px solid;border-radius:5px;padding:7px;font-weight:800}.legend{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #173c58;border-radius:9px;margin-top:12px;padding:12px;text-align:center;background:#04131f}.legend div{border-right:1px solid #31506a;padding:0 8px;color:#9db0c0;font-size:11px;line-height:1.5}.legend div:last-child{border:0}.legend b{display:block;color:#00e39a}.foot{text-align:center;color:#71889b;font-size:11px;margin-top:10px}.signalHead{min-height:48px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.right{display:flex;flex-direction:column;gap:12px}.chart{height:550px}.range{right:112px;width:136px}.lev{right:-78px}.legend{grid-template-columns:repeat(4,1fr)}.legend div{border-right:1px solid #31506a;border-bottom:0;padding:0 8px}}@media(max-width:900px){body{padding:0;min-width:0;width:100vw;overflow-x:hidden}.app{width:1280px;max-width:none;margin:0;transform-origin:top left;transform:scale(.30)}.top{width:1280px;padding:8px 6px 12px}.actions{grid-template-columns:82px 82px 82px minmax(270px,1fr);gap:7px;margin:8px 0 5px}.btn{height:38px;font-size:13px;border-radius:7px}.signalHead{min-height:44px;padding:5px 10px;justify-content:flex-start;gap:24px}.signalHead span{font-size:9px}.signalHead b{font-size:16px}.badge{font-size:7px!important;padding:3px 5px}.main{grid-template-columns:minmax(0,1fr) 320px;gap:10px}.main>main{position:relative;top:-8px}.chart{height:500px}.bottom{grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:7px}.example{min-height:155px;padding:8px}.exBig{font-size:16px;margin:8px 0 6px}.right{gap:9px}.card{padding:9px}.legend{grid-template-columns:repeat(4,1fr);margin-top:9px;padding:10px}.foot{margin:8px 0}}</style></head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b><small>V5 - Signal Dashboard</small></div><div class="quote"><select id="symbolSelect" style="background:#061727;color:#e9f2f8;border:1px solid #1c4a70;border-radius:6px;padding:7px;font-weight:800"><option value="BTCUSD">BTCUSD</option><option value="XAU/USD">XAU/USD</option><option value="USOIL" disabled>USOIL — pending</option></select><span class="coin">₿</span><span id="quoteSymbol">BTCUSD</span><span id="quotePrice">68,432.50</span><span id="quoteChange" class="up">+324.75 (+0.48%)</span><span id="quoteLive" class="green">● Live</span></div><div class="clock" id="liveClock">--<br>--</div></header>
 <section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div><span>Signal Direction</span><b>BUY</b></div><div><span>Setup Quality</span><b>88%</b> <em class="badge">HIGH QUALITY</em></div></div></section>
@@ -82,9 +73,6 @@
 })();
 </script><script id="rizvi-default-timeframe-v65">
 (function(){ window.RIZVI_CANDLE_TIMEFRAME='1M'; })();
-</script><script id="rizvi-legacy-canvas-disabled-v59">
-/* V59: Legacy canvas renderer disabled. Lightweight Charts V57/V58 is the single canonical candle renderer/feed. */
-(function(){ window.RIZVI_LEGACY_CANVAS_DISABLED=true; })();
 </script><script>
 (function(){
  const tfEls=[...document.querySelectorAll('.tf span')];
@@ -1680,186 +1668,53 @@
   });
   setTimeout(()=>{if(window.RIZVI_MASTER_CONFIRMATION)renderMaster(window.RIZVI_MASTER_CONFIRMATION);},250);
 })();
-</script><script id="rizvi-tv-chart-v57-script">
+</script><script id="rizvi-old-approved-canvas-chart-v66">
 (function(){
-  'use strict';
-  if(window.__RIZVI_TV_V57)return;
-  window.__RIZVI_TV_V57=true;
-
-  const TF={ '1M':1,'3M':3,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440 };
-  let chart=null,series=null,liveLine=null,lastTf='',lastSig='',ready=false,tries=0;
-
-  function host(){
-    const root=document.querySelector('.chart');
-    if(!root)return null;
-    let el=document.getElementById('rizviTvChart');
-    if(!el){
-      el=document.createElement('div');
-      el.id='rizviTvChart';
-      const a=document.createElement('div');
-      a.className='tvAttrib';
-      a.innerHTML='<a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>';
-      el.appendChild(a);
-      root.appendChild(el);
-    }
-    return el;
-  }
-
-  function num(v){const n=Number(v);return Number.isFinite(n)?n:NaN}
-
-  function rows(){
-    const src=Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_AGG_BARS.length
-      ?window.RIZVI_AGG_BARS:(window.RIZVI_RAW_BARS||[]);
-    return (Array.isArray(src)?src:[]).map(b=>({
-      t:num(b.t),o:num(b.o),h:num(b.h),l:num(b.l),c:num(b.c)
-    })).filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite))
-      .sort((a,b)=>a.t-b.t);
-  }
-
-  function aggregate(raw,minutes){
-    if(minutes===1)return raw.slice(-520).map(b=>({
-      time:Math.floor(b.t/1000),open:b.o,high:b.h,low:b.l,close:b.c
-    }));
-    const out=[],ms=minutes*60000;
-    for(const b of raw){
-      const bucket=Math.floor(b.t/ms)*ms;
-      const last=out[out.length-1];
-      if(!last||last._t!==bucket){
-        out.push({_t:bucket,time:Math.floor(bucket/1000),open:b.o,high:b.h,low:b.l,close:b.c});
-      }else{
-        last.high=Math.max(last.high,b.h);
-        last.low=Math.min(last.low,b.l);
-        last.close=b.c;
-      }
-    }
-    return out.slice(-320).map(({_t,...x})=>x);
-  }
-
-  function selectedData(){
-    const raw=(window.RIZVI_RAW_BARS||[]);
-    const label=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
-    const mins=TF[label]||1;
-    let data=aggregate(raw,mins);
-    if(Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_CANDLE_TIMEFRAME===label&&window.RIZVI_AGG_BARS.length){
-      data=window.RIZVI_AGG_BARS.map(b=>({time:Math.floor(num(b.t)/1000),open:num(b.o),high:num(b.h),low:num(b.l),close:num(b.c)}))
-        .filter(b=>Number.isFinite(b.time)&&[b.open,b.high,b.low,b.close].every(Number.isFinite));
-    }
-    return data;
-  }
-
-  async function ensureCandles(){
-    try{
-      const r=await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000',{cache:'no-store'});
-      const d=await r.json();
-      if(!Array.isArray(d)||!d.length)throw new Error('Binance candle feed empty');
-      const bars=d.map(x=>({t:Number(x[0]),o:Number(x[1]),h:Number(x[2]),l:Number(x[3]),c:Number(x[4])}))
-        .filter(b=>[b.t,b.o,b.h,b.l,b.c].every(Number.isFinite));
-      if(!bars.length)throw new Error('No valid BTC candles');
-      window.RIZVI_RAW_BARS=bars;
-      window.RIZVI_CANDLE_SOURCE='BINANCE_BTCUSDT';
-      window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',timeframe:'1m',source:'Binance BTCUSDT klines',live:true,bars:bars.length,updatedAt:Date.now()};
-      const label=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
-      const mins=TF[label]||1;
-      window.RIZVI_AGG_BARS=aggregate(bars,mins).map(b=>({t:b.time*1000,o:b.open,h:b.high,l:b.low,c:b.close}));
-      document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
-      document.dispatchEvent(new CustomEvent('rizvi:chart-source',{detail:{source:'Binance BTCUSDT klines',live:true,bars:bars.length}}));
-      /* V61: live refresh must preserve the user's chart viewport/zoom. */
-      refresh(false);
-      return true;
-    }catch(e){
-      window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',timeframe:'1m',source:'Binance BTCUSDT klines',live:false,error:String(e),updatedAt:Date.now()};
-      return false;
-    }
-  }
-
-  function init(){
-    if(ready||!window.LightweightCharts)return;
-    const el=host(); if(!el)return;
-    const L=window.LightweightCharts;
-    try{
-      chart=L.createChart(el,{
-        autoSize:true,
-        layout:{background:{type:L.ColorType.Solid,color:'#031421'},textColor:'#8fa3b4',fontFamily:'Arial,sans-serif'},
-        grid:{vertLines:{color:'rgba(18,45,66,.75)'},horzLines:{color:'rgba(18,45,66,.75)'}},
-        crosshair:{
-          mode:L.CrosshairMode.Normal,
-          vertLine:{color:'rgba(150,180,205,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'},
-          horzLine:{color:'rgba(150,180,205,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'}
-        },
-        rightPriceScale:{
-          visible:true,borderColor:'#18324b',textColor:'#8fa3b4',
-          scaleMargins:{top:.08,bottom:.12},
-          autoScale:true
-        },
-        timeScale:{
-          visible:true,borderColor:'#18324b',timeVisible:true,secondsVisible:false,
-          rightOffset:5,barSpacing:8,minBarSpacing:3,
-          fixLeftEdge:false,fixRightEdge:false,
-          tickMarkFormatter:(time)=>{
-            const d=new Date(Number(time)*1000);
-            return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
-          }
-        },
-        handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
-        handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:{time:true,price:true}}
-      });
-      series=chart.addSeries(L.CandlestickSeries,{
-        upColor:'#19d6c0',downColor:'#ff4755',
-        borderUpColor:'#19d6c0',borderDownColor:'#ff4755',
-        wickUpColor:'#19d6c0',wickDownColor:'#ff4755',
-        borderVisible:true,lastValueVisible:true,priceLineVisible:false
-      });
-      ready=true;
-      refresh(true);
-      ensureCandles();
-      setInterval(ensureCandles,30000);
-      window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(_){}});
-      setInterval(()=>refresh(false),700);
-      window.addEventListener('rizvi:price-update',()=>refresh(false));
-      window.addEventListener('rizvi:timeframe-update',()=>refresh(true));
-      window.addEventListener('rizvi:candle-update',()=>refresh(false));
-      window.addEventListener('rizvi:symbol-change',()=>setTimeout(()=>refresh(true),100));
-    }catch(e){
-      el.innerHTML='<div style="padding:16px;color:#d7ae57;font:12px Arial">TradingView chart loading…</div>';
-    }
-  }
-
-  function refresh(force){
-    if(!ready||!series)return;
-    const label=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
-    const data=selectedData();
-    if(!data.length)return;
-    const sig=label+'|'+data.length+'|'+data[0].time+'|'+data[data.length-1].time;
-    const timeframeChanged=label!==lastTf;
-
-    if(force||sig!==lastSig||timeframeChanged){
-      series.setData(data);
-      /* Fit only on first load/timeframe change — never reset a user's manual zoom on live ticks. */
-      if(force||timeframeChanged){
-        requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(_){}});
-      }
-      lastSig=sig;lastTf=label;
-    }else{
-      series.update(data[data.length-1]);
-    }
-
-    const live=num(window.RIZVI_CURRENT_SYMBOL==='XAU/USD'
-      ?window.RIZVI_LIVE_PRICES?.['XAU/USD']
-      :window.RIZVI_LIVE_PRICE);
-    const px=Number.isFinite(live)?live:data[data.length-1].close;
-    if(Number.isFinite(px)){
-      if(!liveLine)liveLine=series.createPriceLine({
-        price:px,color:'#62e6b0',lineWidth:2,lineStyle:L.LineStyle.Dashed,
-        axisLabelVisible:true,title:'LIVE PRICE'
-      });
-      else liveLine.applyOptions({price:px});
-    }
-  }
-
-  function boot(){
-    if(window.LightweightCharts){init();return}
-    if(++tries<100)setTimeout(boot,250);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+ const host=document.querySelector('.chart');
+ if(!host||host.querySelector('canvas'))return;
+ const c=document.createElement('canvas'); c.width=1200;c.height=500;
+ c.style.cssText='position:absolute;left:0;right:0;top:47px;width:100%;height:calc(100% - 47px);display:block;z-index:1;pointer-events:none';
+ host.appendChild(c);
+ const ctx=c.getContext('2d');
+ let bars=[];
+ function draw(){
+   const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+   ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;
+   for(let i=1;i<6;i++){let y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+   const n=Math.min(70,bars.length), step=w/n, body=Math.max(4,step*.55);
+   const start=Math.max(0,bars.length-n); let max=0,min=Infinity;
+   bars.slice(start).forEach(b=>{max=Math.max(max,b.h,b.l);min=Math.min(min,b.h,b.l)});
+   const sy=v=>h-30-(v-min)/(max-min||1)*(h-60);
+   bars.slice(start).forEach((b,i)=>{
+    const x=i*step+step*.5, yo=sy(b.o),yc=sy(b.c),yh=sy(b.h),yl=sy(b.l);
+    ctx.strokeStyle=b.c>=b.o?'#31d17c':'#ff5b68';ctx.beginPath();ctx.moveTo(x,yh);ctx.lineTo(x,yl);ctx.stroke();
+    ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(x-body/2,Math.min(yo,yc),body,Math.max(2,Math.abs(yc-yo)));
+   });
+ }
+ async function load(){
+  try{
+   const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
+   if(Array.isArray(d)){bars=d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',source:'COINBASE 1M',bars:bars.length,updatedAt:Date.now(),live:true};document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));draw();}
+  }catch(e){}
+ }
+ load();setInterval(load,10000);addEventListener('resize',draw);
+})();
+</script><script id="rizvi-old-approved-timeframe-v66">
+(function(){
+ const tfEls=[...document.querySelectorAll('.tf span')];
+ const map={'1M':1,'3M':3,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
+ let selected=1;
+ function aggregate(raw,m){
+  const out=[]; for(let i=0;i<raw.length;i+=m){const a=raw.slice(i,i+m);if(!a.length)continue;
+   out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
+  } return out;
+ }
+ window.RIZVI_SET_TIMEFRAME=function(label,raw){
+  selected=map[label]||1;
+  const data=aggregate(raw||window.RIZVI_RAW_BARS||[],selected);
+  window.RIZVI_CANDLE_TIMEFRAME=label; window.RIZVI_AGG_BARS=data;
+  return data;
+ };
+ tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS)));
 })();
 </script></body></html>
