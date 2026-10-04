@@ -56,7 +56,8 @@ function readJson(req){
     req.on('error',reject);
   });
 }
-function ofKey(x){return String(x.symbol||x.ticker||'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function normalizedSymbol(x){return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function ofKey(x){return normalizedSymbol(x.symbol||x.ticker||'BTCUSDT');}
 function ofReply(res,status,obj){
   return send(res,status,'application/json; charset=utf-8',JSON.stringify(obj),{
     'Access-Control-Allow-Origin':'*',
@@ -89,6 +90,14 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
   if(url.pathname==='/ctrader/status' && req.method==='GET'){
     return ofReply(res,200,{ok:true,data:ctrader.status()});
+  }
+  if(url.pathname==='/ctrader/orderflow' && req.method==='GET'){
+    const key=normalizedSymbol(url.searchParams.get('symbol')||'XAUUSD');
+    const data=global.RIZVI_CTRADER_ORDER_FLOW;
+    if(!data || (data.symbol && normalizedSymbol(data.symbol)!==key)){
+      return ofReply(res,200,{ok:true,connected:ctrader.status().connected,data:null});
+    }
+    return ofReply(res,200,{ok:true,connected:ctrader.status().connected,data});
   }
   if(url.pathname==='/ctrader/auth-url' && req.method==='GET'){
     if(!process.env.CTRADER_CLIENT_ID)return ofReply(res,503,{ok:false,error:'CTRADER_CLIENT_ID not configured'});
