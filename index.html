@@ -2237,15 +2237,18 @@ function levels(){
  try{if(typeof window.RIZVI_SIGNAL_LEVELS==='function')out=window.RIZVI_SIGNAL_LEVELS(p,d)}catch(e){}
  var sl=N(out?.sl),tp1=N(out?.tp1),tp2=N(out?.tp2),tp3=N(out?.tp3),entry=N(out?.entry);
  if(!Number.isFinite(entry))entry=p;
- if(!Number.isFinite(sl)||!Number.isFinite(tp1)||!Number.isFinite(tp2)||!Number.isFinite(tp3)){
+ var valid=d==='BUY'
+   ? (Number.isFinite(sl)&&Number.isFinite(tp1)&&Number.isFinite(tp2)&&Number.isFinite(tp3)&&sl<entry&&entry<tp1&&tp1<tp2&&tp2<tp3)
+   : (Number.isFinite(sl)&&Number.isFinite(tp1)&&Number.isFinite(tp2)&&Number.isFinite(tp3)&&sl>entry&&entry>tp1&&tp1>tp2&&tp2>tp3);
+ if(!valid){
    var risk=Number(window.RIZVI_TRADE_RISK);
-   if(!Number.isFinite(risk)||risk<=0)risk=Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0); risk=Math.min(Math.max(risk,Math.abs(p)*0.00035),Math.abs(p)*0.00075);
-   if(!Number.isFinite(risk)||risk<=0)risk=Math.max(1,Math.abs(p)*0.0015);
+   if(!Number.isFinite(risk)||risk<=0)risk=Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0);
+   risk=Math.min(Math.max(risk,Math.abs(entry)*0.00035),Math.abs(entry)*0.00075);
+   if(!Number.isFinite(risk)||risk<=0)risk=Math.max(1,Math.abs(entry)*0.0015);
    if(d==='BUY'){sl=entry-risk;tp1=entry+risk;tp2=entry+risk*1.5;tp3=entry+risk*2}
    else{sl=entry+risk;tp1=entry-risk;tp2=entry-risk*1.5;tp3=entry-risk*2}
  }
- if(d==='BUY' && !(sl<entry&&entry<tp1&&tp1<tp2&&tp2<tp3))return null;
- if(d==='SELL' && !(sl>entry&&entry>tp1&&tp1>tp2&&tp2>tp3))return null;
+ return {d:d,sl:sl,entry:entry,tp1:tp1,tp2:tp2,tp3:tp3};
  return {d:d,sl:sl,entry:entry,tp1:tp1,tp2:tp2,tp3:tp3};
 }
 function render(){
