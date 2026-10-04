@@ -570,7 +570,7 @@
     const ready=document.querySelector('.ready');
     if(headDir&&q.signalDirection&&q.signalDirection!=='NEUTRAL')headDir.textContent=q.signalDirection;
     if(signal&&q.signalDirection&&q.signalDirection!=='NEUTRAL')signal.textContent=q.signalDirection;
-    if(quality)quality.innerHTML=(q.patternConfidence||0)+'% <em class="badge">'+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT')+'</em>';
+    if(quality)quality.innerHTML=(q.patternConfidence||0)+'% <em class="badge">'+(Number(q.patternConfidence)>=70?'QUALIFIED':'WAIT')+'</em>';
     if(headBadge)headBadge.textContent=q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT';
     if(ready){ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6b5312';}
     const execCard=document.querySelectorAll('.right .card')[1];
@@ -618,7 +618,7 @@
       symbol:e.symbol,updatedAt:Date.now(),signalDirection:signalText,
       liquidityScore,patternConfidence,marketDirection:direction,
       aligned,confirmedSweep:sweeps.length>0,confirmedBreakout:follow,
-      multiTimeframe:tfs.size>=2,status:liquidityScore>=60?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
+      multiTimeframe:tfs.size>=2,status:(liquidityScore>=70&&patternConfidence>=70)?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION'
     };
     const qualityEl=document.querySelector('.card.gborder .row b');
     const readyEl=document.querySelector('.card.gborder .ready');
@@ -674,8 +674,8 @@
     if(r!==null){ if(direction==='BUY'&&r>=50&&r<75)score+=10; if(direction==='SELL'&&r<=50&&r>25)score+=10; }
     if(q.aligned)score+=10;
     if(q.multiTimeframe)score+=5;
-    score=Math.max(55,Math.min(95,Math.round(score)));
-    const quality=score>=80?'HIGH QUALITY':score>=70?'MEDIUM':'WATCH';
+    score=Math.max(0,Math.min(95,Math.round(score)));
+    const quality=score>=70?'QUALIFIED':'WAIT';
     const color=direction==='BUY'?'#00e39a':direction==='SELL'?'#ff5b68':'#ffc43d';
     if(headDirection){headDirection.textContent=direction;headDirection.style.color=color;}
     if(headQuality)headQuality.textContent=score+'%';
@@ -744,8 +744,8 @@
     if(signalPct && Number.isFinite(pct)) signalPct.childNodes[0].nodeValue=pct+'% ';
     if(score && Number.isFinite(q.liquidityScore)) score.firstChild.nodeValue=q.liquidityScore+'%  ';
     if(badge){
-      const high=pct>=80;
-      badge.textContent=high?'HIGH QUALITY':'WATCH';
+      const high=pct>=70;
+      badge.textContent=high?'QUALIFIED':'WAIT';
       badge.style.background=high?'#10b875':'#173c75';
       badge.style.color=high?'#04150d':'#7fb8ff';
     }
@@ -2143,7 +2143,14 @@ function refresh(force){
 function wait(){if(window.LightweightCharts)init();else if(++attempts<120)setTimeout(wait,250)}
 wait();
 })();
-</script><script id="rizvi-live-signal-engine-v80">(function(){'use strict';if(window.__RIZVI_SIGNAL_ENGINE_V80)return;window.__RIZVI_SIGNAL_ENGINE_V80=true;function A(){return Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS.slice(-200):[]}function E(a,n){if(a.length<n)return null;let x=a.slice(0,n).reduce((s,b)=>s+b.c,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)x=a[i].c*k+x*(1-k);return x}function R(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i].c-a[i-1].c;if(d>0)g+=d;else l-=d}return l?100-100/(1+(g/14)/(l/14)):100}function U(){let a=A();if(a.length<20)return;let e20=E(a,20),e50=E(a,50),r=R(a),p=a[a.length-1].c,t=p>e20&&e20>e50?'BULLISH':p<e20&&e20<e50?'BEARISH':p>e20?'BULLISH':'BEARISH',m=p>a[a.length-6].c?'BULLISH':p<a[a.length-6].c?'BEARISH':'NEUTRAL',q=Math.max(0,Math.min(95,Math.round(50+(t===m?15:0)+(r>55&&r<70?8:0)+(t==='BULLISH'&&p>e20||t==='BEARISH'&&p<e20?10:0))));window.RIZVI_SIGNAL_HYSTERESIS=window.RIZVI_SIGNAL_HYSTERESIS||{direction:'WAIT',pending:'WAIT',count:0};let hs=window.RIZVI_SIGNAL_HYSTERESIS,cand=q>=75?(t==='BEARISH'?'SELL':'BUY'):'WAIT';if(q<70){hs.pending='WAIT';hs.count=0;hs.direction='WAIT'}else if(q<75){if(cand!=='WAIT'&&cand!==hs.direction){hs.pending=cand;hs.count++}else if(cand===hs.direction){hs.pending=cand;hs.count=0}if(hs.count>=3){hs.direction=hs.pending;hs.count=0}}else{if(cand===hs.direction){hs.pending=cand;hs.count=0}else{hs.pending=cand;hs.count++}if(hs.count>=2){hs.direction=cand;hs.count=0}}let d=hs.direction,hq=q>=75;window.RIZVI_MASTER_SIGNAL={direction:d,quality:q,trend:t,momentum:m,rsi:r,ema20:e20,ema50:e50,entry:p,highQuality:hq,updatedAt:Date.now()};window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.indicators=true;window.RIZVI_OPERATIONAL_STATUS.signalEngine=true;let h=document.querySelector('.signalHead');if(h){let bs=h.querySelectorAll('b');if(bs[0])bs[0].textContent=d;if(bs[1])bs[1].textContent=q+'%';let z=h.querySelector('.badge');if(z)z.textContent=hq?'HIGH QUALITY':q>=60?'WATCH':'WAIT'}document.dispatchEvent(new CustomEvent('rizvi:signal-engine-update',{detail:window.RIZVI_MASTER_SIGNAL}))}addEventListener('rizvi:candle-update',U);setInterval(U,5000);setTimeout(U,2000)})();</script><script id="rizvi-v85-signal-stability">
+</script><script id="rizvi-v90-entry-threshold">
+(function(){
+  'use strict';
+  window.RIZVI_MIN_ENTRY_CONFIDENCE=70;
+  window.RIZVI_ENTRY_POLICY={minimum:70,belowAction:'WAIT',requireAllIndicators:true};
+})();
+</script>
+<script id="rizvi-live-signal-engine-v80">(function(){'use strict';if(window.__RIZVI_SIGNAL_ENGINE_V80)return;window.__RIZVI_SIGNAL_ENGINE_V80=true;function A(){return Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS.slice(-200):[]}function E(a,n){if(a.length<n)return null;let x=a.slice(0,n).reduce((s,b)=>s+b.c,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)x=a[i].c*k+x*(1-k);return x}function R(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i].c-a[i-1].c;if(d>0)g+=d;else l-=d}return l?100-100/(1+(g/14)/(l/14)):100}function U(){let a=A();if(a.length<20)return;let e20=E(a,20),e50=E(a,50),r=R(a),p=a[a.length-1].c,t=p>e20&&e20>e50?'BULLISH':p<e20&&e20<e50?'BEARISH':p>e20?'BULLISH':'BEARISH',m=p>a[a.length-6].c?'BULLISH':p<a[a.length-6].c?'BEARISH':'NEUTRAL',q=Math.max(0,Math.min(95,Math.round(50+(t===m?15:0)+(r>55&&r<70?8:0)+(t==='BULLISH'&&p>e20||t==='BEARISH'&&p<e20?10:0))));window.RIZVI_SIGNAL_HYSTERESIS=window.RIZVI_SIGNAL_HYSTERESIS||{direction:'WAIT',pending:'WAIT',count:0};let hs=window.RIZVI_SIGNAL_HYSTERESIS,cand=q>=70?(t==='BEARISH'?'SELL':'BUY'):'WAIT';if(q<70){hs.pending='WAIT';hs.count=0;hs.direction='WAIT'}else if(q<75){if(cand!=='WAIT'&&cand!==hs.direction){hs.pending=cand;hs.count++}else if(cand===hs.direction){hs.pending=cand;hs.count=0}if(hs.count>=3){hs.direction=hs.pending;hs.count=0}}else{if(cand===hs.direction){hs.pending=cand;hs.count=0}else{hs.pending=cand;hs.count++}if(hs.count>=2){hs.direction=cand;hs.count=0}}let d=hs.direction,hq=q>=70;window.RIZVI_MASTER_SIGNAL={direction:d,quality:q,trend:t,momentum:m,rsi:r,ema20:e20,ema50:e50,entry:p,highQuality:hq,updatedAt:Date.now()};window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.indicators=true;window.RIZVI_OPERATIONAL_STATUS.signalEngine=true;let h=document.querySelector('.signalHead');if(h){let bs=h.querySelectorAll('b');if(bs[0])bs[0].textContent=d;if(bs[1])bs[1].textContent=q+'%';let z=h.querySelector('.badge');if(z)z.textContent=hq?'HIGH QUALITY':q>=60?'WATCH':'WAIT'}document.dispatchEvent(new CustomEvent('rizvi:signal-engine-update',{detail:window.RIZVI_MASTER_SIGNAL}))}addEventListener('rizvi:candle-update',U);setInterval(U,5000);setTimeout(U,2000)})();</script><script id="rizvi-v85-signal-stability">
 (function(){
   'use strict';
   /* V85: stabilize the visible signal so multiple engines cannot make the dashboard flicker. */
@@ -2278,5 +2285,27 @@ function boot(){
  else setTimeout(boot,500);
 }
 boot();
+})();
+</script><script id="rizvi-v90-final-entry-guard">
+(function(){
+  'use strict';
+  function guard(){
+    const min=Number(window.RIZVI_MIN_ENTRY_CONFIDENCE)||70;
+    const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    const live=window.RIZVI_LIVE_SIGNAL||{};
+    const master=window.RIZVI_MASTER_SIGNAL||{};
+    const vals=[q.patternConfidence, q.liquidityScore, live.score, master.quality]
+      .map(Number).filter(Number.isFinite);
+    const below=vals.some(v=>v<min);
+    const ready=document.querySelector('.gborder .ready');
+    if(ready && below){
+      ready.textContent='WAIT FOR CONFIRMATION';
+      ready.style.background='#73540b';
+      ready.style.borderColor='#d6a62b';
+    }
+    window.RIZVI_ENTRY_READY=!below && vals.length>0;
+  }
+  setInterval(guard,1000);
+  guard();
 })();
 </script></body></html>
