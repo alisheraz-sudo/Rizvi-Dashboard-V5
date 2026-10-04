@@ -2233,7 +2233,7 @@ function setup(){
 function levels(){
  var m=window.RIZVI_MASTER_SIGNAL||{}, q=window.RIZVI_SIGNAL_QUALIFICATION||{}, s=window.RIZVI_STABLE_VISIBLE_SIGNAL||{};
  var d=(s.direction==='BUY'||s.direction==='SELL')?s.direction:((q.marketDirection==='BUY'||q.marketDirection==='SELL')?q.marketDirection:m.direction);
- var quality=Number(s.quality); if(!Number.isFinite(quality))quality=Number(q.patternConfidence); if(!Number.isFinite(quality))quality=Number(m.quality);
+ var quality=Number(m.quality); if(!Number.isFinite(quality))quality=Number(q.patternConfidence); if(!Number.isFinite(quality))quality=Number(s.quality);
  if(!Number.isFinite(quality)||quality<75||d!=='BUY'&&d!=='SELL')return null;
  var now=Date.now(), stable=window.__RIZVI_BOX_STABLE||{on:false,since:0,dir:null};
  if(stable.dir!==d){stable.dir=d;stable.on=false;stable.since=now}
