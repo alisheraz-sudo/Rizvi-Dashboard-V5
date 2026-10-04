@@ -356,8 +356,8 @@
 (function(){
  async function gold(){
   try{
-   const d=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-   const p=Number(d?.spot_usd_oz);
+   const d=await fetch('/market/xau/spot,{cache:'no-store'}).then(r=>r.json());
+   const p=Number(d?.data?.spot_usd_oz ?? d?.spot_usd_oz);
    if(!Number.isFinite(p))return;
    window.RIZVI_GOLD_FEED={price:p,status:d?.data_state?.status||'unknown',price_as_of:d?.price_as_of||d?.updated_at,source:d?.price_source||d?.source};
    window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
@@ -377,8 +377,8 @@
  async function goldBars(){
   if((window.RIZVI_CURRENT_SYMBOL||'BTCUSD')!=='XAU/USD')return;
   try{
-   const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-   const rows=Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]);
+   const d=await fetch('/market/xau/intraday?hours=12,{cache:'no-store'}).then(r=>r.json());
+   const rows=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
    /* XAUS intraday is a real recorded price series: {t,p}, not OHLC. Build candles from consecutive real observations. */
    const pts=rows.map(x=>Array.isArray(x)
      ? {t:+x[0],p:+x[1]}
@@ -408,8 +408,8 @@
     return d.reverse().map(x=>({t:x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]}));
   }
   async function gold(){
-    const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-    const a=Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]);
+    const d=await fetch('/market/xau/intraday?hours=12,{cache:'no-store'}).then(r=>r.json());
+    const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
     const pts=a.map(x=>Array.isArray(x)
       ? {t:+x[0],p:+x[1]}
       : {t:+(x.timestamp||x.time||x.t),p:+(x.p??x.price??x.close??x.c)}
@@ -550,8 +550,8 @@
   }
   async function gold(){
     try{
-      const d=await fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=36&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-      const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
+      const d=await fetch('/market/xau/intraday?hours=36,{cache:'no-store'}).then(r=>r.json());
+      const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||[]));
       const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
       const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
@@ -1719,8 +1719,8 @@
   }
   async function goldCheck(){
     try{
-      const d=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
-      const p=Number(d?.spot_usd_oz);
+      const d=await fetch('/market/xau/spot,{cache:'no-store'}).then(r=>r.json());
+      const p=Number(d?.data?.spot_usd_oz ?? d?.spot_usd_oz);
       if(!Number.isFinite(p))throw new Error('Gold price unavailable');
       window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
       window.RIZVI_LIVE_PRICES['XAU/USD']=p;
@@ -2611,17 +2611,18 @@ function get(){try{const s=localStorage.getItem(KEY);return allowed.has(s)?s:'BT
 function set(sym){try{localStorage.setItem(KEY,sym)}catch(e){}}
 function fire(sym){window.RIZVI_CURRENT_SYMBOL=sym;const sel=document.getElementById('symbolSelect');if(sel)sel.value=sym;const q=document.getElementById('quoteSymbol');if(q)q.textContent=sym;document.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));window.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));}
 function loadGoldBars(){
- return fetch('https://xaus.com/api/v1/intraday?symbol=xau&hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+ return fetch('/market/xau/intraday?hours=12&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  if(Array.isArray(d?.bars)&&d.bars.length)return d.bars.map(x=>({t:Number(x.t),o:Number(x.o),h:Number(x.h),l:Number(x.l),c:Number(x.c)}))
+    .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite));
   const a=Array.isArray(d)?d:(d?.data||d?.prices||[]);
-  const bars=a.map(x=>Array.isArray(x)?{t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}:{t:+(x.timestamp||x.time||x.t),o:+(x.open??x.o),h:+(x.high??x.h),l:+(x.low??x.l),c:+(x.close??x.c)})
-   .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite));
+  const pts=a.map(x=>Array.isArray(x)
+    ? {t:+x[0],p:+x[1]}
+    : {t:+(x.timestamp||x.time||x.t),p:+(x.p??x.price??x.close??x.c)}
+  ).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((a,b)=>a.t-b.t);
+  const bars=pts.map((x,i)=>{const prev=i?pts[i-1].p:x.p;return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};});
   if(!bars.length)throw new Error('XAU intraday unavailable');
   return bars;
- }).catch(()=>fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
-  const p=Number(d?.spot_usd_oz);if(!Number.isFinite(p))throw new Error('XAU spot unavailable');
-  const now=Math.floor(Date.now()/60000)*60000;
-  return [{t:now-3600000,o:p,h:p,l:p,c:p,synthetic:true},{t:now,o:p,h:p,l:p,c:p,synthetic:true}];
- }));
+ });
 }
 async function switchSymbol(sym){
  if(!allowed.has(sym))return;
