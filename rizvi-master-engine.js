@@ -62,9 +62,13 @@
     window.RIZVI_SIGNAL_QUALIFICATION={
       symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
       liquidityScore:Math.round(liqScore),patternConfidence:confidence,aligned:true,
-      confirmedSweep:false,confirmedBreakout:false,multiTimeframe:confirmations>=3,
+      confirmedSweep:Boolean(liq.sweeps?.length),confirmedBreakout:Boolean(liq.breakouts?.length),
+      multiTimeframe:confirmations>=3,
       status:qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',
-      masterConfirmations:confirmations
+      masterConfirmations:confirmations,
+      trend:engines.trend,structure:engines.structure,liquidity:engines.liquidity,
+      orderFlow:engines.orderFlow,momentum:engines.momentum,divergence:engines.divergence,
+      priceAction:engines.priceAction,volatility:engines.volatility
     };
     window.RIZVI_SIGNAL_DIRECTION=direction;
     window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
