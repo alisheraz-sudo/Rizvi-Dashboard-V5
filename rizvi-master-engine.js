@@ -1,13 +1,13 @@
 /* Rizvi Dashboard V5 — Master Confirmation Engine
    Real-data confirmation layer. No synthetic data. Auto Trading stays OFF.
    Inputs: live OHLC, market range/liquidity context, BTC order flow when available.
-   V52: stability layer for fast/sideways markets. Weights unchanged.
+   V53: hard stability layer for fast/sideways markets. Weights unchanged.
 */
 (function(){
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
-  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,orderFlowSamples:[]};
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,orderFlowSamples:[],confidenceSamples:[]};
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
@@ -51,14 +51,18 @@
 
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else {state.pendingDirection=rawDirection;state.pendingCount=1;}
+    const now=Date.now();
+    state.confidenceSamples.push({t:now,v:rawConfidence});
+    state.confidenceSamples=state.confidenceSamples.filter(x=>now-x.t<=15000);
+    const avgConfidence=state.confidenceSamples.length?state.confidenceSamples.reduce((s,x)=>s+x.v,0)/state.confidenceSamples.length:rawConfidence;
     if(rawDirection==='WAIT'){
       state.stableDirection='WAIT';
-      state.stableConfidence=Math.round(state.stableConfidence*0.7+50*0.3);
+      state.stableConfidence=Math.round(state.stableConfidence*0.85+50*0.15);
     }else if(rawDirection===state.stableDirection){
-      state.stableConfidence=Math.round(state.stableConfidence*0.7+rawConfidence*0.3);
-    }else if(state.pendingCount>=2){
+      state.stableConfidence=Math.round(state.stableConfidence*0.85+avgConfidence*0.15);
+    }else if(state.pendingCount>=3){
       state.stableDirection=rawDirection;
-      state.stableConfidence=Math.round(state.stableConfidence*0.7+rawConfidence*0.3);
+      state.stableConfidence=Math.round(state.stableConfidence*0.85+avgConfidence*0.15);
     }
     const direction=state.stableDirection;
     const confidence=clamp(Math.round(state.stableConfidence));
@@ -77,7 +81,7 @@
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
       confirmations,trend,structure,momentum,rsi:r,
-      rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000},
+      rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000,confidenceWindowMs:15000,holdCycles:3},
       engines,autoTrading:false
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
