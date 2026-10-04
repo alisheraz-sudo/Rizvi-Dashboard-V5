@@ -49,6 +49,37 @@
   .legend{display:none!important}
   .foot{font-size:8px!important;margin:7px 4px!important}
 }
+</style><style id="rizvi-v84-two-by-two-panels">
+/* V84: preserve chart size; place four panels in a clean 2x2 grid directly below it. */
+@media(max-width:900px){
+  body{min-width:0!important;width:100%!important;overflow-x:hidden!important}
+  .app{width:100%!important;max-width:none!important;margin:0!important}
+  .main{display:flex!important;flex-direction:column!important;width:100%!important;gap:6px!important}
+  .main>main{width:100%!important;min-width:0!important}
+  .chart{width:100%!important;height:430px!important}
+  .right{
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:auto auto!important;
+    gap:6px!important;
+    padding:0 5px!important;
+    box-sizing:border-box!important;
+  }
+  .right .card{
+    width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  .right .title{font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .right .title small{font-size:7px!important}
+  .right .big{font-size:15px!important}
+  .right .row,.right .rangeRow{font-size:8px!important}
+  .right .note{font-size:7px!important}
+  .right .checks{font-size:7px!important}
+  .right .ready{font-size:7px!important}
+}
 </style><style id="rizvi-v69-hide-static-candles"> .chart .candles{display:none!important;} </style><style id="rizvi-v55-tv-restore-css">
 /* V55 source restore: TradingView Lightweight Charts owns chart interaction. */
 .chart .grid,.chart .candles,.chart .range,.chart .price,.chart .tag,.chart .axis{display:none!important}
