@@ -102,4 +102,53 @@
   window.RIZVI_RUN_MASTER_CONFIRMATION=run;
   setInterval(run,5000);
   run();
+
+  // V67: stabilize Entry/SL/TP trade range. Live price may refresh every few seconds,
+  // but trade levels must stay fixed until a new qualified setup is created.
+  (function stabilizeTradeRange(){
+    const original=window.RIZVI_SIGNAL_LEVELS;
+    if(typeof original!=='function')return;
+    let frozen=null;
+    let frozenDirection=null;
+    let wasQualified=false;
+    window.RIZVI_STABLE_TRADE_RANGE=null;
+    window.RIZVI_SIGNAL_LEVELS=function(price,direction){
+      const dir=direction==='SELL'?'SELL':'BUY';
+      if(frozen){
+        window.RIZVI_TRADE_RANGE=frozen;
+        return frozen;
+      }
+      if(window.RIZVI_MASTER_CONFIRMATION?.qualified){
+        const lv=original(price,dir);
+        if(lv){
+          frozen={...lv};
+          frozenDirection=dir;
+          window.RIZVI_STABLE_TRADE_RANGE=frozen;
+          window.RIZVI_TRADE_RANGE=frozen;
+          return frozen;
+        }
+      }
+      return original(price,dir);
+    };
+    window.addEventListener('rizvi:master-confirmation-update',e=>{
+      const m=e.detail||window.RIZVI_MASTER_CONFIRMATION;
+      const qualified=!!m?.qualified;
+      const dir=m?.direction==='SELL'?'SELL':m?.direction==='BUY'?'BUY':null;
+      const p=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[m?.symbol||'BTCUSD']);
+      if(qualified && dir && Number.isFinite(p) && (!wasQualified || dir!==frozenDirection)){
+        const lv=original(p,dir);
+        if(lv){
+          frozen={...lv};
+          frozenDirection=dir;
+          window.RIZVI_STABLE_TRADE_RANGE=frozen;
+          window.RIZVI_TRADE_RANGE=frozen;
+          window.dispatchEvent(new CustomEvent('rizvi:stable-trade-range-update',{detail:frozen}));
+        }
+      }
+      if(!qualified && wasQualified){
+        // Keep the last qualified range visible; do not chase live-price noise.
+      }
+      wasQualified=qualified;
+    });
+  })();
 })();
