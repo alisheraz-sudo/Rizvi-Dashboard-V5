@@ -2308,4 +2308,56 @@ boot();
   setInterval(guard,1000);
   guard();
 })();
+</script><script id="rizvi-v90-unified-70-gate">
+(function(){
+'use strict';
+if(window.__RIZVI_UNIFIED_70_GATE)return;window.__RIZVI_UNIFIED_70_GATE=true;
+const MIN=70;
+let hold={direction:'WAIT',score:0,streak:0};
+function normalize(){
+  const q=window.RIZVI_SIGNAL_QUALIFICATION;
+  const m=window.RIZVI_MASTER_SIGNAL||{};
+  if(q){
+    const raw=Number(q.patternConfidence);
+    const score=Number.isFinite(raw)?Math.max(0,Math.min(100,raw)):Number(m.quality)||0;
+    const dir=(q.marketDirection==='BUY'||q.marketDirection==='SELL')?q.marketDirection:
+      ((m.direction==='BUY'||m.direction==='SELL')?m.direction:'WAIT');
+    if(score<MIN){
+      q.status='WAIT_FOR_CONFIRMATION';
+      q.marketDirection='WAIT';
+      q.signalDirection='WAIT';
+      q.qualified=false;
+      q.entryValid=false;
+    }else{
+      if(dir===hold.direction)hold.streak++;else{hold.direction=dir;hold.streak=1}
+      if(hold.streak>=2){
+        q.status='QUALIFIED_CONTEXT';
+        q.marketDirection=dir;
+        q.signalDirection=dir;
+        q.qualified=true;
+        q.entryValid=true;
+      }else{
+        q.status='WAIT_FOR_CONFIRMATION';
+        q.marketDirection='WAIT';
+        q.signalDirection='WAIT';
+        q.qualified=false;
+        q.entryValid=false;
+      }
+    }
+    q.patternConfidence=Math.round(score);
+    window.RIZVI_SIGNAL_GATE={minConfidence:MIN,score:Math.round(score),direction:q.marketDirection,qualified:q.qualified,updatedAt:Date.now()};
+  }else{
+    const score=Number(m.quality);
+    if(Number.isFinite(score)&&score<MIN){
+      m.direction='WAIT';m.highQuality=false;
+    }
+  }
+  const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;
+  if(s && Number(s.quality)<MIN){
+    s.direction='WAIT';s.quality=Math.round(Number(s.quality)||0);
+  }
+}
+setInterval(normalize,500);
+normalize();
+})();
 </script></body></html>
