@@ -60,7 +60,7 @@
   function rows(trades){
     const names=['trend','structure','liquidity','orderFlow','momentum','divergence','priceAction','volatility'];
     return names.map(n=>{
-      const a=trades.filter(t=>t.outcome&&t.engines?.[n]);
+      const a=trades.filter(t=>t.outcome&&t.outcome!=='INVALID'&&t.engines?.[n]&&t.engines[n].correct!==null);
       const correct=a.filter(t=>t.engines[n].correct===true).length;
       const accuracy=a.length?correct/a.length*100:null;
       return '<tr><td>'+n+'</td><td>'+a.length+'</td><td>'+(accuracy==null?'—':accuracy.toFixed(1)+'%')+'</td></tr>';
@@ -79,21 +79,55 @@
       summary(w1,'WEEK 1')+summary(w2,'WEEK 2')+
       '<div style="margin-top:12px;overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Engine</th><th>W1 n</th><th>W1 acc.</th><th>W2 n</th><th>W2 acc.</th></tr></thead><tbody>'+
       ['trend','structure','liquidity','orderFlow','momentum','divergence','priceAction','volatility'].map(n=>{
-        const cell=w=>{const a=w.filter(t=>t.outcome&&t.engines?.[n]);const c=a.filter(t=>t.engines[n].correct===true).length;return '<td style="text-align:center">'+a.length+'</td><td style="text-align:center">'+(a.length?(c/a.length*100).toFixed(1)+'%':'—')+'</td>'};
+        const cell=w=>{const a=w.filter(t=>t.outcome&&t.outcome!=='INVALID'&&t.engines?.[n]&&t.engines[n].correct!==null);const c=a.filter(t=>t.engines[n].correct===true).length;return '<td style="text-align:center">'+a.length+'</td><td style="text-align:center">'+(a.length?(c/a.length*100).toFixed(1)+'%':'—')+'</td>'};
         return '<tr><td>'+n+'</td>'+cell(w1)+cell(w2)+'</tr>';
       }).join('')+'</tbody></table></div>'+
       '<div style="margin-top:10px;color:#71889a">Each qualified setup is saved with the engine snapshot. Mark outcomes after the market move; only resolved WIN/LOSS records count toward engine accuracy.</div>'+
-      '<div style="margin-top:12px">'+d.trades.slice(-10).reverse().map((t,i)=>'<div style="padding:8px;border-top:1px solid #203548"><b>'+t.symbol+' '+t.direction+'</b> • '+pct(t.confidence)+' • '+new Date(t.ts).toLocaleString()+' • '+(t.outcome||'PENDING')+
+      '<div style="margin-top:12px">'+d.trades.slice(-10).reverse().map((t,i)=>'<div style="padding:8px;border-top:1px solid #203548"><b>'+t.symbol+' '+t.direction+'</b> • '+pct(t.confidence)+' • '+new Date(t.ts).toLocaleString()+' • '+(t.outcome||('AUTO '+(t.evaluation?.autoOutcome||'PENDING')))+
       ' <button data-win="'+t.id+'" style="margin-left:7px">WIN</button><button data-loss="'+t.id+'">LOSS</button><button data-invalid="'+t.id+'">INVALID</button></div>').join('')+'</div>';
     document.getElementById('rizviResetLearning').onclick=()=>{if(confirm('Reset the Rizvi 2-week learning journal?')){localStorage.removeItem(KEY);render()}};
     b.querySelectorAll('[data-win]').forEach(x=>x.onclick=()=>setOutcome(x.dataset.win,'WIN'));
     b.querySelectorAll('[data-loss]').forEach(x=>x.onclick=()=>setOutcome(x.dataset.loss,'LOSS'));
     b.querySelectorAll('[data-invalid]').forEach(x=>x.onclick=()=>setOutcome(x.dataset.invalid,'INVALID'));
   }
+  function normalizeEngine(raw){
+    if(raw&&typeof raw==='object'&&!Array.isArray(raw)){
+      const signal=String(raw.signal||raw.direction||raw.bias||raw.status||'').toUpperCase();
+      const confidence=Number(raw.confidence??raw.score??raw.strength);
+      return {signal:signal||null,confidence:Number.isFinite(confidence)?clamp(confidence):null,reason:raw.reason||raw.context||null,timestamp:Date.now()};
+    }
+    if(typeof raw==='string') return {signal:raw.toUpperCase(),confidence:null,reason:null,timestamp:Date.now()};
+    return {signal:null,confidence:null,reason:null,timestamp:Date.now()};
+  }
+  function standardizeEngines(snap){
+    const out={};
+    ['trend','structure','liquidity','orderFlow','momentum','divergence','priceAction','volatility'].forEach(k=>{
+      const e=normalizeEngine(snap[k]);
+      if(k==='orderFlow'&&snap[k]&&typeof snap[k]==='object'&&Number.isFinite(Number(snap[k].imbalance)))e.reason='imbalance '+Number(snap[k].imbalance).toFixed(1)+'% • '+(snap[k].status||'UNKNOWN');
+      e.correct=null;out[k]=e;
+    });
+    return out;
+  }
+  function evaluateForward(){
+    const d=load(),now=Date.now(),prices=window.RIZVI_LIVE_PRICES||{};let changed=false;
+    d.trades.forEach(t=>{
+      if(t.outcome||!Number.isFinite(Number(t.entry)))return;
+      const p=Number(prices[t.symbol]);if(!Number.isFinite(p))return;
+      const age=now-t.ts,move=(p-Number(t.entry))*(t.direction==='SELL'?-1:1);
+      t.evaluation=t.evaluation||{};
+      if(age>=15*60000&&!t.evaluation.m15){t.evaluation.m15={price:p,move,hit:move>0};changed=true}
+      if(age>=60*60000&&!t.evaluation.h1){t.evaluation.h1={price:p,move,hit:move>0};changed=true}
+      if(age>=240*60000&&!t.evaluation.h4){t.evaluation.h4={price:p,move,hit:move>0};changed=true}
+      t.evaluation.mfe=Math.max(Number(t.evaluation.mfe)||0,move);
+      t.evaluation.mae=Math.min(Number(t.evaluation.mae)||0,move);
+      if(age>=60*60000&&!t.evaluation.autoOutcome){t.evaluation.autoOutcome=move>0?'WIN':move<0?'LOSS':'FLAT';t.evaluation.autoResolvedAt=now;changed=true}
+    });
+    if(changed)save(d);
+  }
   function setOutcome(id,outcome){
     const d=load(),t=d.trades.find(x=>x.id===id);if(!t)return;
     t.outcome=outcome;t.resolvedAt=Date.now();
-    Object.keys(t.engines||{}).forEach(k=>{if(t.engines[k]&&typeof t.engines[k].signal==='boolean')t.engines[k].correct=t.engines[k].signal===(outcome==='WIN')});
+    Object.keys(t.engines||{}).forEach(k=>{const e=t.engines[k];if(!e)return;if(typeof e.signal==='string'&&/^(BUY|SELL)$/.test(e.signal))e.correct=e.signal===t.direction;else e.correct=null;});
     save(d);render();
   }
   function capture(){
@@ -105,17 +139,14 @@
     const last=d.trades[d.trades.length-1];
     if(last&&now-last.ts<120000)return;
     if(!d.startedAt)d.startedAt=now;
-    const snap=engineSnapshot(), sig=x=>String(x||'').toUpperCase().includes(direction);
-    const engines={};
-    ['trend','structure','liquidity','orderFlow','momentum','divergence','priceAction','volatility'].forEach(k=>{
-      const raw=snap[k];engines[k]={value:raw,signal:typeof raw==='string'?sig(raw):null,correct:null};
-    });
+    const snap=engineSnapshot();
+    const engines=standardizeEngines(snap);
     d.trades.push({id:String(now)+'-'+Math.random().toString(36).slice(2,7),ts:now,symbol,direction,entry:Number.isFinite(p)?p:null,confidence:snap.confidence,engines,qualificationStatus:snap.qualificationStatus});
     save(d);render();
   }
-  window.RIZVI_SIGNAL_JOURNAL={capture,render,load};
+  window.RIZVI_SIGNAL_JOURNAL={capture,render,load,evaluateForward};
   document.addEventListener('rizvi:signal-qualification-update',()=>setTimeout(capture,50));
   document.addEventListener('rizvi:price-update',()=>{});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
-  setInterval(()=>{capture()},5000);
+  setInterval(()=>{capture();evaluateForward();},5000);
 })();
