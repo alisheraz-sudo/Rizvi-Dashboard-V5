@@ -2240,8 +2240,17 @@ function levels(){
  if(quality>=75){if(!stable.on){if(!stable.since)stable.since=now;if(now-stable.since>=1500)stable.on=true}}else{stable.on=false;stable.since=now}
  window.__RIZVI_BOX_STABLE=stable;
  if(!stable.on)return null;
- var p=N(window.RIZVI_LIVE_CHART_PRICE)||N(window.RIZVI_LIVE_PRICE)||N(m.entry);
- if(!Number.isFinite(p))return null;
+ var lock=window.__RIZVI_TRADE_LOCK||{dir:null,entry:null,closed:false};
+ if(lock.dir!==d){lock={dir:d,entry:null,closed:false};window.__RIZVI_TRADE_LOCK=lock}
+ var live=N(window.RIZVI_LIVE_CHART_PRICE)||N(window.RIZVI_LIVE_PRICE)||N(m.entry);
+ if(!Number.isFinite(live))return null;
+ if(!Number.isFinite(lock.entry))lock.entry=live;
+ var p=lock.entry;
+ var lb=Array.isArray(window.RIZVI_RAW_BARS)&&window.RIZVI_RAW_BARS.length?window.RIZVI_RAW_BARS[window.RIZVI_RAW_BARS.length-1]:null;
+ if(!lock.closed && lb){
+   if((d==='SELL'&&N(lb.h)>=p+Math.max(1,Math.abs(p)*0.0005))||(d==='BUY'&&N(lb.l)<=p-Math.max(1,Math.abs(p)*0.0005)))lock.closed=true;
+ }
+ if(lock.closed)return null;
  var risk=Number(window.RIZVI_TRADE_RISK);
  if(!Number.isFinite(risk)||risk<=0)risk=Math.abs(p-N(window.RIZVI_LIVE_PRICE)||0);
  risk=Math.min(Math.max(risk,Math.abs(p)*0.00035),Math.abs(p)*0.00075);
