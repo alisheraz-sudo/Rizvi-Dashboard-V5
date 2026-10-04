@@ -2246,7 +2246,12 @@ function render(){
  if(vals.some(function(v){return !Number.isFinite(v)})||Object.values(ys).some(function(v){return !Number.isFinite(v)})){box.style.display='none';return}
  var top=Math.min(ys.sl,ys.entry,ys.tp3),bottom=Math.max(ys.sl,ys.entry,ys.tp3),height=Math.max(18,bottom-top);
  var rect=host.getBoundingClientRect(),chartEl=document.getElementById('rizviTvChartV55'),cr=chartEl?chartEl.getBoundingClientRect():rect;
- box.style.left=Math.max(40,cr.width-150)+'px';
+ var ts=chartEl&&chartEl.querySelector('canvas')?chartEl.getBoundingClientRect():cr;
+ var rightEdge=Math.max(40,cr.width-12);
+ var entryX=null;
+ try{entryX=window.RIZVI_TV_CHART&&window.RIZVI_TV_CHART.timeScale().logicalToCoordinate((window.RIZVI_RAW_BARS||[]).length-1)}catch(e){}
+ if(Number.isFinite(entryX)) rightEdge=Math.min(rightEdge,entryX+12);
+ box.style.left=Math.max(40,rightEdge-74)+'px';
  box.style.top=(cr.top-rect.top+top)+'px';
  box.style.height=height+'px';box.style.display='block';
  var tpTop=Math.min(ys.entry,ys.tp3),tpBottom=Math.max(ys.entry,ys.tp3);
