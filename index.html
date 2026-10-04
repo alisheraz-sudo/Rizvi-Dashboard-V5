@@ -2428,4 +2428,92 @@ function tick(){
 }
 setInterval(tick,250);
 })();
-</script></body></html>
+</script><script id="rizvi-order-flow-engine-v1">
+(function(){
+'use strict';
+if(window.__RIZVI_ORDER_FLOW_ENGINE_V1)return;
+window.__RIZVI_ORDER_FLOW_ENGINE_V1=true;
+
+/*
+ V1 Order Flow engine.
+ Input contract (backend/API adapter):
+   window.RIZVI_ORDER_FLOW_DEPTH = [{price,bid,ask,time}, ...]
+ or dispatch:
+   window.dispatchEvent(new CustomEvent('rizvi:order-flow-depth',{detail:{levels:[...]}}))
+ Optional executed-flow input:
+   window.RIZVI_ORDER_FLOW_TRADES = [{price,volume,side,time}, ...]
+ The engine does NOT invent depth. Without live depth it reports unavailable.
+*/
+
+const state={
+ available:false, connected:false, bidVolume:0, askVolume:0, delta:0,
+ imbalance:0, pressure:'NEUTRAL', updatedAt:0, source:'NONE'
+};
+
+function n(v){v=Number(v);return Number.isFinite(v)?v:0}
+function read(){
+ const raw=Array.isArray(window.RIZVI_ORDER_FLOW_DEPTH)?window.RIZVI_ORDER_FLOW_DEPTH:[];
+ const levels=raw.filter(x=>x&&Number.isFinite(Number(x.price)));
+ if(!levels.length){state.available=false;state.connected=false;state.source='NONE';return}
+ let bid=0,ask=0;
+ for(const x of levels){bid+=Math.max(0,n(x.bid));ask+=Math.max(0,n(x.ask))}
+ const total=bid+ask;
+ state.available=total>0;
+ state.connected=true;
+ state.bidVolume=bid;
+ state.askVolume=ask;
+ state.delta=bid-ask;
+ state.imbalance=total?Math.round(Math.abs(bid-ask)/total*100):0;
+ state.pressure=state.delta>0?'BUY_PRESSURE':state.delta<0?'SELL_PRESSURE':'NEUTRAL';
+ state.updatedAt=Date.now();
+ state.source=String(window.RIZVI_ORDER_FLOW_SOURCE||'CTRADER_LEVEL2');
+}
+function publish(){
+ read();
+ window.RIZVI_ORDER_FLOW=Object.assign({},state);
+ window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};
+ window.RIZVI_OPERATIONAL_STATUS.orderFlow=state.available;
+ window.RIZVI_OPERATIONAL_STATUS.orderFlowSource=state.source;
+ document.dispatchEvent(new CustomEvent('rizvi:order-flow-update',{detail:window.RIZVI_ORDER_FLOW}));
+}
+window.RIZVI_SET_ORDER_FLOW_DEPTH=function(levels,source){
+ window.RIZVI_ORDER_FLOW_DEPTH=Array.isArray(levels)?levels:[];
+ if(source)window.RIZVI_ORDER_FLOW_SOURCE=source;
+ publish();
+};
+window.addEventListener('rizvi:order-flow-depth',function(e){
+ const d=e&&e.detail||{};
+ window.RIZVI_ORDER_FLOW_DEPTH=Array.isArray(d.levels)?d.levels:[];
+ if(d.source)window.RIZVI_ORDER_FLOW_SOURCE=d.source;
+ publish();
+});
+setInterval(publish,1000);
+publish();
+})();
+</script>
+<script id="rizvi-order-flow-footprint-v1">
+(function(){
+'use strict';
+if(window.__RIZVI_ORDER_FLOW_FOOTPRINT_V1)return;
+window.__RIZVI_ORDER_FLOW_FOOTPRINT_V1=true;
+
+/* Optional visual footprint: only appears when real executed-flow data is supplied. */
+function render(){
+ const trades=Array.isArray(window.RIZVI_ORDER_FLOW_TRADES)?window.RIZVI_ORDER_FLOW_TRADES:[];
+ if(!trades.length)return;
+ const bars=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];
+ const last=bars[bars.length-1];
+ if(!last)return;
+ const start=Number(last.t)||0;
+ const end=start+60000;
+ const inBar=trades.filter(x=>Number(x.time)>=start*1000&&Number(x.time)<end*1000);
+ if(!inBar.length)return;
+ let buy=0,sell=0;
+ for(const x of inBar){const v=Math.max(0,Number(x.volume)||0);if(String(x.side).toUpperCase()==='BUY')buy+=v;else if(String(x.side).toUpperCase()==='SELL')sell+=v}
+ window.RIZVI_ORDER_FLOW_FOOTPRINT={buyVolume:buy,sellVolume:sell,delta:buy-sell,updatedAt:Date.now()};
+ document.dispatchEvent(new CustomEvent('rizvi:order-flow-footprint-update',{detail:window.RIZVI_ORDER_FLOW_FOOTPRINT}));
+}
+setInterval(render,1000);
+})();
+</script>
+</body></html>
