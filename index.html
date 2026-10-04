@@ -94,7 +94,12 @@
   .right .checks{gap:3px!important;margin:5px 0!important;font-size:6.5px!important}
   .right .ready{font-size:6.5px!important;padding:6px 2px!important}
 }
-</style><style id="rizvi-v69-hide-static-candles"> .chart .candles{display:none!important;} </style><style id="rizvi-v55-tv-restore-css">
+</style><style id="rizvi-v69-hide-static-candles"> .chart .candles{display:none!important;} </style><style id="rizvi-v93-single-render-owner">
+/* V93: Lightweight Charts is the single visible chart renderer. Legacy canvas/SVG renderers stay mounted only for compatibility but never paint or capture input. */
+#rizviCandleCanvasV66,#rizviSvgChartV73,#rizviLiveSvgV78{display:none!important;visibility:hidden!important;pointer-events:none!important}
+#rizviTvChartV55{display:block!important;visibility:visible!important}
+.chart{overflow:hidden!important}
+</style><style id="rizvi-v55-tv-restore-css">
 /* V55 source restore: TradingView Lightweight Charts owns chart interaction. */
 .chart .grid,.chart .candles,.chart .range,.chart .price,.chart .tag,.chart .axis{display:none!important}
 #rizviSvgChartV73,#rizviLiveSvgV78{display:none!important}
