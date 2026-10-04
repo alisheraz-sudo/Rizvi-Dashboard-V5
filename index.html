@@ -47,6 +47,7 @@
     const ct=document.getElementById('chartPriceTag'); if(ct) ct.textContent=text;
     if(live) live.textContent='LIVE';
     window.RIZVI_LIVE_PRICE=p;
+      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
       document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}})); document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
     window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
     window.RIZVI_LIVE_PRICES.BTCUSD=p;
@@ -1279,5 +1280,31 @@
   window.addEventListener('rizvi:price-update',()=>syncRange());
   window.addEventListener('rizvi:signal-qualification-update',e=>syncQualification(e));
   setInterval(()=>{syncRange();syncQualification();},2000);
+})();
+</script><script>
+(function(){
+  const dirEl=document.querySelector('.signalHead div:first-child b');
+  const signalBig=document.querySelector('.right .card:first-child .big span:first-child');
+  const qualityRow=[...document.querySelectorAll('.right .card')].find(x=>x.textContent.includes('Quality Score'));
+  const ready=[...document.querySelectorAll('.ready')][0];
+  function apply(e){
+    const q=e.detail||{};
+    if(!q.symbol)return;
+    const d=q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:(q.signalDirection||'BUY');
+    if(dirEl&&q.aligned)dirEl.textContent=d;
+    if(signalBig&&q.aligned)signalBig.textContent=d;
+    if(ready){
+      ready.textContent=q.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+      ready.style.background=q.status==='QUALIFIED_CONTEXT'?'#087e58':'#6f5610';
+    }
+    if(qualityRow){
+      const row=[...qualityRow.querySelectorAll('.row')].find(x=>x.textContent.includes('Quality Score'));
+      const b=row?.querySelector('b');
+      if(b)b.textContent=(q.patternConfidence??0)+'% '+(q.status==='QUALIFIED_CONTEXT'?'HIGH QUALITY':'WAIT');
+    }
+    window.RIZVI_VISIBLE_SIGNAL_STATE={...q,direction:d};
+  }
+  window.addEventListener('rizvi:signal-qualification-update',apply);
+  if(window.RIZVI_SIGNAL_QUALIFICATION)apply({detail:window.RIZVI_SIGNAL_QUALIFICATION});
 })();
 </script></body></html>
