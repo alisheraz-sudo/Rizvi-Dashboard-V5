@@ -1612,4 +1612,40 @@
   setInterval(()=>{bindLive();bindRange();bindQualification();bindStatus();},2000);
   bindLive();bindStatus();
 })();
+</script><script>
+(function(){
+  window.RIZVI_MARKET_OPERATION={BTCUSD:{status:'STARTING'},'XAU/USD':{status:'STARTING'},updatedAt:Date.now()};
+  function set(sym,status,extra){
+    window.RIZVI_MARKET_OPERATION[sym]=Object.assign({status,updatedAt:Date.now()},extra||{});
+    window.RIZVI_MARKET_OPERATION.updatedAt=Date.now();
+  }
+  async function btcCheck(){
+    try{
+      const d=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());
+      const p=Number(d?.data?.amount);
+      if(!Number.isFinite(p))throw new Error('BTC price unavailable');
+      window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+      window.RIZVI_LIVE_PRICES.BTCUSD=p;
+      set('BTCUSD','LIVE',{price:p,source:'Coinbase spot'});
+    }catch(e){set('BTCUSD','DATA_ERROR',{error:String(e)});}
+  }
+  async function goldCheck(){
+    try{
+      const d=await fetch('https://xaus.com/api/v1/spot?compact=1&fresh='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+      const p=Number(d?.spot_usd_oz);
+      if(!Number.isFinite(p))throw new Error('Gold price unavailable');
+      window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
+      window.RIZVI_LIVE_PRICES['XAU/USD']=p;
+      set('XAU/USD','LIVE',{price:p,source:'XAUS spot'});
+      document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
+    }catch(e){set('XAU/USD','DATA_ERROR',{error:String(e)});}
+  }
+  async function run(){
+    await Promise.allSettled([btcCheck(),goldCheck()]);
+    window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};
+    window.RIZVI_OPERATIONAL_STATUS.bothMarkets=true;
+    window.RIZVI_OPERATIONAL_STATUS.marketOperation=window.RIZVI_MARKET_OPERATION;
+  }
+  run();setInterval(run,30000);
+})();
 </script></body></html>
