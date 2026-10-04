@@ -2569,4 +2569,24 @@ W.RIZVI_ALGORITHM_DEFINITIONS=algos;
 setTimeout(test,3000);setInterval(test,5000);
 })();
 </script>
-</body></html>
+<script id="rizvi-v90-symbol-ui-sync">
+(function(){
+'use strict';
+function sync(sym){
+  const q=document.getElementById('quoteSymbol');
+  const coin=document.querySelector('.coin');
+  const head=document.querySelector('.chart .head>div:first-child');
+  if(q)q.textContent=sym;
+  if(coin)coin.textContent=sym==='XAU/USD'?'Au':'₿';
+  if(head){
+    const b=head.querySelector('b');
+    const tf=b?b.textContent:'1m';
+    head.innerHTML=sym+' · <b>'+tf+'</b> &nbsp; <small>LIVE <span id="chartClose">'+(document.getElementById('chartClose')?.textContent||'--')+'</span></small>';
+  }
+  const live=document.getElementById('quoteLive');if(live)live.textContent='LOADING '+sym;
+  if(sym==='XAU/USD'&&typeof window.RIZVI_REFRESH_GOLD==='function')window.RIZVI_REFRESH_GOLD();
+}
+window.addEventListener('rizvi:symbol-change',e=>sync(e.detail?.symbol||'BTCUSD'));
+sync(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
+})();
+</script></body></html>
