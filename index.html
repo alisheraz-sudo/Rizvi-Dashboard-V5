@@ -1835,4 +1835,46 @@ function clock(){
 }
 loadHistory();connect();setInterval(fallback,3000);setInterval(clock,1000);clock();
 })();
+</script><style id="rizvi-chart-v76">
+#rizviSvgChartV73{left:0!important;right:82px!important;top:47px!important;width:calc(100% - 82px)!important;height:calc(100% - 75px)!important}
+</style>
+<script id="rizvi-chart-v76">
+(function(){
+'use strict';
+var host=document.querySelector('.chart');
+if(!host)return;
+var s=document.getElementById('rizviSvgChartV73');
+if(!s)return;
+function fmt(ts){
+ var n=Number(ts); if(n<100000000000)n*=1000;
+ return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(n));
+}
+function draw(){
+ var a=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];
+ if(!a.length)return;
+ var v=a.slice(-90),r=s.getBoundingClientRect(),w=Math.max(1,r.width),h=Math.max(1,r.height);
+ var hi=-Infinity,lo=Infinity;
+ v.forEach(function(b){hi=Math.max(hi,+b.h);lo=Math.min(lo,+b.l);});
+ var pad=(hi-lo)*.08||1;hi+=pad;lo-=pad;
+ var y=function(p){return 12+(hi-p)/(hi-lo)*(h-24)};
+ var step=w/v.length, body=Math.max(2,Math.min(9,step*.58)),o='';
+ for(var g=1;g<6;g++){var gy=g*h/6;o+='<line x1="0" y1="'+gy+'" x2="'+w+'" y2="'+gy+'" stroke="#ffffff18" stroke-width="1"/>';}
+ v.forEach(function(b,i){
+   var x=i*step+step/2, up=+b.c>=+b.o, col=up?'#31d17c':'#ff5b68';
+   var yo=y(+b.o),yc=y(+b.c);
+   o+='<line x1="'+x+'" y1="'+y(+b.h)+'" x2="'+x+'" y2="'+y(+b.l)+'" stroke="'+col+'" stroke-width="1.2"/>';
+   o+='<rect x="'+(x-body/2)+'" y="'+Math.min(yo,yc)+'" width="'+body+'" height="'+Math.max(2,Math.abs(yc-yo))+'" fill="'+col+'"/>';
+ });
+ var live=v[v.length-1], px=w-step/2, py=y(+live.c);
+ o+='<line x1="0" y1="'+py+'" x2="'+w+'" y2="'+py+'" stroke="#00d9a0" stroke-width="1" stroke-dasharray="3 3"/>';
+ o+='<circle cx="'+px+'" cy="'+py+'" r="3" fill="#00d9a0"/>';
+ s.innerHTML=o;
+ var axis=document.getElementById('rizviLiveTimeAxisV71');
+ if(axis){
+   var n=Math.min(6,v.length),q=v.slice(-n);
+   axis.innerHTML=q.map(function(b,i){return '<span'+(i===q.length-1?' class="live"':'')+'>'+fmt(b.t)+'</span>';}).join('');
+ }
+}
+draw();addEventListener('rizvi:candle-update',draw);addEventListener('resize',draw);setInterval(draw,1000);
+})();
 </script></body></html>
