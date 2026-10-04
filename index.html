@@ -329,22 +329,6 @@
 })();
 </script><script>
 (function(){
- const original=document.dispatchEvent.bind(document);
- document.addEventListener('rizvi:chart-source',e=>{
-  const d=e.detail||{}, bars=d.bars;
-  if(!Array.isArray(bars)||!bars.length)return;
-  window.RIZVI_RAW_BARS=bars;
-  window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',bars):bars;
-  const c=document.querySelector('.chart canvas'); if(!c)return;
-  const ctx=c.getContext('2d'),w=c.width,h=c.height,arr=window.RIZVI_AGG_BARS||bars,n=Math.min(70,arr.length);
-  const view=arr.slice(-n), vals=view.flatMap(x=>[x.h,x.l]),max=Math.max(...vals),min=Math.min(...vals),sy=v=>h-30-(v-min)/(max-min||1)*(h-60),step=w/n,body=Math.max(4,step*.55);
-  ctx.clearRect(0,0,w,h);ctx.strokeStyle='#ffffff18';
-  for(let i=1;i<6;i++){const y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-  view.forEach((b,i)=>{const x=i*step+step*.5,yo=sy(b.o),yc=sy(b.c);ctx.strokeStyle=b.c>=b.o?'#31d17c':'#ff5b68';ctx.beginPath();ctx.moveTo(x,sy(b.h));ctx.lineTo(x,sy(b.l));ctx.stroke();ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(x-body/2,Math.min(yo,yc),body,Math.max(2,Math.abs(yc-yo)));});
- });
-})();
-</script><script>
-(function(){
  const el=document.getElementById('liveClock'); if(!el)return;
  function tick(){
   const d=new Date();
