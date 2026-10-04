@@ -11,6 +11,7 @@
   const pct=(n)=>Number.isFinite(Number(n))?Number(n).toFixed(0)+'%':'—';
   function engineSnapshot(){
     const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+    const m=window.RIZVI_MASTER_CONFIRMATION||{};
     const v=window.RIZVI_VISIBLE_SIGNAL_STATE||{};
     const l=window.RIZVI_LIQUIDITY_ENGINE||{};
     const of=window.RIZVI_ORDER_FLOW||{};
@@ -22,18 +23,19 @@
       const total=bid+ask;
       ofm={status:btc.status,imbalance:total?((bid-ask)/total)*100:0};
     }
+    const me=m.engines||{};
     return {
-      trend:q.trend||q.marketTrend||q.htfTrend||null,
-      structure:q.structure||q.marketStructure||null,
-      liquidity:q.liquidity||q.liquidityContext||l.status||null,
-      orderFlow:ofm,
-      momentum:q.momentum||null,
-      divergence:q.divergence||null,
-      priceAction:q.priceAction||null,
-      volatility:q.volatility||null,
+      trend:me.trend||q.trend||q.marketTrend||q.htfTrend||null,
+      structure:me.structure||q.structure||q.marketStructure||null,
+      liquidity:me.liquidity||q.liquidity||q.liquidityContext||l.status||null,
+      orderFlow:me.orderFlow||ofm,
+      momentum:me.momentum||q.momentum||null,
+      divergence:me.divergence||q.divergence||null,
+      priceAction:me.priceAction||q.priceAction||null,
+      volatility:me.volatility||q.volatility||null,
       qualificationStatus:q.status||v.status||null,
-      confidence:clamp(q.patternConfidence??v.confidence),
-      direction:q.marketDirection||v.direction||window.RIZVI_SIGNAL_DIRECTION||'WAIT'
+      confidence:clamp(m.confidence??q.patternConfidence??v.confidence),
+      direction:m.direction||q.marketDirection||v.direction||window.RIZVI_SIGNAL_DIRECTION||'WAIT'
     };
   }
   function currentPrice(symbol){
