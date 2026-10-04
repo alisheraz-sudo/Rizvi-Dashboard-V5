@@ -1488,41 +1488,6 @@
 })();
 </script><script>
 (function(){
-  const host=document.querySelector('.chart');
-  if(!host)return;
-  const canvas=host.querySelector('canvas');
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  function draw(){
-    const data=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
-    const view=data.slice(-70);
-    if(!view.length)return;
-    const w=canvas.width,h=canvas.height;
-    const vals=view.flatMap(b=>[Number(b.h),Number(b.l)]).filter(Number.isFinite);
-    if(!vals.length)return;
-    const max=Math.max(...vals),min=Math.min(...vals);
-    const sy=v=>h-30-(v-min)/(max-min||1)*(h-60);
-    const step=w/view.length,body=Math.max(4,step*.55);
-    ctx.clearRect(0,0,w,h);
-    ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;
-    for(let i=1;i<6;i++){const y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-    view.forEach((b,i)=>{
-      const o=Number(b.o),cl=Number(b.c),hi=Number(b.h),lo=Number(b.l);
-      const x=i*step+step*.5,yo=sy(o),yc=sy(cl);
-      ctx.strokeStyle=cl>=o?'#31d17c':'#ff5b68';
-      ctx.beginPath();ctx.moveTo(x,sy(hi));ctx.lineTo(x,sy(lo));ctx.stroke();
-      ctx.fillStyle=ctx.strokeStyle;
-      ctx.fillRect(x-body/2,Math.min(yo,yc),body,Math.max(2,Math.abs(yc-yo)));
-    });
-  }
-  window.RIZVI_RENDER_LIVE_CHART=draw;
-  window.addEventListener('rizvi:timeframe-update',draw);
-  document.addEventListener('rizvi:chart-source',draw);
-  document.addEventListener('rizvi:symbol-change',()=>setTimeout(draw,50));
-  setTimeout(draw,100);
-})();
-</script><script>
-(function(){
   const qCard=document.querySelector('.right .card');
   const execCard=document.querySelector('.right .card.gborder');
   function bind(e){
