@@ -113,6 +113,15 @@ const server=http.createServer(async(req,res)=>{
     return ofReply(res,200,{ok:true,symbol:key,data:RIZVI_OF_LATEST.get(key)||null,history:(RIZVI_OF_HISTORY.get(key)||[]).slice(-30)});
   }
 
+  if(url.pathname==='/market/ctrader' && req.method==='GET'){
+    const key=normalizedSymbol(url.searchParams.get('symbol')||'XAUUSD');
+    const st=ctrader.status();
+    const id=Object.keys(st.symbols||{}).find(k=>normalizedSymbol(st.symbols[k])===key);
+    const q=id?(st.quotes||{})[id]:null;
+    const bars=id?(st.bars||{})[id]:[];
+    return ofReply(res,200,{ok:true,symbol:key,source:'cTrader',connected:!!st.connected,authorized:!!st.authorized,price:q?.price??null,bid:q?.bid??null,ask:q?.ask??null,updatedAt:q?.timestamp??null,bars:Array.isArray(bars)?bars:[],error:st.lastError||null});
+  }
+
   if(url.pathname==='/market/xau/spot' && req.method==='GET'){
     try{
       const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());
