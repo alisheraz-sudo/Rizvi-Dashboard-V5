@@ -2,6 +2,7 @@ const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
+const ctrader=require('./ctrader-order-flow');
 
 const USER=process.env.RIZVI_USER||'rizvi';
 const PASS=process.env.RIZVI_PASSWORD||'CHANGE_ME';
@@ -86,8 +87,41 @@ const server=http.createServer(async(req,res)=>{
   }
 
   if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
+  if(url.pathname==='/ctrader/status' && req.method==='GET'){
+    return ofReply(res,200,{ok:true,data:ctrader.status()});
+  }
+  if(url.pathname==='/ctrader/auth-url' && req.method==='GET'){
+    if(!process.env.CTRADER_CLIENT_ID)return ofReply(res,503,{ok:false,error:'CTRADER_CLIENT_ID not configured'});
+    const redirect=process.env.CTRADER_REDIRECT_URI || (req.headers['x-forwarded-proto']||'https')+'://'+req.headers.host+'/ctrader/callback';
+    const scope=process.env.CTRADER_SCOPE || 'accounts';
+    const u=new URL('https://id.ctrader.com/my/settings/openapi/grantingaccess/');
+    u.searchParams.set('client_id',process.env.CTRADER_CLIENT_ID);
+    u.searchParams.set('redirect_uri',redirect);
+    u.searchParams.set('scope',scope);
+    u.searchParams.set('product','web');
+    return ofReply(res,200,{ok:true,authorizationUrl:u.toString(),redirectUri:redirect,scope});
+  }
 
   if(url.pathname==='/ctrader/callback' && req.method==='GET'){
+    const code=url.searchParams.get('code');
+    if(code && process.env.CTRADER_CLIENT_ID && process.env.CTRADER_CLIENT_SECRET){
+      try{
+        const redirect=process.env.CTRADER_REDIRECT_URI || (req.headers['x-forwarded-proto']||'https')+'://'+req.headers.host+'/ctrader/callback';
+        const qs=new URLSearchParams({
+          grant_type:'authorization_code',code,redirect_uri:redirect,
+          client_id:process.env.CTRADER_CLIENT_ID,client_secret:process.env.CTRADER_CLIENT_SECRET
+        });
+        const tr=await fetch('https://openapi.ctrader.com/apps/token?'+qs.toString(),{headers:{Accept:'application/json'}});
+        const data=await tr.json();
+        if(tr.ok && !data.errorCode){
+          ctrader.state.accessToken=data.accessToken;
+          ctrader.state.refreshToken=data.refreshToken;
+          await ctrader.start();
+          return send(res,200,'text/html; charset=utf-8','<!doctype html><meta name="viewport" content="width=device-width"><body style="font-family:system-ui;background:#050b12;color:#e8eef5;padding:32px"><h2>cTrader authorization complete</h2><p>Rizvi is now attempting the Level-2 connection.</p><p>For persistent Railway restarts, copy the new refresh token into <b>CTRADER_REFRESH_TOKEN</b> in Railway Variables.</p><p>You may close this page.</p></body>',{'Cache-Control':'no-store'});
+        }
+        return send(res,400,'text/plain; charset=utf-8','cTrader authorization failed: '+(data.description||data.errorCode||'unknown error'));
+      }catch(e){return send(res,500,'text/plain; charset=utf-8','cTrader authorization error: '+e.message);}
+    }
     const code=url.searchParams.get('code');
     const error=url.searchParams.get('error');
     const target=code
