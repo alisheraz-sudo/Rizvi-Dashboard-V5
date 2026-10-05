@@ -3032,3 +3032,172 @@ function run(){
 setInterval(run,1000);setTimeout(run,500);
 })();
 </script>
+<script id="rizvi-v99-canonical-indicator-alignment">
+(function(){
+'use strict';
+if(window.__RIZVI_V99_CANONICAL_ALIGNMENT)return;
+window.__RIZVI_V99_CANONICAL_ALIGNMENT=true;
+
+const W=window;
+const CORE=['EMA','RSI','VWAP','CANDLE','VOLUME_PROFILE','DELTA','DIVERGENCE','TREND'];
+const OPTIONAL=['LIQUIDITY','ORDER_FLOW'];
+
+function num(v,d=0){v=Number(v);return Number.isFinite(v)?v:d}
+function clamp(v,a=0,b=100){return Math.max(a,Math.min(b,v))}
+function bars(){
+  const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:
+          (Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
+  return a.filter(x=>Number.isFinite(Number(x.c??x.close))).map(x=>({
+    o:num(x.o??x.open),h:num(x.h??x.high),l:num(x.l??x.low),c:num(x.c??x.close),
+    v:num(x.v??x.volume)
+  }));
+}
+function momentum(bs){
+  if(bs.length<6)return {label:'--',bias:0};
+  const a=bs.at(-1).c,b=bs.at(-6).c;
+  return {label:a>b?'Bullish ↑':a<b?'Bearish ↓':'Neutral →',bias:a>b?1:a<b?-1:0};
+}
+function structure(bs){
+  if(bs.length<10)return {label:'--',bias:0};
+  const last=bs.at(-1).c, recent=bs.slice(-10);
+  const hi=Math.max(...recent.map(x=>x.h)),lo=Math.min(...recent.map(x=>x.l));
+  const span=Math.max(hi-lo,1e-9);
+  if(last<=lo+span*.20)return {label:'Support ↓',bias:-1};
+  if(last>=hi-span*.20)return {label:'Resistance ↑',bias:1};
+  return {label:last>=recent.reduce((s,x)=>s+x.c,0)/recent.length?'Structure bullish ↑':'Structure bearish ↓',
+          bias:last>=recent.reduce((s,x)=>s+x.c,0)/recent.length?1:-1};
+}
+function calc(){
+  const c=W.RIZVI_INDICATOR_CONFLUENCE?.components||{};
+  const active=[];
+  CORE.forEach(k=>{
+    const x=c[k];
+    if(x && num(x.score)>0)active.push({name:k,score:clamp(num(x.score)),bias:num(x.bias)});
+  });
+  OPTIONAL.forEach(k=>{
+    const x=c[k];
+    if(x && num(x.score)>0 && x.status!=='NOT_ATTACHED' && x.status!=='INSUFFICIENT'){
+      active.push({name:k,score:clamp(num(x.score)),bias:num(x.bias),optional:true});
+    }
+  });
+  const directional=active.filter(x=>x.bias!==0);
+  const signed=directional.reduce((s,x)=>s+x.bias*(x.score/100),0);
+  const direction=signed>0?'BUY':signed<0?'SELL':'WAIT';
+  const same=directional.length?directional.filter(x=>Math.sign(x.bias)===Math.sign(signed)).length/directional.length:0;
+  const avg=active.length?active.reduce((s,x)=>s+x.score,0)/active.length:0;
+  const coreActive=active.filter(x=>!x.optional).length;
+  const quality=Math.round(clamp(avg));
+  const enough=coreActive>=5;
+  const visibleDirection=enough && same>=.60 ? direction : 'WAIT';
+  const qualified=enough && same>=.80 && quality>=80 && (direction==='BUY'||direction==='SELL');
+  const missingCore=CORE.filter(k=>!(c[k]&&num(c[k].score)>0));
+  return {active,coreActive,quality,agreement:Math.round(same*100),direction:visibleDirection,rawDirection:direction,qualified,missingCore};
+}
+function setCheck(el,on,label){
+  if(!el)return;
+  el.className='check'+(on?'':' pending-check');
+  el.textContent=(on?'✓ ':'○ ')+label;
+}
+function paint(){
+  const v=calc(), bs=bars(), m=momentum(bs), st=structure(bs);
+  const signalCard=document.querySelector('.right .card:first-child');
+  const exec=document.querySelector('.right .card:nth-child(2)');
+  const range=document.querySelector('.right .card:nth-child(3)');
+  const head=document.querySelector('.signalHead');
+  const dir=v.direction;
+  const color=dir==='BUY'?'#00e39a':dir==='SELL'?'#ff5b68':'#ffc43d';
+  const status=v.qualified?'HIGH QUALITY':'WAIT';
+  const qtext=v.qualified?v.quality+'%':v.quality+'%';
+  
+  const hd=head?.querySelector('div:first-child b');
+  const hq=head?.querySelector('div:nth-child(2) b');
+  const hb=head?.querySelector('.badge');
+  if(hd){hd.textContent=dir;hd.style.color=color}
+  if(hq)hq.textContent=qtext;
+  if(hb){hb.textContent=status;hb.style.background=v.qualified?'#10b875':'#173c75';hb.style.color=v.qualified?'#04150d':'#7fb8ff'}
+  
+  const big=signalCard?.querySelector('.big');
+  if(big){
+    const a=big.querySelector('span:first-child'),b=big.querySelector('span:nth-child(2)');
+    if(a){a.textContent=dir;a.style.color=color}
+    if(b)b.innerHTML=qtext+' <em class="badge" style="background:'+(v.qualified?'#10b875':'#173c75')+';color:'+(v.qualified?'#04150d':'#7fb8ff')+'">'+status+'</em>';
+  }
+  
+  const rows=signalCard?.querySelectorAll('.row b')||[];
+  if(rows[0])rows[0].textContent=m.bias>0?'Bullish ↑':m.bias<0?'Bearish ↓':'Neutral →';
+  if(rows[1])rows[1].textContent=m.label;
+  if(rows[2]){
+    const raw=W.RIZVI_INDICATOR_CONFLUENCE?.raw?.rsi;
+    rows[2].textContent=Number.isFinite(Number(raw))?Math.round(Number(raw)):'--';
+  }
+  if(rows[3])rows[3].textContent=st.label;
+  if(rows[4]){
+    const d=W.RIZVI_INDICATOR_CONFLUENCE?.raw?.delta;
+    rows[4].textContent=Number.isFinite(Number(d))?(d>0?'Positive ↑':d<0?'Negative ↓':'Neutral →'):'OHLC only';
+  }
+  
+  const score=exec?.querySelector('.row b');
+  const ready=exec?.querySelector('.ready');
+  if(score)score.innerHTML=qtext+' &nbsp; <em class="badge" style="background:'+(v.qualified?'#10b875':'#173c75')+'">'+status+'</em>';
+  if(ready){
+    ready.textContent=v.qualified?'SIGNAL QUALIFIED':'WAIT — INDICATORS NOT FULLY QUALIFIED';
+    ready.style.background=v.qualified?'#087e58':'#173c75';
+    ready.style.borderColor=v.qualified?'#11e091':'#2a67a2';
+  }
+  const checks=exec?.querySelectorAll('.check')||[];
+  ['Entry Valid','SL Valid','RR Acceptable (1:2)','Structure Intact','No Major Reversal'].forEach((label,i)=>{
+    setCheck(checks[i],v.qualified,label);
+  });
+  
+  // Never display a trade range while the canonical state is WAIT.
+  if(!v.qualified){
+    W.RIZVI_TRADE_RANGE=null;
+    W.__RIZVI_TRADE_LOCK=null;
+    const box=document.querySelector('.rizvi-live-trade-range');
+    if(box)box.style.display='none';
+    if(range){
+      const rb=range.querySelectorAll('.rangeRow b');
+      rb.forEach(x=>x.textContent='--');
+    }
+    if(typeof W.RIZVI_DRAW_SIGNAL_LEVELS==='function')W.RIZVI_DRAW_SIGNAL_LEVELS();
+  }
+  
+  W.RIZVI_CANONICAL_INDICATOR_STATE={
+    timestamp:Date.now(),direction:dir,rawDirection:v.rawDirection,quality:v.quality,
+    agreement:v.agreement,coreActive:v.coreActive,qualified:v.qualified,
+    missingCore:v.missingCore,optionalOrderFlowAvailable:!!(c.ORDER_FLOW&&num(c.ORDER_FLOW.score)>0)
+  };
+  W.RIZVI_SIGNAL_DIRECTION=dir;
+  W.RIZVI_SIGNAL_QUALITY=v.quality;
+  W.RIZVI_SIGNAL_QUALIFICATION={
+    status:v.qualified?'QUALIFIED':'WAIT',
+    marketDirection:dir,
+    signalDirection:dir,
+    patternConfidence:v.quality,
+    indicatorAgreement:v.agreement,
+    missingIndicators:v.missingCore,
+    allIndicatorsAligned:v.qualified
+  };
+  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
+  W.RIZVI_OPERATIONAL_STATUS.indicatorAlignment={
+    status:v.qualified?'VERIFIED':'WAIT',
+    coreIndicatorsActive:v.coreActive,
+    agreement:v.agreement,
+    missing:v.missingCore,
+    direction:dir,
+    quality:v.quality,
+    orderFlowOptional:true
+  };
+}
+function run(){
+  try{
+    if(W.RIZVI_INDICATOR_CONFLUENCE)paint();
+  }catch(e){console.warn('Rizvi canonical indicator alignment',e)}
+}
+W.addEventListener('rizvi:indicator-confluence-update',run);
+W.addEventListener('rizvi:candle-update',run);
+W.addEventListener('rizvi:signal-qualification-update',run);
+setTimeout(run,3500);
+setInterval(run,1500);
+})();
+</script>
