@@ -169,7 +169,9 @@ function handleDepth(p) {
     const id = String(q.id);
     const priceRaw = q.bid ?? q.ask;
     if (priceRaw == null) continue;
-    const price = Number(priceRaw) / 100000;
+    const digits = Number(state.symbolMeta[Number(sid)]?.digits);
+    const scale = Math.pow(10, Number.isFinite(digits) ? digits : 5);
+    const price = Number(priceRaw) / scale;
     const size = Number(q.size || 0) / 100;
     book.set(id, {
       id,
