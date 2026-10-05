@@ -61,27 +61,19 @@
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
-    let rawConfidence=rawDirection==='WAIT'?50:clamp(Math.round(48+(lead-conflict)*0.62+(total>=75?8:0)));
-    if(rawDirection!=='WAIT'&&lead>=75&&lead-conflict>=30)rawConfidence=Math.max(rawConfidence,84);
-    if(rawDirection!=='WAIT'&&lead>=95&&lead-conflict>=45)rawConfidence=Math.max(rawConfidence,90);
+    // Current-evidence confidence. No 74/75 smoothing floor.
+    const rawConfidence=rawDirection==='WAIT'?50:
+      clamp(Math.round(52+lead*0.42+(lead-conflict)*0.28+(total>=75?6:0)));
 
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else{state.pendingDirection=rawDirection;state.pendingCount=1;}
-    const now=Date.now();
-    state.confidenceSamples.push({t:now,v:rawConfidence});
-    state.confidenceSamples=state.confidenceSamples.filter(x=>now-x.t<=12000);
-    const avgConfidence=state.confidenceSamples.length?state.confidenceSamples.reduce((s,x)=>s+x.v,0)/state.confidenceSamples.length:rawConfidence;
-    if(rawDirection==='WAIT'){
-      state.stableDirection='WAIT';
-      state.stableConfidence=Math.round(state.stableConfidence*0.70+50*0.30);
-    }else if(rawDirection===state.stableDirection){
-      state.stableConfidence=Math.round(state.stableConfidence*0.70+avgConfidence*0.30);
-    }else if(state.pendingCount>=2){
-      state.stableDirection=rawDirection;
-      state.stableConfidence=Math.round(state.stableConfidence*0.70+avgConfidence*0.30);
-    }
+
+    if(rawDirection==='WAIT')state.stableDirection='WAIT';
+    else if(rawDirection===state.stableDirection)state.stableDirection=rawDirection;
+    else if(state.pendingCount>=2)state.stableDirection=rawDirection;
+
     const direction=state.stableDirection;
-    const confidence=clamp(Math.round(state.stableConfidence));
+    const confidence=direction===rawDirection?rawConfidence:50;
     const confirmations=[trend===direction,structure===direction,momentum===direction,candleBias===direction,of.signal===direction,(liq.status&&liqScore>=70&&liq.direction===direction)].filter(Boolean).length;
     const qualified=direction!=='WAIT'&&confirmations>=4&&confidence>=80;
 
@@ -91,7 +83,7 @@
       liquidity:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:liq.status||'No liquidity event'},
       orderFlow:{signal:of.signal,confidence:of.confidence,reason:of.reason},
       momentum:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'latest candle direction'},
-      candleBias:{signal:candleBias,confidence:clamp(candleBias===direction?75:50),reason:'current candle body'}
+      candleBias:{signal:candleBias,confidence:clamp(candleBias===direction?75:50),reason:'current candle body'},
       divergence:{signal:null,confidence:null,reason:'not enough independent divergence feed'},
       priceAction:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'OHLC candle response'},
       volatility:{signal:'NEUTRAL',confidence:60,reason:'range context only'}
