@@ -422,7 +422,7 @@ async function select(sym){
     window.RIZVI_RAW_BARS=next;
     window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',next):next;
     window.RIZVI_CHART_DATA[sym]={source:direct[sym],bars:next,updatedAt:Date.now(),status:'LIVE'};
-    window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:sym,bars:next}});
+    window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:sym,bars:next}}));
    }catch(e){}
   },10000);
  }catch(e){if(my===generation)window.RIZVI_CHART_DATA[sym]={source:direct[sym],status:'UNAVAILABLE',error:e.message};}
