@@ -2667,4 +2667,118 @@ window.RIZVI_SET_SYMBOL=function(sym){if(!allowed.has(sym))return false;set(sym)
 window.addEventListener('rizvi:symbol-change',e=>{const s=e.detail?.symbol;if(allowed.has(s))set(s)});
 const initial=get();setTimeout(()=>switchSymbol(initial),0);
 })();
-</script><script src="/ctrader-adapter.js"></script></body></html>
+</script><script src="/ctrader-adapter.js"></script>
+<script id="rizvi-v94-unwind-root-fix">
+(function(){
+'use strict';
+if(window.__RIZVI_V94_UNWIND_ROOT_FIX)return;
+window.__RIZVI_V94_UNWIND_ROOT_FIX=true;
+
+const state={
+  activeDirection:'WAIT',
+  unwind:false,
+  reason:'NONE',
+  updatedAt:Date.now()
+};
+const btns=[...document.querySelectorAll('.actions .btn')];
+const unwindBtn=btns.find(b=>b.textContent.includes('UNWIND'));
+const signalHead=document.querySelector('.signalHead div:first-child b');
+const signalCard=document.querySelector('.right .card:first-child .big span:first-child');
+const qualityHead=document.querySelector('.signalHead div:nth-child(2) b');
+const badge=document.querySelector('.signalHead div:nth-child(2) .badge');
+const ready=document.querySelector('.right .card:nth-child(2) .ready');
+
+function setText(d){
+  if(signalHead)signalHead.textContent=d;
+  if(signalCard)signalCard.textContent=d;
+  if(window.RIZVI_SIGNAL_DIRECTION)d==='WAIT'?window.RIZVI_SIGNAL_DIRECTION='WAIT':window.RIZVI_SIGNAL_DIRECTION=d;
+}
+function clearRange(){
+  window.RIZVI_TRADE_RANGE=null;
+  window.__RIZVI_TRADE_LOCK=null;
+  const box=document.querySelector('.rizvi-live-trade-range');
+  if(box)box.style.display='none';
+  if(typeof window.RIZVI_DRAW_SIGNAL_LEVELS==='function')window.RIZVI_DRAW_SIGNAL_LEVELS();
+}
+function paintUnwind(reason){
+  state.unwind=true;state.reason=reason||'STRUCTURE_CHANGE';state.updatedAt=Date.now();
+  window.RIZVI_UNWIND_STATE={...state};
+  setText('UNWIND');
+  if(qualityHead)qualityHead.textContent='--';
+  if(badge){badge.textContent='EXIT / REVERSAL';badge.style.background='#8b5a12';badge.style.color='#fff';}
+  if(ready){ready.textContent='UNWIND — CLOSE / RECHECK';ready.style.background='#8b5a12';ready.style.borderColor='#ffc43d';}
+  btns.forEach(b=>b.style.boxShadow='none');
+  if(unwindBtn)unwindBtn.style.boxShadow='0 0 0 2px #fff5';
+  clearRange();
+  document.dispatchEvent(new CustomEvent('rizvi:unwind-update',{detail:window.RIZVI_UNWIND_STATE}));
+  window.dispatchEvent(new CustomEvent('rizvi:unwind-update',{detail:window.RIZVI_UNWIND_STATE}));
+}
+function clearUnwind(){
+  if(!state.unwind)return;
+  state.unwind=false;state.reason='NONE';state.updatedAt=Date.now();
+  window.RIZVI_UNWIND_STATE={...state};
+  document.dispatchEvent(new CustomEvent('rizvi:unwind-cleared',{detail:window.RIZVI_UNWIND_STATE}));
+}
+function manualUnwind(e){
+  if(e)e.preventDefault();
+  paintUnwind('MANUAL_UNWIND');
+}
+if(unwindBtn){
+  unwindBtn.addEventListener('click',manualUnwind,true);
+}
+window.RIZVI_TRIGGER_UNWIND=paintUnwind;
+window.RIZVI_CLEAR_UNWIND=clearUnwind;
+
+function getFinal(){
+  const f=window.RIZVI_FINAL_SIGNAL||{};
+  const m=window.RIZVI_MASTER_SIGNAL||{};
+  const q=window.RIZVI_SIGNAL_QUALIFICATION||{};
+  const d=f.direction==='BUY'||f.direction==='SELL'?f.direction:
+          m.direction==='BUY'||m.direction==='SELL'?m.direction:
+          q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:'WAIT';
+  const score=Number.isFinite(Number(f.quality))?Number(f.quality):
+              Number.isFinite(Number(m.quality))?Number(m.quality):
+              Number(q.patternConfidence)||0;
+  return {direction:d,score:Number(score)||0,trend:String(f.trend||m.trend||q.trend||'').toUpperCase(),counterTrend:!!f.counterTrend};
+}
+
+function monitor(){
+  const f=getFinal();
+  const previous=state.activeDirection;
+  if(state.unwind){
+    // Stay in UNWIND until the final engine is no longer contradictory.
+    if(f.direction==='WAIT'||f.counterTrend||f.score<70)return;
+    state.unwind=false;state.reason='NONE';
+    setText(f.direction);
+    clearUnwind();
+  }
+  if(previous==='BUY'||previous==='SELL'){
+    if(f.direction!=='WAIT' && f.direction!==previous && f.score>=75){
+      paintUnwind('CONFIRMED_DIRECTION_CHANGE');
+      return;
+    }
+    if(f.direction==='WAIT' && f.score<70){
+      paintUnwind('SIGNAL_INVALIDATED');
+      return;
+    }
+  }
+  if(f.direction==='BUY'||f.direction==='SELL'){
+    state.activeDirection=f.direction;
+    state.updatedAt=Date.now();
+    window.RIZVI_UNWIND_STATE={...state};
+    // Canonical direction for trade-range generation.
+    window.RIZVI_SIGNAL_DIRECTION=f.direction;
+  }else if(f.direction==='WAIT'){
+    state.activeDirection='WAIT';
+    state.updatedAt=Date.now();
+    window.RIZVI_UNWIND_STATE={...state};
+    clearRange();
+    setText('WAIT');
+  }
+}
+setInterval(monitor,1000);
+monitor();
+})();
+</script>
+
+</body></html>
