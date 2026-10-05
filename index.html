@@ -2180,7 +2180,7 @@ wait();
   setInterval(tick,1000);
   tick();
 })();
-</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){const h=document.querySelector('.signalHead');if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=d;if(b[1])b[1].textContent=q+'%'}}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87-disabled">/* V87 legacy range disabled; V88 is the only live trade-range renderer. */</script><style id="rizvi-v88-live-trade-range">
+</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){/* V86: engine state only; V98 owns visible signal UI. */}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87-disabled">/* V87 legacy range disabled; V88 is the only live trade-range renderer. */</script><style id="rizvi-v88-live-trade-range">
 .rizvi-live-trade-range{position:absolute;z-index:30;pointer-events:none;width:74px;min-width:74px;max-width:74px;overflow:visible;display:none}
 .rizvi-live-trade-range .zone{position:absolute;left:0;width:74px;border:1px solid;border-radius:2px}
 .rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.07);border-color:rgba(0,217,145,.45)}
@@ -2703,7 +2703,6 @@ function monitor(){
     // Stay in UNWIND until the final engine is no longer contradictory.
     if(f.direction==='WAIT'||f.counterTrend||f.score<70)return;
     state.unwind=false;state.reason='NONE';
-    setText(f.direction);
     clearUnwind();
   }
   if(previous==='BUY'||previous==='SELL'){
@@ -2727,7 +2726,6 @@ function monitor(){
     state.updatedAt=Date.now();
     window.RIZVI_UNWIND_STATE={...state};
     clearRange();
-    setText('WAIT');
   }
 }
 setInterval(monitor,1000);
