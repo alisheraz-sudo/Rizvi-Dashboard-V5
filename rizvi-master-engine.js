@@ -34,46 +34,64 @@
     const trend=e9>e21?'BUY':e9<e21?'SELL':'NEUTRAL';
     const momentum=last.c>prev.c?'BUY':last.c<prev.c?'SELL':'NEUTRAL';
     const recent=bars.slice(-10), hi=Math.max(...recent.map(x=>Number(x.h))),lo=Math.min(...recent.map(x=>Number(x.l)));
-    const structure=last.c>=hi*0.999?'BUY':last.c<=lo*1.001?'SELL':(last.c>=e21?'BUY':'SELL');
+    const range=Math.max(hi-lo,1e-9), closePos=(Number(last.c)-lo)/range;
+    const bodyPct=Math.abs(Number(last.c)-Number(last.o||prev.c))/Math.max(Number(last.h)-Number(last.l),1e-9);
+    const prior=bars.slice(-11,-1);
+    const priorHi=prior.length?Math.max(...prior.map(x=>Number(x.h))):hi;
+    const priorLo=prior.length?Math.min(...prior.map(x=>Number(x.l))):lo;
+    const structure=last.c>priorHi?'BUY':last.c<priorLo?'SELL':(last.c>=e21?'BUY':'SELL');
+    const candleBias=last.c<Number(last.o||prev.c)?'SELL':last.c>Number(last.o||prev.c)?'BUY':'NEUTRAL';
     const of=orderFlow(symbol);
     const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
     const liqScore=clamp(liq.status?Number(liq.score||liq.liquidityScore||0):0);
+
     let buy=0,sell=0;
     const add=(s,w)=>{if(s==='BUY')buy+=w;if(s==='SELL')sell+=w};
-    add(trend,20); add(structure,25); add(momentum,10);
-    if(r!==null){if(r>=50&&r<75)buy+=10;if(r<=50&&r>25)sell+=10;}
-    if(of.signal==='BUY')buy+=20;if(of.signal==='SELL')sell+=20;
-    if(liq.status&&Number.isFinite(liqScore)){if(liqScore>=70){if(liq.direction==='SELL')sell+=15;else buy+=15;}}
+    add(trend,25); add(structure,25); add(momentum,15); add(candleBias,10);
+    if(r!==null){if(r>=55&&r<72)buy+=10;if(r<=45&&r>28)sell+=10;}
+    if(closePos>0.72)buy+=8;
+    if(closePos<0.28)sell+=8;
+    if(bodyPct>=0.55)add(candleBias,7);
+    if(of.signal==='BUY')buy+=15;
+    if(of.signal==='SELL')sell+=15;
+    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){
+      if(liq.direction==='SELL')sell+=12;
+      else if(liq.direction==='BUY')buy+=12;
+    }
+
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
-    const lead=Math.max(buy,sell), conflict=Math.min(buy,sell);
-    let rawConfidence=clamp(Math.round(50+(lead-conflict)*0.75));
-    if(rawDirection==='WAIT')rawConfidence=50;
+    const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
+    let rawConfidence=rawDirection==='WAIT'?50:clamp(Math.round(48+(lead-conflict)*0.62+(total>=75?8:0)));
+    if(rawDirection!=='WAIT'&&lead>=75&&lead-conflict>=30)rawConfidence=Math.max(rawConfidence,84);
+    if(rawDirection!=='WAIT'&&lead>=95&&lead-conflict>=45)rawConfidence=Math.max(rawConfidence,90);
 
     if(rawDirection===state.pendingDirection)state.pendingCount++;
-    else {state.pendingDirection=rawDirection;state.pendingCount=1;}
+    else{state.pendingDirection=rawDirection;state.pendingCount=1;}
     const now=Date.now();
     state.confidenceSamples.push({t:now,v:rawConfidence});
-    state.confidenceSamples=state.confidenceSamples.filter(x=>now-x.t<=15000);
+    state.confidenceSamples=state.confidenceSamples.filter(x=>now-x.t<=12000);
     const avgConfidence=state.confidenceSamples.length?state.confidenceSamples.reduce((s,x)=>s+x.v,0)/state.confidenceSamples.length:rawConfidence;
     if(rawDirection==='WAIT'){
       state.stableDirection='WAIT';
-      state.stableConfidence=Math.round(state.stableConfidence*0.85+50*0.15);
+      state.stableConfidence=Math.round(state.stableConfidence*0.70+50*0.30);
     }else if(rawDirection===state.stableDirection){
-      state.stableConfidence=Math.round(state.stableConfidence*0.85+avgConfidence*0.15);
-    }else if(state.pendingCount>=3){
+      state.stableConfidence=Math.round(state.stableConfidence*0.70+avgConfidence*0.30);
+    }else if(state.pendingCount>=2){
       state.stableDirection=rawDirection;
-      state.stableConfidence=Math.round(state.stableConfidence*0.85+avgConfidence*0.15);
+      state.stableConfidence=Math.round(state.stableConfidence*0.70+avgConfidence*0.30);
     }
     const direction=state.stableDirection;
     const confidence=clamp(Math.round(state.stableConfidence));
-    const confirmations=[trend===direction,structure===direction,momentum===direction,of.signal===direction,(liq.status&&liqScore>=70)].filter(Boolean).length;
-    const qualified=direction!=='WAIT'&&confirmations>=3&&confidence>=80;
+    const confirmations=[trend===direction,structure===direction,momentum===direction,candleBias===direction,of.signal===direction,(liq.status&&liqScore>=70&&liq.direction===direction)].filter(Boolean).length;
+    const qualified=direction!=='WAIT'&&confirmations>=4&&confidence>=80;
+
     const engines={
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
       structure:{signal:structure,confidence:clamp(70+(structure===direction?15:0)),reason:'recent 10-bar structure'},
       liquidity:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:liq.status||'No liquidity event'},
       orderFlow:{signal:of.signal,confidence:of.confidence,reason:of.reason},
       momentum:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'latest candle direction'},
+      candleBias:{signal:candleBias,confidence:clamp(candleBias===direction?75:50),reason:'current candle body'}
       divergence:{signal:null,confidence:null,reason:'not enough independent divergence feed'},
       priceAction:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'OHLC candle response'},
       volatility:{signal:'NEUTRAL',confidence:60,reason:'range context only'}
@@ -92,7 +110,7 @@
       status:qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',
       masterConfirmations:confirmations,
       trend:engines.trend,structure:engines.structure,liquidity:engines.liquidity,
-      orderFlow:engines.orderFlow,momentum:engines.momentum,divergence:engines.divergence,
+      orderFlow:engines.orderFlow,momentum:engines.momentum,candleBias:engines.candleBias,divergence:engines.divergence,
       priceAction:engines.priceAction,volatility:engines.volatility
     };
     window.RIZVI_SIGNAL_DIRECTION=direction;
