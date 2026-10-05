@@ -2889,4 +2889,61 @@ W.RIZVI_VERIFY_INDICATOR_ALIGNMENT=run;
 setTimeout(run,1000);
 setInterval(run,1500);
 })();
+</script>\n<script id="rizvi-v96-sideways-noise-gate">
+(function(){
+'use strict';
+if(window.__RIZVI_V96_SIDEWAYS_GATE)return;
+window.__RIZVI_V96_SIDEWAYS_GATE=true;
+const W=window;
+const S={candidate:'WAIT',count:0,stable:'WAIT',lastChange:0,history:[]};
+const MIN_STABLE=4, COOLDOWN=12000, FLIP_SCORE=82, SIDE_AGREE=72;
+function n(x){const v=Number(x);return Number.isFinite(v)?v:0}
+function get(){
+ const a=W.RIZVI_ALIGNMENT_GATE||{};
+ const m=W.RIZVI_MULTI_ALGORITHM_REPORT?.master||W.RIZVI_MASTER_ALGORITHM||{};
+ const d=a.qualified?a.direction:(m.action==='BUY'||m.action==='SELL'?m.action:'WAIT');
+ const q=n(a.quality||a.average||m.confidence);
+ const ag=n(a.agreement);
+ const comps=a.components||{};
+ const vals=Object.values(comps).filter(x=>x&&Number(x.bias)!==0);
+ const signed=vals.reduce((s,x)=>s+n(x.bias)*(n(x.score)/100),0);
+ const conflict=vals.length?Math.abs(signed)<0.22*vals.length:false;
+ const sideways=(d==='WAIT'||q<75||ag<SIDE_AGREE||conflict);
+ return {d,q,ag,sideways};
+}
+function apply(v){
+ const now=Date.now();
+ if(v.sideways){
+   S.candidate='WAIT';S.count=0;
+   if(S.stable!=='WAIT'){
+     S.stable='WAIT';S.lastChange=now;
+     W.RIZVI_SIGNAL_DIRECTION='WAIT';
+     W.RIZVI_SIGNAL_QUALITY=0;
+     W.RIZVI_TRADE_RANGE=null;
+     if(typeof W.RIZVI_DRAW_SIGNAL_LEVELS==='function')W.RIZVI_DRAW_SIGNAL_LEVELS();
+     W.RIZVI_NOISE_FILTER_STATE={mode:'SIDEWAYS_WAIT',stable:'WAIT',reason:'LOW_CONFLUENCE_OR_CONFLICT'};
+     W.dispatchEvent(new CustomEvent('rizvi:noise-filter',{detail:W.RIZVI_NOISE_FILTER_STATE}));
+   }
+   return;
+ }
+ if(v.d!==S.candidate){S.candidate=v.d;S.count=1}
+ else S.count++;
+ if(S.candidate!==S.stable){
+   const enough=S.count>=MIN_STABLE;
+   const cooled=(now-S.lastChange)>=COOLDOWN;
+   const strong=v.q>=FLIP_SCORE&&v.ag>=80;
+   if(enough && (cooled||strong)){
+     S.stable=S.candidate;S.lastChange=now;
+     W.RIZVI_SIGNAL_DIRECTION=S.stable;
+     W.RIZVI_SIGNAL_QUALITY=v.q;
+     W.RIZVI_NOISE_FILTER_STATE={mode:'CONFIRMED',stable:S.stable,quality:v.q,agreement:v.ag};
+     W.dispatchEvent(new CustomEvent('rizvi:stable-signal',{detail:W.RIZVI_NOISE_FILTER_STATE}));
+   }
+ }
+}
+function run(){try{apply(get())}catch(e){console.warn('Rizvi noise gate',e)}}
+W.RIZVI_NOISE_FILTER_STATE={mode:'STARTING',stable:'WAIT'};
+W.RIZVI_GET_STABLE_SIGNAL=()=>({...S});
+setInterval(run,1500);setTimeout(run,500);
+})();
 </script>\n</body></html>
