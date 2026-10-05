@@ -67,7 +67,7 @@
     const direction=state.stableDirection;
     const confidence=clamp(Math.round(state.stableConfidence));
     const confirmations=[trend===direction,structure===direction,momentum===direction,of.signal===direction,(liq.status&&liqScore>=70)].filter(Boolean).length;
-    const qualified=direction!=='WAIT'&&confirmations>=3&&confidence>=70;
+    const qualified=direction!=='WAIT'&&confirmations>=3&&confidence>=80;
     const engines={
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
       structure:{signal:structure,confidence:clamp(70+(structure===direction?15:0)),reason:'recent 10-bar structure'},
