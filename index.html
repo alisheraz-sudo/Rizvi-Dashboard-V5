@@ -2781,4 +2781,112 @@ monitor();
 })();
 </script>
 
-</body></html>
+<script id="rizvi-v95-indicator-alignment-gate">
+(function(){
+'use strict';
+if(window.__RIZVI_V95_ALIGNMENT_GATE)return;
+window.__RIZVI_V95_ALIGNMENT_GATE=true;
+const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
+const CRITICAL=['EMA','RSI','VWAP','CANDLE','VOLUME_PROFILE','DELTA','DIVERGENCE','TREND','ORDER_FLOW','LIQUIDITY'];
+const DIR=new Set(['BUY','SELL']);
+function components(){
+  const r=W.RIZVI_INDICATOR_CONFLUENCE||{};
+  const c=r.components||{};
+  return c;
+}
+function attached(v){
+  if(!v)return false;
+  if(v.status==='NOT_ATTACHED'||v.status==='INSUFFICIENT')return false;
+  return Number(v.score)>0;
+}
+function calc(){
+  const c=components(), rows=CRITICAL.map(k=>({name:k,v:c[k]||null,attached:attached(c[k])}));
+  const missing=rows.filter(x=>!x.attached).map(x=>x.name);
+  const active=rows.filter(x=>x.attached);
+  const signed=active.reduce((s,x)=>s+(Number(x.v.score)||0)/100*(Number(x.v.bias)||0),0);
+  const directional=active.filter(x=>Number(x.v.bias)!==0);
+  const dir=signed>0?'BUY':signed<0?'SELL':'WAIT';
+  const agreement=directional.length?directional.filter(x=>Math.sign(Number(x.v.bias))===Math.sign(signed)).length/directional.length:0;
+  const contradiction=directional.some(x=>Number(x.v.bias)!==0&&Math.sign(Number(x.v.bias))!==Math.sign(signed));
+  const avg=active.length?active.reduce((s,x)=>s+Number(x.v.score||0),0)/active.length:0;
+  const complete=missing.length===0;
+  const aligned=complete && active.length===CRITICAL.length && agreement>=0.80 && !contradiction;
+  let quality=Math.round(avg);
+  if(!complete)quality=Math.min(quality,69);
+  if(agreement<0.80)quality=Math.min(quality,69);
+  if(contradiction)quality=Math.min(quality,59);
+  const qualified=aligned && quality>=80 && DIR.has(dir);
+  return {timestamp:Date.now(),direction:qualified?dir:'WAIT',rawDirection:dir,quality:qualified?quality:0,average:Math.round(avg),agreement:Math.round(agreement*100),complete,aligned,qualified,missing,contradiction,components:c};
+}
+function rangeOk(dir){
+  const r=W.RIZVI_TRADE_RANGE;
+  if(!r||!DIR.has(dir))return true;
+  const e=Number(r.entry),sl=Number(r.sl),t1=Number(r.tp1),t2=Number(r.tp2),t3=Number(r.tp3);
+  if(![e,sl,t1,t2,t3].every(Number.isFinite))return false;
+  return dir==='BUY'?(sl<e&&t1>e&&t2>t1&&t3>t2):(sl>e&&t1<e&&t2<t1&&t3<t2);
+}
+function paint(v){
+  const head=document.querySelector('.signalHead div:first-child b');
+  const card=document.querySelector('.right .card:first-child .big span:first-child');
+  const q=document.querySelector('.signalHead div:nth-child(2) b');
+  const badge=document.querySelector('.signalHead div:nth-child(2) .badge');
+  const ready=document.querySelector('.right .card:nth-child(2) .ready');
+  const finalDir=(W.RIZVI_UNWIND_STATE?.unwind)?'UNWIND':v.direction;
+  if(head)head.textContent=finalDir;
+  if(card)card.textContent=finalDir;
+  W.RIZVI_SIGNAL_DIRECTION=finalDir;
+  if(q)q.textContent=(v.qualified&&!W.RIZVI_UNWIND_STATE?.unwind)?v.quality+'%':'--';
+  if(badge){
+    badge.textContent=(v.qualified&&!W.RIZVI_UNWIND_STATE?.unwind)?'HIGH QUALITY':(v.missing.length?'NOT FULLY ALIGNED':'WAIT');
+    badge.style.background=v.qualified?'#10b875':'#173c75';
+  }
+  if(ready){
+    ready.textContent=finalDir==='UNWIND'?'UNWIND — CLOSE / RECHECK':v.qualified?'SIGNAL QUALIFIED':'WAIT — ALIGNMENT REQUIRED';
+    ready.style.background=finalDir==='UNWIND'?'#8b5a12':v.qualified?'#087e58':'#173c75';
+  }
+  if(!v.qualified || finalDir==='UNWIND'){
+    W.RIZVI_TRADE_RANGE=null;
+    W.__RIZVI_TRADE_LOCK=null;
+    const box=document.querySelector('.rizvi-live-trade-range');if(box)box.style.display='none';
+    if(typeof W.RIZVI_DRAW_SIGNAL_LEVELS==='function')W.RIZVI_DRAW_SIGNAL_LEVELS();
+  }
+  W.RIZVI_SIGNAL_QUALIFICATION={
+    status:v.qualified?'QUALIFIED':'WAIT',
+    marketDirection:v.direction,
+    patternConfidence:v.quality,
+    indicatorAgreement:v.agreement,
+    missingIndicators:v.missing,
+    allIndicatorsAligned:v.aligned
+  };
+  W.RIZVI_ALIGNMENT_GATE=v;
+}
+function run(){
+  const v=calc();
+  const final=W.RIZVI_FINAL_SIGNAL||{};
+  const master=W.RIZVI_MASTER_ALGORITHM||{};
+  // Never allow an unverified sub-engine to promote a High Quality signal.
+  if(v.qualified){
+    const candidates=[final.direction,master.action].filter(DIR.has);
+    const conflicts=candidates.length>1 && candidates.some(x=>x!==v.direction);
+    if(conflicts){v.qualified=false;v.direction='WAIT';v.quality=0;}
+  }
+  if(!v.qualified && (final.direction==='BUY'||final.direction==='SELL'||master.action==='BUY'||master.action==='SELL')){
+    // Direction may remain informational, but H.Q. qualification stays blocked.
+  }
+  paint(v);
+  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
+  W.RIZVI_OPERATIONAL_STATUS.indicatorAlignment={
+    status:v.aligned?'VERIFIED':'BLOCKED',
+    allIndicatorsAttached:v.complete,
+    agreement:v.agreement,
+    missing:v.missing,
+    direction:v.direction,
+    quality:v.quality
+  };
+  W.dispatchEvent(new CustomEvent('rizvi:indicator-alignment-update',{detail:v}));
+}
+W.RIZVI_VERIFY_INDICATOR_ALIGNMENT=run;
+setTimeout(run,1000);
+setInterval(run,1500);
+})();
+</script>\n</body></html>
