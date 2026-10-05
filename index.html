@@ -1311,7 +1311,7 @@
     const ready=document.querySelector('.right .card:nth-child(2) .ready');
     const note=document.querySelector('.right .card:nth-child(2) .note');
     const score=Number(x.liquidityScore);
-    if(q&&Number.isFinite(score))q.innerHTML=score+'% <em class="badge">'+(score>=70?'HIGH QUALITY':'WAIT')+'</em>';
+    if(q&&Number.isFinite(score))q.innerHTML=score+'% <em class="badge">'+(score>=80?'HIGH QUALITY':'WAIT')+'</em>';
     if(ready)ready.textContent=x.status==='QUALIFIED_CONTEXT'?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
     if(note)note.textContent='Liquidity '+(x.confirmedSweep?'sweep confirmed':'sweep pending')+' · '+(x.confirmedBreakout?'breakout confirmed':'breakout pending')+' · '+(x.multiTimeframe?'multi-timeframe aligned':'single-timeframe context');
   }
