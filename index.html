@@ -2946,4 +2946,28 @@ W.RIZVI_NOISE_FILTER_STATE={mode:'STARTING',stable:'WAIT'};
 W.RIZVI_GET_STABLE_SIGNAL=()=>({...S});
 setInterval(run,1500);setTimeout(run,500);
 })();
+</script>\n<script id="rizvi-v97-noise-ui-enforcement">
+(function(){
+'use strict';
+if(window.__RIZVI_V97_NOISE_UI_ENFORCEMENT)return;
+window.__RIZVI_V97_NOISE_UI_ENFORCEMENT=true;
+const W=window;
+function run(){
+ const s=W.RIZVI_NOISE_FILTER_STATE||{};
+ if(s.mode!=='SIDEWAYS_WAIT')return;
+ const h=document.querySelector('.signalHead div:first-child b');
+ const card=document.querySelector('.right .card:first-child .big span:first-child');
+ const q=document.querySelector('.signalHead div:nth-child(2) b');
+ const badge=document.querySelector('.signalHead div:nth-child(2) .badge');
+ const ready=document.querySelector('.right .card:nth-child(2) .ready');
+ if(h)h.textContent='WAIT';
+ if(card)card.textContent='WAIT';
+ if(q)q.textContent='--';
+ if(badge){badge.textContent='SIDEWAYS / WAIT';badge.style.background='#173c75';}
+ if(ready){ready.textContent='WAIT — MARKET NOISE FILTER';ready.style.background='#173c75';}
+ W.RIZVI_SIGNAL_DIRECTION='WAIT';
+ W.RIZVI_SIGNAL_QUALITY=0;
+}
+setInterval(run,500);
+})();
 </script>\n</body></html>
