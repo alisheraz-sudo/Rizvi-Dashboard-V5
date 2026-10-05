@@ -156,7 +156,7 @@
     window.RIZVI_LIVE_PRICE=p;
     window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
     window.RIZVI_LIVE_PRICES[s]=p;
-    const direction=window.RIZVI_SIGNAL_DIRECTION||'BUY';
+    const direction=(window.RIZVI_SIGNAL_DIRECTION==='BUY'||window.RIZVI_SIGNAL_DIRECTION==='SELL')?window.RIZVI_SIGNAL_DIRECTION:'WAIT';
     document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:s,price:p,direction}}));
     window.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:s,price:p,direction}}));
     if(typeof window.RIZVI_SIGNAL_LEVELS==='function')window.RIZVI_SIGNAL_LEVELS(p,direction);
@@ -231,8 +231,8 @@
 
   let frozen=null, frozenDirection=null;
   window.RIZVI_SIGNAL_LEVELS=function(price,direction){
-    const p=Number(price), dir=direction==='SELL'?'SELL':'BUY';
-    if(!Number.isFinite(p))return frozen||null;
+    const p=Number(price), dir=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
+    if(!Number.isFinite(p)||!dir)return frozen||null;
     if(frozen && frozenDirection===dir){
       window.RIZVI_TRADE_RANGE=frozen;
       return frozen;
@@ -367,7 +367,7 @@
    window.RIZVI_GOLD_FEED={price:p,status:d?.data_state?.status||'unknown',price_as_of:d?.price_as_of||d?.updated_at,source:d?.price_source||d?.source};
    window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
    window.RIZVI_LIVE_PRICES['XAU/USD']=p;
-   const direction=window.RIZVI_SIGNAL_DIRECTION||document.querySelector('.signalHead div:first-child b')?.textContent?.trim()||'BUY';
+   const uiDir=document.querySelector('.signalHead div:first-child b')?.textContent?.trim(); const direction=(window.RIZVI_SIGNAL_DIRECTION==='BUY'||window.RIZVI_SIGNAL_DIRECTION==='SELL')?window.RIZVI_SIGNAL_DIRECTION:(uiDir==='BUY'||uiDir==='SELL'?uiDir:'WAIT');
    window.RIZVI_SIGNAL_DIRECTION=direction;
    if(typeof window.RIZVI_SIGNAL_LEVELS==='function') window.RIZVI_SIGNAL_LEVELS(p,direction);
    document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'XAU/USD',price:p,direction}}));
