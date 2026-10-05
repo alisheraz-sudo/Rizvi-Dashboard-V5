@@ -388,9 +388,9 @@ window.RIZVI_DIRECT_CHART_SOURCE=direct;
 window.RIZVI_CHART_DATA=window.RIZVI_CHART_DATA||{};
 let timer=null,generation=0;
 async function btc(){
- const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
- if(!Array.isArray(d))return [];
- return d.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite));
+ const d=await fetch('/market/btc/intraday?granularity=60',{cache:'no-store'}).then(r=>r.json());
+ if(!Array.isArray(d?.bars))return [];
+ return d.bars.map(x=>({t:+x.t,l:+x.l,h:+x.h,o:+x.o,c:+x.c})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite));
 }
 async function gold(){
  const d=await fetch('/market/xau/intraday?hours=12',{cache:'no-store'}).then(r=>r.json());
