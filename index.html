@@ -2930,23 +2930,23 @@ setInterval(run,500);
 'use strict';
 if(window.__RIZVI_V98_FINAL_GATE)return;window.__RIZVI_V98_FINAL_GATE=true;
 const W=window, ST={dir:'WAIT',candidate:'WAIT',count:0,lastChange:0,score:0};
-const CONFIRM_TICKS=5, FLIP_TICKS=8, HOLD_MS=15000, MIN=80, AGREEMENT=78;
+const CONFIRM_TICKS=5, FLIP_TICKS=8, HOLD_MS=15000, MIN=70, STRONG=80, AGREEMENT=70;
 function num(x){x=Number(x);return Number.isFinite(x)?x:0}
 function read(){
  const a=W.RIZVI_ALIGNMENT_GATE||{}, q=W.RIZVI_SIGNAL_QUALIFICATION||{}, m=W.RIZVI_MASTER_SIGNAL||{}, f=W.RIZVI_FINAL_SIGNAL||{};
- const dir=(a.direction==='BUY'||a.direction==='SELL')?a.direction:(q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:'WAIT');
- const score=Math.max(0,Math.min(100,num(a.quality||q.patternConfidence||f.quality||m.quality)));
+ const dir=(a.direction==='BUY'||a.direction==='SELL')?a.direction:(a.rawDirection==='BUY'||a.rawDirection==='SELL'?a.rawDirection:(q.marketDirection==='BUY'||q.marketDirection==='SELL'?q.marketDirection:'WAIT'));
+ const score=Math.max(0,Math.min(100,num(a.quality||a.average||q.patternConfidence||f.quality||m.quality)));
  const agree=num(a.agreement||q.indicatorAgreement);
- const aligned=a.aligned!==false && a.complete!==false;
+ const aligned=a.complete!==false && (a.aligned!==false || score>=MIN);
  const noise=dir==='WAIT'||score<MIN||agree<AGREEMENT||!aligned;
- return {dir,score,agree,noise};
+ return {dir,score,agree,noise,strong:score>=STRONG};
 }
 function paint(dir,score,mode){
  const h=document.querySelector('.signalHead'), card=document.querySelector('.right .card:first-child'), big=card?.querySelector('.big');
- if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=dir;if(b[1])b[1].textContent=dir==='WAIT'?'--':Math.round(score)+'%';const z=h.querySelector('.badge');if(z){z.textContent=mode==='CONFIRMED'?'HIGH QUALITY':mode==='HOLD'?'CONFIRMED / HOLD':'WAIT — ENGINE FILTER';z.style.background=mode==='CONFIRMED'?'#087e58':'#173c75';}}
- if(big){const a=big.querySelector('span:first-child'),b=big.querySelector('span:nth-child(2)');if(a)a.textContent=dir;if(b){const z=b.querySelector('.badge');if(z){b.childNodes[0].nodeValue=(dir==='WAIT'?'--':Math.round(score)+'% ') ;z.textContent=mode==='CONFIRMED'?'HIGH QUALITY':mode==='HOLD'?'CONFIRMED / HOLD':'WAIT — ENGINE FILTER';}}}
+ if(h){const b=h.querySelectorAll('b');if(b[0])b[0].textContent=dir;if(b[1])b[1].textContent=dir==='WAIT'?'--':Math.round(score)+'%';const z=h.querySelector('.badge');if(z){z.textContent=mode==='CONFIRMED'?(score>=STRONG?'STRONG SIGNAL':'WEAK SIGNAL'):mode==='HOLD'?(score>=STRONG?'STRONG / HOLD':'WEAK / HOLD'):'WAIT — ENGINE FILTER';z.style.background=mode==='CONFIRMED'?'#087e58':'#173c75';}}
+ if(big){const a=big.querySelector('span:first-child'),b=big.querySelector('span:nth-child(2)');if(a)a.textContent=dir;if(b){const z=b.querySelector('.badge');if(z){b.childNodes[0].nodeValue=(dir==='WAIT'?'--':Math.round(score)+'% ') ;z.textContent=mode==='CONFIRMED'?(score>=STRONG?'STRONG SIGNAL':'WEAK SIGNAL'):mode==='HOLD'?(score>=STRONG?'STRONG / HOLD':'WEAK / HOLD'):'WAIT — ENGINE FILTER';}}}
  const ready=document.querySelector('.right .card:nth-child(2) .ready');
- if(ready){ready.textContent=mode==='CONFIRMED'?'SIGNAL QUALIFIED':mode==='HOLD'?'SIGNAL CONFIRMED — HOLD':'WAIT — ENGINE NOISE FILTER';ready.style.background=mode==='CONFIRMED'?'#087e58':'#173c75';}
+ if(ready){ready.textContent=mode==='CONFIRMED'?(score>=STRONG?'STRONG SIGNAL':'WEAK SIGNAL'):mode==='HOLD'?(score>=STRONG?'STRONG SIGNAL — HOLD':'WEAK SIGNAL — HOLD'):'WAIT — ENGINE NOISE FILTER';ready.style.background=mode==='CONFIRMED'?'#087e58':'#173c75';}
  W.RIZVI_VISIBLE_SIGNAL={direction:dir,quality:dir==='WAIT'?0:Math.round(score),mode,updatedAt:Date.now()};
 }
 function run(){
@@ -2966,7 +2966,7 @@ function run(){
    paint(ST.dir,ST.score,'HOLD');
  }
  W.RIZVI_SIGNAL_DIRECTION=ST.dir;W.RIZVI_SIGNAL_QUALITY=Math.round(ST.score);
- W.RIZVI_SIGNAL_GATE=Object.assign({},W.RIZVI_SIGNAL_GATE||{},{finalNoiseGate:true,confirmTicks:CONFIRM_TICKS,flipTicks:FLIP_TICKS,minConfidence:MIN,agreement:AGREEMENT,updatedAt:now});
+ W.RIZVI_SIGNAL_GATE=Object.assign({},W.RIZVI_SIGNAL_GATE||{},{finalNoiseGate:true,confirmTicks:CONFIRM_TICKS,flipTicks:FLIP_TICKS,minConfidence:MIN,strongConfidence:STRONG,agreement:AGREEMENT,updatedAt:now});
 }
 setInterval(run,1000);setTimeout(run,500);
 })();
