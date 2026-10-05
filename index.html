@@ -2029,7 +2029,7 @@ setInterval(live,1000);setTimeout(draw,100);
 'use strict';
 if(window.__RIZVI_V55_TV_ENGINE)return;window.__RIZVI_V55_TV_ENGINE=true;
 const TF={'1M':1,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
-let chart=null,series=null,ready=false,lastTf='',lastFirst=0,lastLast=0,attempts=0,L=null;
+let chart=null,series=null,ready=false,lastTf='',lastFirst=0,lastLast=0,lastSymbol='',attempts=0,L=null;
 function N(v){const x=Number(v);return Number.isFinite(x)?x:NaN}
 function host(){
  const area=document.querySelector('.chart');if(!area)return null;
@@ -2085,6 +2085,7 @@ function init(){
    priceLineVisible:true,priceLineColor:'#53dca5',priceLineWidth:1,priceLineStyle:L.LineStyle.Dashed
   });
   window.RIZVI_TV_CHART=chart;window.RIZVI_TV_SERIES=series;
+  lastSymbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
   ready=true;
   window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(e){}});
   refresh(true);
@@ -2093,6 +2094,11 @@ function init(){
 }
 function refresh(force){
  if(!ready||!series)return;
+ const sym=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+ if(sym!==lastSymbol){
+   try{series.setData([]);chart.timeScale().fitContent()}catch(e){}
+   lastSymbol=sym;lastTf='';lastFirst=0;lastLast=0;force=true;
+ }
  const a=rows();if(!a.length)return;
  const tf=window.RIZVI_CANDLE_TIMEFRAME||'1M',mins=TF[tf]||1,data=aggregate(a,mins);if(!data.length)return;
  const first=data[0].time,last=data[data.length-1].time,changed=tf!==lastTf||first!==lastFirst||last!==lastLast;
@@ -2923,100 +2929,5 @@ function run(){
 setInterval(run,500);
 })();
 </script>\n
-<script id="rizvi-v98-symbol-isolation">
-(function(){
-'use strict';
-if(window.__RIZVI_V98_SYMBOL_ISOLATION)return;
-window.__RIZVI_V98_SYMBOL_ISOLATION=true;
 
-const W=window;
-let generation=0, active=null, refreshTimer=null, chart=null, series=null, host=null;
-
-function current(){return W.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD';}
-
-function makeHost(sym){
-  const old=document.getElementById('rizviTvChartV55');
-  if(old) old.remove();
-  host=document.createElement('div');
-  host.id='rizviTvChartV55';
-  host.dataset.symbol=sym;
-  host.style.cssText='position:absolute;left:0;right:0;top:47px;bottom:0;width:auto;height:auto;z-index:10;background:#031421;touch-action:none;';
-  document.querySelector('.chart')?.appendChild(host);
-  if(!W.LightweightCharts||!W.LightweightCharts.createChart)return false;
-  chart=W.LightweightCharts.createChart(host,{
-    layout:{background:{type:'solid',color:'#031421'},textColor:'#8fa3b4'},
-    grid:{vertLines:{color:'#0a253a'},horzLines:{color:'#0a253a'}},
-    rightPriceScale:{borderColor:'#173650',scaleMargins:{top:0.08,bottom:0.08}},
-    timeScale:{borderColor:'#173650',timeVisible:true,secondsVisible:false,rightOffset:4,barSpacing:7},
-    crosshair:{mode:1},
-    handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
-    handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true}
-  });
-  series=chart.addCandlestickSeries({
-    upColor:'#19d6c0',downColor:'#ff4755',
-    borderUpColor:'#19d6c0',borderDownColor:'#ff4755',
-    wickUpColor:'#19d6c0',wickDownColor:'#ff4755'
-  });
-  return true;
-}
-
-function normalizeBars(bars){
-  const seen=new Map();
-  for(const b of (Array.isArray(bars)?bars:[])){
-    const t=Number(b?.t),o=Number(b?.o),h=Number(b?.h),l=Number(b?.l),c=Number(b?.c);
-    if(!Number.isFinite(t)||![o,h,l,c].every(Number.isFinite))continue;
-    const sec=Math.floor(t/1000);
-    seen.set(sec,{time:sec,open:o,high:h,low:l,close:c});
-  }
-  return [...seen.values()].sort((a,b)=>a.time-b.time);
-}
-
-function render(sym,bars){
-  if(sym!==active||host?.dataset.symbol!==sym||!series)return;
-  const data=normalizeBars(bars);
-  if(!data.length)return;
-  series.setData(data);
-  chart.timeScale().fitContent();
-  const last=data[data.length-1];
-  W.RIZVI_CHART_DATA=W.RIZVI_CHART_DATA||{};
-  W.RIZVI_CHART_DATA[sym]={...(W.RIZVI_CHART_DATA[sym]||{}),bars,updatedAt:Date.now(),status:'LIVE',source:'isolated-renderer'};
-  W.RIZVI_RENDERED_SYMBOL=sym;
-}
-
-function onCandles(e){
-  const d=e?.detail||{};
-  if(!d.symbol||d.symbol!==active)return;
-  if(d.reset){ if(series)series.setData([]); return; }
-  render(d.symbol,d.bars);
-}
-
-async function switchSymbol(sym){
-  if(sym!=='BTCUSD'&&sym!=='XAU/USD')return;
-  const my=++generation;
-  active=sym;
-  clearInterval(refreshTimer); refreshTimer=null;
-  W.RIZVI_CURRENT_SYMBOL=sym;
-  makeHost(sym);
-  if(series)series.setData([]);
-  W.RIZVI_RAW_BARS=[]; W.RIZVI_AGG_BARS=[]; W.RIZVI_LIVE_PRICE=null;
-  W.RIZVI_SYMBOL_RENDER_LOCK={symbol:sym,generation:my,status:'LOADING',updatedAt:Date.now()};
-  const head=document.querySelector('.chart .head>div:first-child');
-  if(head){
-    const b=head.querySelector('b');
-    const tf=b?b.textContent:'1m';
-    head.innerHTML=sym+' · <b>'+tf+'</b> &nbsp; <small>LIVE <span id="chartClose">--</span></small>';
-  }
-  W.dispatchEvent(new CustomEvent('rizvi:symbol-render-reset',{detail:{symbol:sym,generation:my}}));
-  // The existing unified data owner remains the sole data fetcher. We only consume
-  // candle-update events here, with a strict symbol/generation gate.
-  if(my!==generation||current()!==sym)return;
-  W.RIZVI_SYMBOL_RENDER_LOCK.status='WAITING_FOR_DATA';
-}
-
-W.addEventListener('rizvi:candle-update',onCandles);
-W.addEventListener('rizvi:symbol-change',e=>switchSymbol(e.detail?.symbol||current()));
-const initial=current();
-setTimeout(()=>switchSymbol(initial),0);
-})();
-</script>
 </body></html>
