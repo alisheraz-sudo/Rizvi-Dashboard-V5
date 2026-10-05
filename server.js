@@ -244,4 +244,9 @@ const server=http.createServer(async(req,res)=>{
 
   return send(res,404,'text/plain; charset=utf-8','Not found');
 });
+// RIZVI_CTRADER_AUTOSTART: start the cTrader/L2 bridge on every production boot.
+// It remains safely disabled when required credentials are not configured.
+if(process.env.CTRADER_CLIENT_ID && process.env.CTRADER_CLIENT_SECRET && (process.env.CTRADER_ACCESS_TOKEN || process.env.CTRADER_REFRESH_TOKEN)){
+  ctrader.start().catch(err=>console.error('cTrader startup failed:',err.message));
+}
 server.listen(process.env.PORT||10000,'0.0.0.0');
