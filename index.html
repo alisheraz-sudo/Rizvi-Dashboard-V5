@@ -3362,3 +3362,104 @@ setTimeout(run,3500);
 setInterval(run,1500);
 })();
 </script>
+
+
+<script id="rizvi-v100-weighted-engine">
+(function(){
+'use strict';
+if(window.__RIZVI_V100_WEIGHTED_ENGINE)return;
+window.__RIZVI_V100_WEIGHTED_ENGINE=true;
+const W=window;
+const WEIGHTS={TREND:15,ORDER_FLOW:15,PRICE_ACTION:12,LIQUIDITY:10,SR:8,VOLUME_PROFILE:7,DELTA:7,VWAP:5,EMA:5,MOMENTUM:4,RSI:3,DIVERGENCE:3,CANDLE_PATTERN:2,SESSIONS:2,COMBO:2};
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
+const n=v=>Number.isFinite(Number(v))?Number(v):null;
+function bars(){
+ const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
+ return a.filter(x=>n(x.c??x.close)!=null).map(x=>({o:n(x.o??x.open),h:n(x.h??x.high),l:n(x.l??x.low),c:n(x.c??x.close),v:n(x.v??x.volume)||0}));
+}
+function ema(a,p){if(a.length<p)return null;let e=a.slice(0,p).reduce((s,x)=>s+x,0)/p,k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function rsi(a,p=14){if(a.length<p+1)return null;let u=0,d=0;for(let i=a.length-p;i<a.length;i++){let z=a[i]-a[i-1];if(z>0)u+=z;else d-=z}return d===0?100:100-(100/(1+u/d))}
+function vwap(bs){let pv=0,v=0;bs.slice(-100).forEach(x=>{let q=x.v||0;pv+=((x.h+x.l+x.c)/3)*q;v+=q});return v?pv/v:null}
+function comp(name,defScore=0,defBias=0){
+ const c=W.RIZVI_INDICATOR_CONFLUENCE?.components?.[name];
+ if(c)return {score:clamp(c.score),bias:n(c.bias)||0,status:c.status||'LIVE'};
+ return {score:defScore,bias:defBias,status:defScore?'CALCULATED':'UNAVAILABLE'};
+}
+function calcSR(bs){
+ if(bs.length<12)return {score:0,bias:0,status:'INSUFFICIENT'};
+ const last=bs.at(-1).c, recent=bs.slice(-20),hi=Math.max(...recent.map(x=>x.h)),lo=Math.min(...recent.map(x=>x.l)),span=Math.max(hi-lo,1e-9);
+ const nearR=(hi-last)/span<.12,nearS=(last-lo)/span<.12;
+ return {score:nearR||nearS?85:65,bias:nearR?1:nearS?-1:(last>(hi+lo)/2?1:-1),status:'CALCULATED',resistance:hi,support:lo};
+}
+function calcSession(){
+ const h=new Date().getUTCHours()+new Date().getUTCMinutes()/60;
+ let s='OFF_SESSION';
+ if(h>=23||h<6)s='ASIA';
+ else if(h>=7&&h<13)s='LONDON';
+ else if(h>=13&&h<15.5)s='LONDON_NY_OVERLAP';
+ else if(h>=15.5&&h<22)s='NEW_YORK';
+ return {score:s==='OFF_SESSION'?60:80,bias:0,status:s};
+}
+function run(){
+ const bs=bars(); if(bs.length<21)return;
+ const c=bs.map(x=>x.c),last=c.at(-1),e9=ema(c,9),e21=ema(c,21),e20=ema(c,20),e50=ema(c,50),rv=rsi(c),vw=vwap(bs);
+ const prev=c.at(-2), mom=last>prev?1:last<prev?-1:0;
+ const pa=comp('CANDLE',70,mom);
+ const sr=calcSR(bs), sess=calcSession();
+ const base={
+  TREND:comp('TREND',e20&&e50?(e20>e50?85:70):0,e20&&e50?(e20>e50?1:-1):0),
+  ORDER_FLOW:comp('ORDER_FLOW',0,0),
+  PRICE_ACTION:comp('PRICE_ACTION',pa.score,mom),
+  LIQUIDITY:comp('LIQUIDITY',0,0),
+  SR:sr,
+  VOLUME_PROFILE:comp('VOLUME_PROFILE',0,0),
+  DELTA:comp('DELTA',0,0),
+  VWAP:comp('VWAP',vw?clamp(50+Math.min(35,Math.abs(last-vw)/Math.max(Math.abs(e20-last)||1,1)*2)):0,vw?(last>vw?1:-1):0),
+  EMA:comp('EMA',e9&&e21?(e9>e21?85:70):0,e9&&e21?(e9>e21?1:-1):0),
+  MOMENTUM:{score:Math.abs(last-prev)>0?70:50,bias:mom,status:'CALCULATED'},
+  RSI:{score:rv==null?0:clamp(100-Math.abs(rv-50)*1.5),bias:rv==null?0:(rv>55?1:rv<45?-1:0),status:rv==null?'INSUFFICIENT':'CALCULATED'},
+  DIVERGENCE:comp('DIVERGENCE',0,0),
+  CANDLE_PATTERN:{score:pa.score,bias:pa.bias,status:'CALCULATED'},
+  SESSIONS:sess
+ };
+ const available=Object.entries(base).filter(([k,v])=>v.score>0);
+ let weighted=0,activeWeight=0;
+ available.forEach(([k,v])=>{weighted+=v.score*WEIGHTS[k];activeWeight+=WEIGHTS[k]});
+ const directional=available.filter(([k,v])=>v.bias!==0);
+ const signed=directional.reduce((s,[k,v])=>s+(v.score/100)*v.bias*WEIGHTS[k],0);
+ const maxDir=directional.reduce((s,[k])=>s+WEIGHTS[k],0);
+ const direction=signed>0?'BUY':signed<0?'SELL':'WAIT';
+ const agreement=directional.length?directional.filter(([k,v])=>v.bias===Math.sign(signed)).reduce((s,[k])=>s+WEIGHTS[k],0)/Math.max(maxDir,1):0;
+ const comboScore=direction==='WAIT'?50:clamp(50+agreement*50);
+ const rawScore=activeWeight?weighted/activeWeight:0;
+ const score=Math.round(clamp(rawScore*(activeWeight/100)+comboScore*WEIGHTS.COMBO/100));
+ const qualified=direction!=='WAIT'&&score>=70&&agreement>=0.70;
+ const components={};Object.entries(base).forEach(([k,v])=>components[k]={score:Math.round(v.score),bias:v.bias,status:v.status});
+ components.COMBO={score:Math.round(comboScore),bias:direction==='BUY'?1:direction==='SELL'?-1:0,status:'CALCULATED'};
+ W.RIZVI_WEIGHTED_INDICATOR_STATE={timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',direction,score,agreement:Math.round(agreement*100),qualified,activeWeight,weights:WEIGHTS,components};
+ W.RIZVI_INDICATOR_WEIGHTS=WEIGHTS;
+ W.RIZVI_INDICATOR_REGISTRY=W.RIZVI_INDICATOR_REGISTRY||{};
+ W.RIZVI_INDICATOR_REGISTRY.supportResistance={active:true,weight:8};
+ W.RIZVI_INDICATOR_REGISTRY.sessions={active:true,weight:2};
+ W.RIZVI_INDICATOR_REGISTRY.weightedScoring={active:true,weights:WEIGHTS};
+ W.RIZVI_SIGNAL_DIRECTION=qualified?direction:'WAIT';
+ W.RIZVI_SIGNAL_QUALITY=score;
+ W.RIZVI_SIGNAL_QUALIFICATION=Object.assign({},W.RIZVI_SIGNAL_QUALIFICATION||{},{
+   status:qualified?'QUALIFIED':'WAIT',
+   marketDirection:qualified?direction:'WAIT',
+   signalDirection:qualified?direction:'WAIT',
+   patternConfidence:score,
+   indicatorAgreement:Math.round(agreement*100),
+   weightedScore:score,
+   missingIndicators:Object.entries(base).filter(([k,v])=>v.status==='UNAVAILABLE'||v.score<=0).map(([k])=>k),
+   allIndicatorsAligned:qualified,
+   l2Excluded:true
+ });
+ W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
+ W.RIZVI_OPERATIONAL_STATUS.indicatorScoring={status:'ACTIVE',score,threshold:70,agreement:Math.round(agreement*100),weights:WEIGHTS};
+ W.dispatchEvent(new CustomEvent('rizvi:weighted-indicator-update',{detail:W.RIZVI_WEIGHTED_INDICATOR_STATE}));
+}
+['rizvi:candle-update','rizvi:timeframe-update','rizvi:order-flow-update','rizvi:liquidity-update'].forEach(e=>W.addEventListener(e,run));
+run();setInterval(run,1500);
+})();
+</script>
