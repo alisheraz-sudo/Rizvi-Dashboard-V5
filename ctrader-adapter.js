@@ -67,6 +67,7 @@
     const p=m&&m.payload||{};const type=Number(m&&m.payloadType);
     if(m&&m.clientMsgId&&S.pending[m.clientMsgId]){const x=S.pending[m.clientMsgId];clearTimeout(x.t);delete S.pending[m.clientMsgId];if(type===P.ERROR_RES)x.reject(Error(p.description||p.errorCode||'cTrader error'));else x.resolve(p)}
     if(type===P.HEARTBEAT)return;
+    if(type===P.SUB_DEPTH_RES){window.RIZVI_L2_STATUS={status:'SUBSCRIBED',symbolId:S.activeSymbolId,updatedAt:Date.now(),events:0,bidLevels:0,askLevels:0,imbalance:null};emit('l2',{status:'SUBSCRIBED',symbolId:S.activeSymbolId});}
     if(type===P.ACCOUNTS_RES){const a=p.ctidTraderAccount||[];const live=a.filter(x=>!!x.isLive);const pool=CFG.live?live:a;const chosen=pool[0];if(chosen){S.accountId=Number(chosen.ctidTraderAccountId);await accountAuth();}}
     if(type===P.ACCOUNT_AUTH_RES){setStatus('ACCOUNT AUTHORIZED',true);await loadSymbols();startHeartbeat();emit('ready',{accountId:S.accountId});try{if(window.state&&window.state.symbol)await subscribe(window.state.symbol,window.state.tf||'1M')}catch(e){emit('error',{message:e.message})}}
     if(type===P.SYMBOLS_LIST_RES){S.symbols=(p.symbol||[]);S.symbolMap={};S.symbols.forEach(x=>S.symbolMap[norm(x.symbolName)]=x);emit('symbols',{symbols:S.symbols});}
@@ -76,7 +77,7 @@
         const d=S.depth||{bids:{},asks:{},updatedAt:null};
         (p.newQuotes||[]).forEach(q=>{const price=Number(q.bid!=null?q.bid:q.ask)/priceScale(id),size=Number(q.size||0)/100,key=String(q.id||price.toFixed(5));if(!Number.isFinite(price))return;(q.bid!=null?d.bids:d.asks)[key]={id:key,price,size}});
         (p.deletedQuotes||[]).forEach(qid=>{delete d.bids[String(qid)];delete d.asks[String(qid)]});
-        d.updatedAt=Date.now();S.depth=d;emit('depth',{symbolId:id,depth:d});window.RIZVI_ORDER_FLOW={status:'CONNECTED',updatedAt:d.updatedAt,bids:d.bids,asks:d.asks};
+        d.updatedAt=Date.now();S.depth=d;const bv=Object.values(d.bids).reduce((a,x)=>a+Number(x.size||0),0),av=Object.values(d.asks).reduce((a,x)=>a+Number(x.size||0),0),imb=(bv+av)>0?(bv-av)/(bv+av):0;window.RIZVI_L2_STATUS={status:'LIVE',symbolId:id,updatedAt:d.updatedAt,events:Number((window.RIZVI_L2_STATUS||{}).events||0)+1,bidLevels:Object.keys(d.bids).length,askLevels:Object.keys(d.asks).length,bidSize:bv,askSize:av,imbalance:imb};emit('depth',{symbolId:id,depth:d,imbalance:imb,bidSize:bv,askSize:av});window.RIZVI_ORDER_FLOW={status:'CONNECTED',updatedAt:d.updatedAt,bids:d.bids,asks:d.asks,imbalance:imb};
       }
     }
     if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(b=>decodeBar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
@@ -93,7 +94,7 @@
     await send({payloadType:P.SUB_SPOTS_REQ,ctidTraderAccountId:S.accountId,symbolId:[S.activeSymbolId],subscribeToSpotTimestamp:true});
     await send({payloadType:P.SUB_TB_REQ,ctidTraderAccountId:S.accountId,period,symbolId:S.activeSymbolId});
     S.depth={bids:{},asks:{},updatedAt:null};
-    try{await send({payloadType:P.SUB_DEPTH_REQ,ctidTraderAccountId:S.accountId,symbolId:[S.activeSymbolId]})}catch(e){emit('error',{message:'Depth subscription unavailable: '+e.message})}
+    try{window.RIZVI_L2_STATUS={status:'SUBSCRIBING',symbolId:S.activeSymbolId,updatedAt:Date.now(),events:0,bidLevels:0,askLevels:0,imbalance:null};await send({payloadType:P.SUB_DEPTH_REQ,ctidTraderAccountId:S.accountId,symbolId:[S.activeSymbolId]})}catch(e){window.RIZVI_L2_STATUS={status:'ERROR',symbolId:S.activeSymbolId,updatedAt:Date.now(),error:e.message};emit('error',{message:'Depth subscription unavailable: '+e.message})}
     const now=Date.now(),from=now-(period===1?12:48)*60*60000;
     await send({payloadType:P.GET_TB_REQ,ctidTraderAccountId:S.accountId,fromTimestamp:from,toTimestamp:now,period,symbolId:S.activeSymbolId,count:260});
     emit('subscribed',{symbol:symbolName,symbolId:S.activeSymbolId,period});
