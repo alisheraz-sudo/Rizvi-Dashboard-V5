@@ -122,6 +122,18 @@ const server=http.createServer(async(req,res)=>{
     return ofReply(res,200,{ok:true,symbol:key,source:'cTrader',connected:!!st.connected,authorized:!!st.authorized,price:q?.price??null,bid:q?.bid??null,ask:q?.ask??null,updatedAt:q?.timestamp??null,bars:Array.isArray(bars)?bars:[],error:st.lastError||null});
   }
 
+  if(url.pathname==='/market/btc/intraday' && req.method==='GET'){
+    try{
+      const gran=Math.min(86400,Math.max(60,Number(url.searchParams.get('granularity')||60)));
+      const r=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity='+gran,{headers:{Accept:'application/json'},cache:'no-store'});
+      if(!r.ok)throw new Error('Coinbase HTTP '+r.status);
+      const data=await r.json();
+      const bars=Array.isArray(data)?data.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4]})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)):[];
+      if(!bars.length)throw new Error('No BTC bars returned');
+      return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Coinbase',bars,updatedAt:Date.now()});
+    }catch(e){return ofReply(res,502,{ok:false,symbol:'BTCUSD',source:'Coinbase',error:e.message});}
+  }
+
   if(url.pathname==='/market/xau/spot' && req.method==='GET'){
     try{
       const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());
