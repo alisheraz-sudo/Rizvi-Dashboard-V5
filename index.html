@@ -3464,206 +3464,37 @@ run();setInterval(run,1500);
 })();
 </script>
 
-<script id="rizvi-v101-canonical-engine-ui">
+<script id="rizvi-v102-indicator-contribution-engine">
 (function(){
 'use strict';
-if(window.__RIZVI_V101_CANONICAL_ENGINE_UI)return;
-window.__RIZVI_V101_CANONICAL_ENGINE_UI=true;
-
+if(window.__RIZVI_V102_INDICATOR_CONTRIBUTION_ENGINE)return;
+window.__RIZVI_V102_INDICATOR_CONTRIBUTION_ENGINE=true;
 const W=window;
 const WEIGHTS={TREND:15,ORDER_FLOW:15,PRICE_ACTION:12,LIQUIDITY:10,SR:8,VOLUME_PROFILE:7,DELTA:7,VWAP:5,EMA:5,MOMENTUM:4,RSI:3,DIVERGENCE:3,CANDLE_PATTERN:2,SESSIONS:2,COMBO:2};
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
 const n=v=>Number.isFinite(Number(v))?Number(v):null;
-
 function getBars(){
- const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:
-         (Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
- return a.map((x,i)=>({
-   t:n(x.t??x.time??x.timestamp)??i,
-   o:n(x.o??x.open),h:n(x.h??x.high),l:n(x.l??x.low),c:n(x.c??x.close),v:n(x.v??x.volume)
- })).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
+ const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
+ return a.map((x,i)=>({t:n(x.t??x.time??x.timestamp)??i,o:n(x.o??x.open),h:n(x.h??x.high),l:n(x.l??x.low),c:n(x.c??x.close),v:n(x.v??x.volume)})).filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
 }
-function ema(a,p){
- if(a.length<p)return null;
- let e=a.slice(0,p).reduce((s,x)=>s+x,0)/p,k=2/(p+1);
- for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);
- return e;
-}
-function rsi(a,p=14){
- if(a.length<p+1)return null;
- let g=0,l=0;
- for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];if(d>0)g+=d;else l-=d}
- if(l===0)return 100;
- return 100-100/(1+g/l);
-}
-function atr(bs,p=14){
- if(bs.length<p+1)return null;
- const tr=[];
- for(let i=1;i<bs.length;i++)tr.push(Math.max(bs[i].h-bs[i].l,Math.abs(bs[i].h-bs[i-1].c),Math.abs(bs[i].l-bs[i-1].c)));
- return tr.slice(-p).reduce((a,b)=>a+b,0)/Math.min(p,tr.length);
-}
-function vwap(bs){
- let pv=0,v=0;
- bs.slice(-100).forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;pv+=((x.h+x.l+x.c)/3)*q;v+=q});
- return v?pv/v:null;
-}
-function candle(bs){
- if(bs.length<3)return {score:0,bias:0,name:'INSUFFICIENT'};
- const b=bs.at(-1),p=bs.at(-2),body=Math.abs(b.c-b.o),range=Math.max(b.h-b.l,1e-9);
- const up=b.h-Math.max(b.o,b.c),dn=Math.min(b.o,b.c)-b.l;
- if(b.c>b.o&&p.c<p.o&&b.c>=p.o&&b.o<=p.c)return {score:90,bias:1,name:'BULL ENGULFING'};
- if(b.c<b.o&&p.c>p.o&&b.o>=p.c&&b.c<=p.o)return {score:90,bias:-1,name:'BEAR ENGULFING'};
- if(dn>body*2&&up<body)return {score:82,bias:1,name:'HAMMER'};
- if(up>body*2&&dn<body)return {score:82,bias:-1,name:'SHOOTING STAR'};
- if(body/range<.18)return {score:50,bias:0,name:'DOJI / NEUTRAL'};
- return {score:68,bias:b.c>b.o?1:-1,name:b.c>b.o?'BULL CANDLE':'BEAR CANDLE'};
-}
-function trend(bs){
- const c=bs.map(x=>x.c),e9=ema(c,9),e21=ema(c,21),e50=ema(c,50),last=c.at(-1);
- if(e9==null||e21==null)return {score:0,bias:0,name:'INSUFFICIENT'};
- const bias=e9>e21&&e21>e50?1:e9<e21&&e21<e50?-1:e9>e21?1:e9<e21?-1:0;
- return {score:bias?85:55,bias,name:bias>0?'BULLISH':bias<0?'BEARISH':'MIXED',e9,e21,e50};
-}
-function momentum(bs){
- if(bs.length<7)return {score:0,bias:0,name:'INSUFFICIENT'};
- const d=bs.at(-1).c-bs.at(-6).c;
- return {score:d?70:50,bias:d>0?1:d<0?-1:0,name:d>0?'BULLISH':'BEARISH'};
-}
-function liquidity(bs){
- if(bs.length<15)return {score:0,bias:0,status:'INSUFFICIENT'};
- const r=bs.slice(-20),hi=Math.max(...r.map(x=>x.h)),lo=Math.min(...r.map(x=>x.l)),last=bs.at(-1).c,span=Math.max(hi-lo,1e-9),pos=(last-lo)/span;
- if(pos>=.82)return {score:82,bias:1,status:'LIVE_BAR_RANGE',event:'HIGH_LIQUIDITY / BREAKOUT_CONTEXT',high:hi,low:lo};
- if(pos<=.18)return {score:82,bias:-1,status:'LIVE_BAR_RANGE',event:'LOW_LIQUIDITY / BREAKOUT_CONTEXT',high:hi,low:lo};
- return {score:58,bias:pos>.5?1:pos<.5?-1:0,status:'LIVE_BAR_RANGE',event:'RANGE',high:hi,low:lo};
-}
-function sr(bs){
- if(bs.length<12)return {score:0,bias:0,status:'INSUFFICIENT'};
- const r=bs.slice(-20),hi=Math.max(...r.map(x=>x.h)),lo=Math.min(...r.map(x=>x.l)),last=bs.at(-1).c,span=Math.max(hi-lo,1e-9);
- const nearR=(hi-last)/span<=.10,nearS=(last-lo)/span<=.10;
- if(nearR)return {score:80,bias:-1,status:'RESISTANCE',resistance:hi,support:lo};
- if(nearS)return {score:80,bias:1,status:'SUPPORT',resistance:hi,support:lo};
- return {score:58,bias:last>(hi+lo)/2?1:-1,status:'RANGE',resistance:hi,support:lo};
-}
-function volumeProfile(bs){
- const r=bs.slice(-100),lo=Math.min(...r.map(x=>x.l)),hi=Math.max(...r.map(x=>x.h)),bins=24,w=Math.max((hi-lo)/bins,1e-9),vol=Array(bins).fill(0);
- r.forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;const k=Math.max(0,Math.min(bins-1,Math.floor((x.c-lo)/w)));vol[k]+=q});
- const mx=Math.max(...vol),k=vol.indexOf(mx),p=lo+(k+.5)*w,last=bs.at(-1).c;
- return {score:mx?65:50,bias:last>p?1:last<p?-1:0,status:'CALCULATED_BAR_PROFILE',poc:p};
-}
-function delta(bs){
- const r=bs.slice(-30);let d=0;
- r.forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;d+=((x.c-x.o)/Math.max(x.h-x.l,1e-9))*q});
- return {score:clamp(50+Math.min(35,Math.abs(d)/(r.length||1)*8)),bias:d>0?1:d<0?-1:0,status:'OHLC_PROXY',delta:d};
-}
-function divergence(bs){
- if(bs.length<30)return {score:0,bias:0,status:'INSUFFICIENT'};
- const c=bs.map(x=>x.c),now=rsi(c.slice(-15)),old=rsi(c.slice(-25,-10)),pc=c.at(-1)-c.at(-11),pr=(now??50)-(old??50);
- if(pc>0&&pr<0)return {score:84,bias:-1,status:'BEAR_DIVERGENCE'};
- if(pc<0&&pr>0)return {score:84,bias:1,status:'BULL_DIVERGENCE'};
- return {score:52,bias:0,status:'NONE'};
-}
-function orderFlow(){
- const levels=Array.isArray(W.RIZVI_ORDER_FLOW_DEPTH)?W.RIZVI_ORDER_FLOW_DEPTH:[];
- if(levels.length){
-   let bid=0,ask=0;levels.forEach(x=>{bid+=Math.max(0,n(x.bid)||0);ask+=Math.max(0,n(x.ask)||0)});
-   const total=bid+ask,im=total?(bid-ask)/total:0;
-   return {score:clamp(50+Math.abs(im)*100),bias:im>.08?1:im<-.08?-1:0,status:'LIVE',imbalance:im};
- }
- const b=W.RIZVI_ORDER_FLOW?.BTCUSDT;
- if(b&&b.status==='LIVE'){
-   let bid=0,ask=0;Object.values(b.bids||{}).forEach(x=>bid+=Number(x.size)||0);Object.values(b.asks||{}).forEach(x=>ask+=Number(x.size)||0);
-   const total=bid+ask,im=total?(bid-ask)/total:0;
-   return {score:clamp(50+Math.abs(im)*100),bias:im>.08?1:im<-.08?-1:0,status:'LIVE',imbalance:im};
- }
- return {score:0,bias:0,status:'UNAVAILABLE'};
-}
-function sessions(){
- const h=new Date().getUTCHours()+new Date().getUTCMinutes()/60;
- let s='OFF SESSION';
- if(h>=23||h<6)s='ASIA';else if(h>=7&&h<13)s='LONDON';else if(h>=13&&h<15.5)s='LONDON–NY OVERLAP';else if(h>=15.5&&h<22)s='NEW YORK';
- return {score:s==='OFF SESSION'?55:78,bias:0,status:s};
-}
-function rangeLevels(bs){
- const now=Date.now(),windows=[86400000,14400000,3600000,1800000,900000];
- const out={};
- [['DAY',windows[0]],['4H',windows[1]],['1H',windows[2]],['30M',windows[3]],['15M',windows[4]]].forEach(([k,w],idx)=>{
-   let r=bs.filter(x=>Number.isFinite(x.t)&&x.t>now-w);
-   if(!r.length)r=bs.slice(-(idx===0?1440:idx===1?240:idx===2?60:idx===3?30:15));
-   out[k]={high:Math.max(...r.map(x=>x.h)),low:Math.min(...r.map(x=>x.l))};
- });
- return out;
-}
-function calculate(){
- const bs=getBars();
- if(bs.length<21)return null;
- const c=bs.map(x=>x.c),last=c.at(-1),e9=ema(c,9),e21=ema(c,21),rv=rsi(c),vw=vwap(bs),tr=trend(bs),mom=momentum(bs),pat=candle(bs),liq=liquidity(bs),srx=sr(bs),vp=volumeProfile(bs),del=delta(bs),div=divergence(bs),of=orderFlow(),sess=sessions();
- const parts={
-  TREND:tr,ORDER_FLOW:of,PRICE_ACTION:{score:pat.score,bias:pat.bias,status:'CALCULATED'},LIQUIDITY:liq,SR:srx,
-  VOLUME_PROFILE:vp,DELTA:del,VWAP:{score:vw==null?0:clamp(65+Math.min(25,Math.abs(last-vw)/Math.max(atr(bs)||1,1)*10)),bias:vw==null?0:last>vw?1:-1,status:vw==null?'INSUFFICIENT':'CALCULATED'},
-  EMA:{score:e9==null||e21==null?0:e9>e21?82:68,bias:e9==null||e21==null?0:e9>e21?1:-1,status:e9==null||e21==null?'INSUFFICIENT':'CALCULATED'},
-  MOMENTUM:mom,RSI:{score:rv==null?0:clamp(100-Math.abs(rv-50)*1.5),bias:rv==null?0:rv>55?1:rv<45?-1:0,status:rv==null?'INSUFFICIENT':'CALCULATED'},
-  DIVERGENCE:div,CANDLE_PATTERN:pat,SESSIONS:sess
- };
- const active=Object.entries(parts).filter(([k,v])=>v.score>0);
- let activeWeight=active.reduce((s,[k])=>s+WEIGHTS[k],0);
- let weighted=active.reduce((s,[k,v])=>s+v.score*WEIGHTS[k],0);
- const directional=active.filter(([k,v])=>v.bias!==0);
- const signed=directional.reduce((s,[k,v])=>s+(v.score/100)*v.bias*WEIGHTS[k],0);
- const direction=signed>0?'BUY':signed<0?'SELL':'WAIT';
- const agreement=directional.length?directional.filter(([k,v])=>Math.sign(v.bias)===Math.sign(signed)).reduce((s,[k])=>s+WEIGHTS[k],0)/Math.max(1,directional.reduce((s,[k])=>s+WEIGHTS[k],0)):0;
- const combo=direction==='WAIT'?50:clamp(50+agreement*50);
- weighted+=combo*WEIGHTS.COMBO;activeWeight+=WEIGHTS.COMBO;
- const score=Math.round(clamp(weighted/Math.max(1,activeWeight)*100));
- const coreMissing=Object.entries(parts).filter(([k,v])=>v.status==='UNAVAILABLE'||v.score<=0).map(([k])=>k);
- const qualified=direction!=='WAIT'&&score>=70&&agreement>=.70;
- return {timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',bars:bs.length,last,score,agreement:Math.round(agreement*100),direction,qualified,activeWeight,missingIndicators:coreMissing,components:Object.fromEntries(Object.entries(parts).map(([k,v])=>[k,{score:Math.round(v.score),bias:v.bias,status:v.status}])) ,raw:{trend:tr,momentum:mom,candle:pat,liquidity:liq,sr:srx,volumeProfile:vp,delta:del,divergence:div,rsi:rv,vwap:vw,orderFlow:of,sessions:sess,ema9:e9,ema21:e21},ranges:rangeLevels(bs)};
-}
-function colorize(dir){
- const buy=document.querySelector('.actions .btn.buy'),sell=document.querySelector('.actions .btn.sell'),unwind=document.querySelector('.actions .btn.unwind');
- if(buy){buy.style.background='#08b45e';buy.style.borderColor='#20f18e';buy.style.color='#fff';buy.style.opacity=dir==='BUY'?1:.72;buy.style.boxShadow=dir==='BUY'?'0 0 0 2px rgba(32,241,142,.35)':'none'}
- if(sell){sell.style.background='#d72c3d';sell.style.borderColor='#ff5c69';sell.style.color='#fff';sell.style.opacity=dir==='SELL'?1:.72; }
- if(unwind){unwind.style.background='#e69a0b';unwind.style.borderColor='#ffc83e';unwind.style.color='#fff';unwind.style.opacity=dir==='WAIT'?0.72:1}
-}
-function paint(s){
- if(!s)return;
- W.RIZVI_CANONICAL_INDICATOR_STATE=s;
- W.RIZVI_WEIGHTED_INDICATOR_STATE=s;
- W.RIZVI_INDICATOR_WEIGHTS=WEIGHTS;
- W.RIZVI_SIGNAL_DIRECTION=s.qualified?s.direction:'WAIT';
- W.RIZVI_SIGNAL_QUALITY=s.score;
- W.RIZVI_SIGNAL_QUALIFICATION={status:s.qualified?'QUALIFIED':'WAIT',marketDirection:s.qualified?s.direction:'WAIT',signalDirection:s.qualified?s.direction:'WAIT',patternConfidence:s.score,indicatorAgreement:s.agreement,weightedScore:s.score,missingIndicators:s.missingIndicators,allIndicatorsAligned:s.qualified,qualified:s.qualified,l2Excluded:true};
- W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
- W.RIZVI_OPERATIONAL_STATUS.indicatorScoring={status:'ACTIVE',score:s.score,agreement:s.agreement,activeWeight:s.activeWeight,missing:s.missingIndicators};
- const head=document.querySelector('.signalHead'),hd=head?.querySelector('div:first-child b'),hq=head?.querySelector('div:nth-child(2) b'),hb=head?.querySelector('.badge');
- const visible=s.qualified?s.direction:'WAIT', vc=visible==='BUY'?'#00e39a':visible==='SELL'?'#ff5b68':'#ffc43d';
- if(hd){hd.textContent=visible;hd.style.color=vc}
- if(hq){hq.textContent=s.score+'%';hq.style.color=vc}
- if(hb){hb.textContent=s.qualified?(s.score>=95?'EXTREME CONFIRMATION':s.score>=90?'VERY HIGH QUALITY':'HIGH QUALITY'):'WAIT';hb.style.background=s.qualified?'#10b875':'#173c75';hb.style.color=s.qualified?'#04150d':'#7fb8ff'}
- const card=document.querySelector('.right .card:first-child'),big=card?.querySelector('.big'),rows=card?.querySelectorAll('.row b')||[];
- if(big){
-   const a=big.querySelector('span:first-child'),b=big.querySelector('span:nth-child(2)');
-   if(a){a.textContent=visible;a.style.color=vc}
-   if(b){b.style.color=vc;b.childNodes[0].nodeValue=s.score+'% ';const z=b.querySelector('.badge');if(z){z.textContent=s.qualified?'QUALIFIED':'WAIT';z.style.background=s.qualified?'#10b875':'#173c75';z.style.color=s.qualified?'#04150d':'#7fb8ff'}}
- }
- if(rows[0])rows[0].textContent=s.raw.trend.bias>0?'Bullish ↑':s.raw.trend.bias<0?'Bearish ↓':'Neutral →';
- if(rows[1])rows[1].textContent=s.raw.momentum.name==='BULLISH'?'Bullish ↑':s.raw.momentum.name==='BEARISH'?'Bearish ↓':'Neutral →';
- if(rows[2])rows[2].textContent=s.raw.rsi==null?'--':Math.round(s.raw.rsi);
- if(rows[3])rows[3].textContent=s.raw.sr.status==='RESISTANCE'?'Resistance ↑':s.raw.sr.status==='SUPPORT'?'Support ↑':s.raw.sr.status;
- if(rows[4])rows[4].textContent=s.raw.delta.status==='OHLC_PROXY'?(s.raw.delta.bias>0?'Positive ↑':s.raw.delta.bias<0?'Negative ↓':'Neutral →'):s.raw.delta.status;
- const exec=document.querySelector('.right .card:nth-child(2)'),scoreEl=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');
- if(scoreEl)scoreEl.innerHTML=s.score+'% &nbsp; <em class="badge" style="background:'+(s.qualified?'#10b875':'#173c75')+';color:'+(s.qualified?'#04150d':'#7fb8ff')+'">'+(s.qualified?'QUALIFIED':'WAIT')+'</em>';
- if(ready){ready.textContent=s.qualified?'SIGNAL QUALIFIED':'WAIT — ENGINE FILTER';ready.style.background=s.qualified?'#087e58':'#173c75'}
- const mr=document.querySelector('.marketRange');
- if(mr){
-   const rows2=mr.querySelectorAll('.rangeRow');
-   const map=['DAY','4H','1H','30M','15M'];
-   rows2.forEach((r,i)=>{const b=r.querySelector('b'),x=s.ranges[map[i]];if(b&&x)b.textContent=x.high.toFixed(2)+' / '+x.low.toFixed(2)});
- }
- colorize(visible);
- W.dispatchEvent(new CustomEvent('rizvi:canonical-engine-update',{detail:s}));
-}
-function run(){try{paint(calculate())}catch(e){console.warn('Rizvi V101',e)}}
-['rizvi:candle-update','rizvi:timeframe-update','rizvi:order-flow-update','rizvi:liquidity-update','rizvi:price-update'].forEach(e=>W.addEventListener(e,run));
-run();setInterval(run,1000);
+function ema(a,p){if(a.length<p)return null;let e=a.slice(0,p).reduce((s,x)=>s+x,0)/p,k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function rsi(a,p=14){if(a.length<p+1)return null;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];if(d>0)g+=d;else l-=d}if(l===0)return 100;return 100-100/(1+g/l)}
+function atr(bs,p=14){if(bs.length<p+1)return null;const tr=[];for(let i=1;i<bs.length;i++)tr.push(Math.max(bs[i].h-bs[i].l,Math.abs(bs[i].h-bs[i-1].c),Math.abs(bs[i].l-bs[i-1].c)));return tr.slice(-p).reduce((a,b)=>a+b,0)/Math.min(p,tr.length)}
+function vwap(bs){let pv=0,v=0;bs.slice(-100).forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;pv+=((x.h+x.l+x.c)/3)*q;v+=q});return v?pv/v:null}
+function candle(bs){if(bs.length<3)return{score:0,bias:0,status:'INSUFFICIENT',name:'INSUFFICIENT'};const b=bs.at(-1),p=bs.at(-2),body=Math.abs(b.c-b.o),range=Math.max(b.h-b.l,1e-9),up=b.h-Math.max(b.o,b.c),dn=Math.min(b.o,b.c)-b.l;if(b.c>b.o&&p.c<p.o&&b.c>=p.o&&b.o<=p.c)return{score:90,bias:1,status:'CALCULATED',name:'BULL ENGULFING'};if(b.c<b.o&&p.c>p.o&&b.o>=p.c&&b.c<=p.o)return{score:90,bias:-1,status:'CALCULATED',name:'BEAR ENGULFING'};if(dn>body*2&&up<body)return{score:82,bias:1,status:'CALCULATED',name:'HAMMER'};if(up>body*2&&dn<body)return{score:82,bias:-1,status:'CALCULATED',name:'SHOOTING STAR'};if(body/range<.18)return{score:50,bias:0,status:'CALCULATED',name:'DOJI / NEUTRAL'};return{score:68,bias:b.c>b.o?1:-1,status:'CALCULATED',name:b.c>b.o?'BULL CANDLE':'BEAR CANDLE'}}
+function trend(bs){const c=bs.map(x=>x.c),e9=ema(c,9),e21=ema(c,21),e50=ema(c,50);if(e9==null||e21==null)return{score:0,bias:0,status:'INSUFFICIENT',name:'INSUFFICIENT'};const bias=e9>e21&&e21>e50?1:e9<e21&&e21<e50?-1:e9>e21?1:e9<e21?-1:0;return{score:bias?85:55,bias,status:'CALCULATED',name:bias>0?'BULLISH':bias<0?'BEARISH':'MIXED',e9,e21,e50}}
+function momentum(bs){if(bs.length<7)return{score:0,bias:0,status:'INSUFFICIENT',name:'INSUFFICIENT'};const d=bs.at(-1).c-bs.at(-6).c;return{score:d?70:50,bias:d>0?1:d<0?-1:0,status:'CALCULATED',name:d>0?'BULLISH':d<0?'BEARISH':'NEUTRAL'}}
+function liquidity(bs){if(bs.length<15)return{score:0,bias:0,status:'INSUFFICIENT'};const r=bs.slice(-20),hi=Math.max(...r.map(x=>x.h)),lo=Math.min(...r.map(x=>x.l)),last=bs.at(-1).c,span=Math.max(hi-lo,1e-9),pos=(last-lo)/span;if(pos>=.82)return{score:82,bias:1,status:'CALCULATED',event:'HIGH LIQUIDITY / BREAKOUT',high:hi,low:lo};if(pos<=.18)return{score:82,bias:-1,status:'CALCULATED',event:'LOW LIQUIDITY / BREAKOUT',high:hi,low:lo};return{score:58,bias:pos>.5?1:pos<.5?-1:0,status:'CALCULATED',event:'RANGE',high:hi,low:lo}}
+function sr(bs){if(bs.length<12)return{score:0,bias:0,status:'INSUFFICIENT'};const r=bs.slice(-20),hi=Math.max(...r.map(x=>x.h)),lo=Math.min(...r.map(x=>x.l)),last=bs.at(-1).c,span=Math.max(hi-lo,1e-9),nearR=(hi-last)/span<=.10,nearS=(last-lo)/span<=.10;if(nearR)return{score:80,bias:-1,status:'CALCULATED',state:'RESISTANCE',resistance:hi,support:lo};if(nearS)return{score:80,bias:1,status:'CALCULATED',state:'SUPPORT',resistance:hi,support:lo};return{score:58,bias:last>(hi+lo)/2?1:-1,status:'CALCULATED',state:'RANGE',resistance:hi,support:lo}}
+function volumeProfile(bs){const r=bs.slice(-100),lo=Math.min(...r.map(x=>x.l)),hi=Math.max(...r.map(x=>x.h)),bins=24,w=Math.max((hi-lo)/bins,1e-9),vol=Array(bins).fill(0);r.forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;vol[Math.max(0,Math.min(bins-1,Math.floor((x.c-lo)/w)))] += q});const mx=Math.max(...vol),k=vol.indexOf(mx),p=lo+(k+.5)*w,last=bs.at(-1).c;return{score:mx?65:50,bias:last>p?1:last<p?-1:0,status:'CALCULATED_BAR_PROFILE',poc:p}}
+function delta(bs){const r=bs.slice(-30);let d=0;r.forEach(x=>{const q=Number.isFinite(x.v)&&x.v>0?x.v:1;d+=((x.c-x.o)/Math.max(x.h-x.l,1e-9))*q});return{score:clamp(50+Math.min(35,Math.abs(d)/(r.length||1)*8)),bias:d>0?1:d<0?-1:0,status:'OHLC_PROXY',delta:d}}
+function divergence(bs){if(bs.length<30)return{score:0,bias:0,status:'INSUFFICIENT'};const c=bs.map(x=>x.c),now=rsi(c.slice(-15)),old=rsi(c.slice(-25,-10)),pc=c.at(-1)-c.at(-11),pr=(now??50)-(old??50);if(pc>0&&pr<0)return{score:84,bias:-1,status:'BEAR_DIVERGENCE'};if(pc<0&&pr>0)return{score:84,bias:1,status:'BULL_DIVERGENCE'};return{score:52,bias:0,status:'CALCULATED_NONE'}}
+function orderFlow(){const levels=Array.isArray(W.RIZVI_ORDER_FLOW_DEPTH)?W.RIZVI_ORDER_FLOW_DEPTH:[];if(levels.length){let bid=0,ask=0;levels.forEach(x=>{bid+=Math.max(0,n(x.bid)||0);ask+=Math.max(0,n(x.ask)||0)});const total=bid+ask,im=total?(bid-ask)/total:0;return{score:clamp(50+Math.abs(im)*100),bias:im>.08?1:im<-.08?-1:0,status:'LIVE',imbalance:im}}const b=W.RIZVI_ORDER_FLOW?.BTCUSDT;if(b&&b.status==='LIVE'){let bid=0,ask=0;Object.values(b.bids||{}).forEach(x=>bid+=Number(x.size)||0);Object.values(b.asks||{}).forEach(x=>ask+=Number(x.size)||0);const total=bid+ask,im=total?(bid-ask)/total:0;return{score:clamp(50+Math.abs(im)*100),bias:im>.08?1:im<-.08?-1:0,status:'LIVE',imbalance:im}}return{score:0,bias:0,status:'UNAVAILABLE'}}
+function sessions(){const h=new Date().getUTCHours()+new Date().getUTCMinutes()/60;let s='OFF SESSION';if(h>=23||h<6)s='ASIA';else if(h>=7&&h<13)s='LONDON';else if(h>=13&&h<15.5)s='LONDON–NY OVERLAP';else if(h>=15.5&&h<22)s='NEW YORK';return{score:s==='OFF SESSION'?55:78,bias:0,status:'CALCULATED',session:s}}
+function rangeLevels(bs){const now=Date.now(),windows=[86400000,14400000,3600000,1800000,900000],out={};[['DAY',windows[0]],['4H',windows[1]],['1H',windows[2]],['30M',windows[3]],['15M',windows[4]]].forEach(([k,w],idx)=>{let r=bs.filter(x=>{let t=x.t; if(t<1e12)t*=1000; return Number.isFinite(t)&&t>now-w});if(!r.length)r=bs.slice(-(idx===0?1440:idx===1?240:idx===2?60:idx===3?30:15));out[k]={high:Math.max(...r.map(x=>x.h)),low:Math.min(...r.map(x=>x.l))}});return out}
+function calculate(){const bs=getBars();if(bs.length<21)return null;const c=bs.map(x=>x.c),last=c.at(-1),e9=ema(c,9),e21=ema(c,21),rv=rsi(c),vw=vwap(bs),tr=trend(bs),mom=momentum(bs),pat=candle(bs),liq=liquidity(bs),srx=sr(bs),vp=volumeProfile(bs),del=delta(bs),div=divergence(bs),of=orderFlow(),sess=sessions();const parts={TREND:tr,ORDER_FLOW:of,PRICE_ACTION:{score:pat.score,bias:pat.bias,status:'CALCULATED'},LIQUIDITY:liq,SR:srx,VOLUME_PROFILE:vp,DELTA:del,VWAP:{score:vw==null?0:clamp(65+Math.min(25,Math.abs(last-vw)/Math.max(atr(bs)||1,1)*10)),bias:vw==null?0:last>vw?1:-1,status:vw==null?'INSUFFICIENT':'CALCULATED'},EMA:{score:e9==null||e21==null?0:e9>e21?82:68,bias:e9==null||e21==null?0:e9>e21?1:-1,status:e9==null||e21==null?'INSUFFICIENT':'CALCULATED'},MOMENTUM:mom,RSI:{score:rv==null?0:clamp(100-Math.abs(rv-50)*1.5),bias:rv==null?0:rv>55?1:rv<45?-1:0,status:rv==null?'INSUFFICIENT':'CALCULATED'},DIVERGENCE:div,CANDLE_PATTERN:pat,SESSIONS:sess};const active=Object.entries(parts).filter(([k,v])=>v.status!=='UNAVAILABLE'&&v.score>0);let activeWeight=active.reduce((s,[k])=>s+WEIGHTS[k],0),weighted=active.reduce((s,[k,v])=>s+v.score*WEIGHTS[k],0);const directional=active.filter(([k,v])=>v.bias!==0),signed=directional.reduce((s,[k,v])=>s+(v.score/100)*v.bias*WEIGHTS[k],0),dir=signed>0?'BUY':signed<0?'SELL':'WAIT';const dirWeight=directional.reduce((s,[k])=>s+WEIGHTS[k],0),agreement=directional.length?directional.filter(([k,v])=>Math.sign(v.bias)===Math.sign(signed)).reduce((s,[k])=>s+WEIGHTS[k],0)/Math.max(1,dirWeight):0;const combo=dir==='WAIT'?50:clamp(50+agreement*50);weighted+=combo*WEIGHTS.COMBO;activeWeight+=WEIGHTS.COMBO;const score=Math.round(clamp(weighted/Math.max(1,activeWeight)*100));const components={};Object.entries(parts).forEach(([k,v])=>{components[k]={score:Math.round(v.score),bias:v.bias,status:v.status,weight:WEIGHTS[k],weightedPoints:Number((v.score*WEIGHTS[k]/100).toFixed(2)),includedInScore:v.status!=='UNAVAILABLE'&&v.score>0}});components.COMBO={score:Math.round(combo),bias:dir==='BUY'?1:dir==='SELL'?-1:0,status:'CALCULATED',weight:WEIGHTS.COMBO,weightedPoints:Number((combo*WEIGHTS.COMBO/100).toFixed(2)),includedInScore:true};const missing=Object.entries(parts).filter(([k,v])=>v.status==='UNAVAILABLE').map(([k])=>k);const insufficient=Object.entries(parts).filter(([k,v])=>v.status==='INSUFFICIENT').map(([k])=>k);const qualified=dir!=='WAIT'&&score>=70&&agreement>=.70;return{timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',bars:bs.length,last,score,agreement:Math.round(agreement*100),direction:dir,qualified,activeWeight,scoreCoverage:Math.round(activeWeight),missingIndicators:missing,insufficientIndicators:insufficient,components,raw:{trend:tr,momentum:mom,candle:pat,liquidity:liq,sr:srx,volumeProfile:vp,delta:del,divergence:div,rsi:rv,vwap:vw,orderFlow:of,sessions:sess,ema9:e9,ema21:e21},ranges:rangeLevels(bs)}}
+function paint(s){if(!s)return;W.RIZVI_CANONICAL_INDICATOR_STATE=s;W.RIZVI_WEIGHTED_INDICATOR_STATE=s;W.RIZVI_INDICATOR_WEIGHTS=WEIGHTS;W.RIZVI_INDICATOR_SCOREBOARD=s.components;W.RIZVI_SIGNAL_DIRECTION=s.qualified?s.direction:'WAIT';W.RIZVI_SIGNAL_QUALITY=s.score;W.RIZVI_SIGNAL_QUALIFICATION={status:s.qualified?'QUALIFIED':'WAIT',marketDirection:s.qualified?s.direction:'WAIT',signalDirection:s.qualified?s.direction:'WAIT',patternConfidence:s.score,indicatorAgreement:s.agreement,weightedScore:s.score,missingIndicators:s.missingIndicators,insufficientIndicators:s.insufficientIndicators,allIndicatorsAligned:s.qualified,qualified:s.qualified,l2Excluded:true};W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.indicatorScoring={status:'ACTIVE',score:s.score,agreement:s.agreement,activeWeight:s.activeWeight,scoreCoverage:s.scoreCoverage,missing:s.missingIndicators,insufficient:s.insufficientIndicators,perIndicator:s.components};const head=document.querySelector('.signalHead'),hd=head?.querySelector('div:first-child b'),hq=head?.querySelector('div:nth-child(2) b'),hb=head?.querySelector('.badge'),visible=s.qualified?s.direction:'WAIT',vc=visible==='BUY'?'#00e39a':visible==='SELL'?'#ff5b68':'#ffc43d';if(hd){hd.textContent=visible;hd.style.color=vc}if(hq){hq.textContent=s.score+'%';hq.style.color=vc}if(hb){hb.textContent=s.qualified?(s.score>=95?'EXTREME CONFIRMATION':s.score>=90?'VERY HIGH QUALITY':'HIGH QUALITY'):'WAIT';hb.style.background=s.qualified?'#10b875':'#173c75';hb.style.color=s.qualified?'#04150d':'#7fb8ff'}const card=document.querySelector('.right .card:first-child'),big=card?.querySelector('.big'),rows=card?.querySelectorAll('.row b')||[];if(big){const a=big.querySelector('span:first-child'),b=big.querySelector('span:nth-child(2)');if(a){a.textContent=visible;a.style.color=vc}if(b){b.style.color=vc;b.childNodes[0].nodeValue=s.score+'% ';const z=b.querySelector('.badge');if(z){z.textContent=s.qualified?'QUALIFIED':'WAIT';z.style.background=s.qualified?'#10b875':'#173c75';z.style.color=s.qualified?'#04150d':'#7fb8ff'}}}if(rows[0])rows[0].textContent=s.raw.trend.bias>0?'Bullish ↑':s.raw.trend.bias<0?'Bearish ↓':'Neutral →';if(rows[1])rows[1].textContent=s.raw.momentum.name==='BULLISH'?'Bullish ↑':s.raw.momentum.name==='BEARISH'?'Bearish ↓':'Neutral →';if(rows[2])rows[2].textContent=s.raw.rsi==null?'--':Math.round(s.raw.rsi);if(rows[3])rows[3].textContent=s.raw.sr.state==='RESISTANCE'?'Resistance ↑':s.raw.sr.state==='SUPPORT'?'Support ↑':s.raw.sr.state;if(rows[4])rows[4].textContent=s.raw.delta.status==='OHLC_PROXY'?(s.raw.delta.bias>0?'Positive ↑':s.raw.delta.bias<0?'Negative ↓':'Neutral →'):s.raw.delta.status;const exec=document.querySelector('.right .card:nth-child(2)'),scoreEl=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');if(scoreEl)scoreEl.innerHTML=s.score+'% &nbsp; <em class="badge" style="background:'+(s.qualified?'#10b875':'#173c75')+';color:'+(s.qualified?'#04150d':'#7fb8ff')+'">'+(s.qualified?'QUALIFIED':'WAIT')+'</em>';if(ready){ready.textContent=s.qualified?'SIGNAL QUALIFIED':'WAIT — ENGINE FILTER';ready.style.background=s.qualified?'#087e58':'#173c75'}const mr=document.querySelector('.marketRange');if(mr){const rs=mr.querySelectorAll('.rangeRow'),map=['DAY','4H','1H','30M','15M'];rs.forEach((r,i)=>{const b=r.querySelector('b'),x=s.ranges[map[Math.floor(i/2)]];if(b&&x)b.textContent=(i%2===0?x.high:x.low).toFixed(2)})}const buy=document.querySelector('.actions .btn.buy'),sell=document.querySelector('.actions .btn.sell'),unwind=document.querySelector('.actions .btn.unwind');if(buy)buy.style.opacity=visible==='BUY'?1:.72;if(sell)sell.style.opacity=visible==='SELL'?1:.72;if(unwind)unwind.style.opacity=visible==='WAIT'?.72:1;W.dispatchEvent(new CustomEvent('rizvi:canonical-engine-update',{detail:s}))}
+function run(){try{paint(calculate())}catch(e){console.warn('Rizvi V102',e)}} 
+['rizvi:candle-update','rizvi:timeframe-update','rizvi:order-flow-update','rizvi:liquidity-update','rizvi:price-update'].forEach(e=>W.addEventListener(e,run));run();setInterval(run,1000);
 })();
 </script>
