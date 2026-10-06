@@ -62,5 +62,5 @@
     ws.onclose=()=>{state.btc.status='RECONNECTING';render();setTimeout(connectCoinbase,3000)};
   }
   window.addEventListener('rizvi:ctrader',e=>{const d=e.detail||{};if(d.type==='depth'&&d.depth){state.broker={status:'LIVE',symbol:(window.__RIZVI_ACTIVE_SYMBOL||'XAU/USD'),bids:d.depth.bids||{},asks:d.depth.asks||{},updatedAt:d.depth.updatedAt||Date.now()};render()}else if(d.type==='status'&&d.status){if(!/AUTHORIZED|CONNECTED|REAL BROKER/.test(d.status))state.broker.status=d.status;render()}});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();connectCoinbase()});else{mount();connectBinance()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();connectCoinbase()});else{mount();connectCoinbase()}
 })();
