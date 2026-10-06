@@ -230,6 +230,11 @@ const server=http.createServer(async(req,res)=>{
     '/icons/rizvi-192.svg':'icons/rizvi-192.svg',
     '/icons/rizvi-512.svg':'icons/rizvi-512.svg'
   };
+  // Serve the dashboard's root-level JS engines explicitly. These files are
+  // private dashboard assets, so they remain behind the authenticated session.
+  if (url.pathname.endsWith('.js') && !url.pathname.includes('/') && /^[A-Za-z0-9._-]+\\.js$/.test(url.pathname.slice(1))) {
+    files[url.pathname]=url.pathname.slice(1);
+  }
   const rel=files[url.pathname];
   if(rel){
     const filePath=path.join(ROOT,rel);
