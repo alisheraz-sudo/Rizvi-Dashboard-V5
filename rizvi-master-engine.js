@@ -45,19 +45,57 @@
     const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
     const liqScore=clamp(liq.status?Number(liq.score||liq.liquidityScore||0):0);
 
+    // V103 indicator bridge: calculate independent evidence from the same live OHLC feed.
+    const vols=bars.map(x=>Number(x.v??x.volume)).filter(Number.isFinite);
+    const hasVolume=bars.some(x=>Number.isFinite(Number(x.v??x.volume))&&Number(x.v??x.volume)>0);
+    const typical=bars.map(x=>(Number(x.h)+Number(x.l)+Number(x.c))/3);
+    let vwap=null;
+    if(hasVolume){
+      let pv=0,vv=0; for(const x of bars.slice(-240)){const v=Number(x.v??x.volume); if(Number.isFinite(v)&&v>0){pv+=((Number(x.h)+Number(x.l)+Number(x.c))/3)*v;vv+=v;}}
+      if(vv>0)vwap=pv/vv;
+    }
+    let volumeProfile=null;
+    if(hasVolume){
+      const bins=new Map(), sample=bars.slice(-240); let minP=Infinity,maxP=-Infinity;
+      sample.forEach(x=>{minP=Math.min(minP,Number(x.l));maxP=Math.max(maxP,Number(x.h));});
+      const step=Math.max((maxP-minP)/24,1e-9);
+      sample.forEach(x=>{const v=Number(x.v??x.volume);if(!Number.isFinite(v)||v<=0)return;const k=Math.floor(((Number(x.h)+Number(x.l)+Number(x.c))/3-minP)/step);bins.set(k,(bins.get(k)||0)+v);});
+      let pk=null,pv=0;for(const [k,v] of bins)if(v>pv){pv=v;pk=k;} if(pk!==null)volumeProfile={poc:minP+(pk+.5)*step,totalVolume:[...bins.values()].reduce((a,b)=>a+b,0)};
+    }
+    const vwapSignal=vwap===null?'WAIT':last.c>vwap?'BUY':last.c<vwap?'SELL':'NEUTRAL';
+    const vpSignal=volumeProfile===null?'WAIT':last.c>=volumeProfile.poc?'BUY':'SELL';
+    const delta=of.status==='LIVE'?of.imbalance:null;
+    const deltaSignal=delta===null?'WAIT':delta>8?'BUY':delta<-8?'SELL':'NEUTRAL';
+    const prev8=bars.slice(-16,-8),last8=bars.slice(-8);
+    const prevHigh=prev8.length?Math.max(...prev8.map(x=>Number(x.h))):null,lastHigh=last8.length?Math.max(...last8.map(x=>Number(x.h))):null;
+    const prevLow=prev8.length?Math.min(...prev8.map(x=>Number(x.l))):null,lastLow=last8.length?Math.min(...last8.map(x=>Number(x.l))):null;
+    const prevCloses=prev8.map(x=>Number(x.c)),lastCloses=last8.map(x=>Number(x.c));
+    const prevRsi=prevCloses.length>=2?rsi(prevCloses):null,lastRsi=r;
+    const bearishDiv=prevHigh!==null&&lastHigh!==null&&lastHigh>prevHigh&&prevRsi!==null&&lastRsi!==null&&lastRsi<prevRsi;
+    const bullishDiv=prevLow!==null&&lastLow!==null&&lastLow<prevLow&&prevRsi!==null&&lastRsi!==null&&lastRsi>prevRsi;
+    const divergence=bullishDiv?'BUY':bearishDiv?'SELL':'NEUTRAL';
+    const prev=bars.at(-2), prevPrev=bars.at(-3);
+    const bullishEngulf=prev&&prevPrev&&prev.c>prev.o&&prevPrev.c<prevPrev.o&&prev.c>=prevPrev.o&&prev.o<=prevPrev.c;
+    const bearishEngulf=prev&&prevPrev&&prev.c<prev.o&&prevPrev.c>prevPrev.o&&prev.c<=prevPrev.o&&prev.o>=prevPrev.c;
+    const candlePattern=bullishEngulf?'BUY':bearishEngulf?'SELL':candleBias;
+    const rangeLevels=window.RIZVI_MARKET_RANGE||{};
+    const rangeSignals={};
+    ['dayHigh','h4High','h1High','m30High','m15High'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c>Number(rangeLevels[k])?'BUY':'NEUTRAL';});
+    ['dayLow','h4Low','h1Low','m30Low','m15Low'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c<Number(rangeLevels[k])?'SELL':'NEUTRAL';});
+
     let buy=0,sell=0;
     const add=(s,w)=>{if(s==='BUY')buy+=w;if(s==='SELL')sell+=w};
-    add(trend,25); add(structure,25); add(momentum,15); add(candleBias,10);
-    if(r!==null){if(r>=55&&r<72)buy+=10;if(r<=45&&r>28)sell+=10;}
-    if(closePos>0.72)buy+=8;
-    if(closePos<0.28)sell+=8;
-    if(bodyPct>=0.55)add(candleBias,7);
-    if(of.signal==='BUY')buy+=15;
-    if(of.signal==='SELL')sell+=15;
-    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){
-      if(liq.direction==='SELL')sell+=12;
-      else if(liq.direction==='BUY')buy+=12;
-    }
+    add(trend,20); add(structure,18); add(momentum,10); add(candleBias,7);
+    if(r!==null){if(r>=55&&r<72)buy+=8;if(r<=45&&r>28)sell+=8;}
+    if(closePos>0.72)buy+=5; if(closePos<0.28)sell+=5;
+    if(bodyPct>=0.55)add(candleBias,5);
+    if(of.signal==='BUY')buy+=12; if(of.signal==='SELL')sell+=12;
+    if(deltaSignal==='BUY')buy+=6; if(deltaSignal==='SELL')sell+=6;
+    if(vwapSignal==='BUY')buy+=6; if(vwapSignal==='SELL')sell+=6;
+    if(vpSignal==='BUY')buy+=4; if(vpSignal==='SELL')sell+=4;
+    if(divergence==='BUY')buy+=8; if(divergence==='SELL')sell+=8;
+    if(candlePattern==='BUY')buy+=5; if(candlePattern==='SELL')sell+=5;
+    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){if(liq.direction==='SELL')sell+=10;else if(liq.direction==='BUY')buy+=10;}
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
@@ -84,15 +122,23 @@
       orderFlow:{signal:of.signal,confidence:of.confidence,reason:of.reason},
       momentum:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'latest candle direction'},
       candleBias:{signal:candleBias,confidence:clamp(candleBias===direction?75:50),reason:'current candle body'},
-      divergence:{signal:null,confidence:null,reason:'not enough independent divergence feed'},
+      divergence:{signal:divergence,confidence:divergence==='NEUTRAL'?50:72,reason:'price/RSI divergence'},
       priceAction:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'OHLC candle response'},
-      volatility:{signal:'NEUTRAL',confidence:60,reason:'range context only'}
+      volatility:{signal:'NEUTRAL',confidence:60,reason:'range context'},
+      vwap:{signal:vwapSignal,confidence:vwap===null?null:70,reason:vwap===null?'volume data unavailable':'price vs session VWAP',value:vwap},
+      volumeProfile:{signal:vpSignal,confidence:volumeProfile===null?null:68,reason:volumeProfile===null?'volume data unavailable':'POC context',poc:volumeProfile?.poc??null},
+      delta:{signal:deltaSignal,confidence:delta===null?null:of.confidence,reason:delta===null?'L2 unavailable':'L2 bid/ask imbalance',imbalance:delta},
+      candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},
+      rangeLevels:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:'Day/4H/1H/30M/15M high-low context',levels:rangeLevels}
     };
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000,confidenceWindowMs:15000,holdCycles:3},
-      engines,autoTrading:false
+      engines,autoTrading:false,
+      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:4,minConfidence:80},
+      contributions:{trend:trend,structure:structure,momentum:momentum,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
+      indicatorStatus:{ema:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4}
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
       symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
