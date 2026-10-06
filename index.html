@@ -187,7 +187,7 @@
  let selected=1;
  function aggregate(raw,m){
   const out=[]; for(let i=0;i<raw.length;i+=m){const a=raw.slice(i,i+m);if(!a.length)continue;
-   out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
+   out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c,v:a.reduce((s,x)=>s+(Number(x.v)||0),0)});
   } return out;
  }
  window.RIZVI_SET_TIMEFRAME=function(label,raw){
@@ -611,7 +611,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
   }
   async function gold(){
     try{
-      const d=await fetch('/market/xau/intraday?hours=36,{cache:'no-store'}).then(r=>r.json());
+      const d=await fetch('/market/xau/intraday?hours=36',{cache:'no-store'}).then(r=>r.json());
       const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||[]));
       const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
@@ -1909,7 +1909,7 @@ function aggregate(raw,m){
  const out=[];
  for(let i=0;i<raw.length;i+=m){
   const a=raw.slice(i,i+m); if(!a.length)continue;
-  out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c});
+  out.push({t:a[0].t,o:a[0].o,h:Math.max(...a.map(x=>x.h)),l:Math.min(...a.map(x=>x.l)),c:a[a.length-1].c,v:a.reduce((s,x)=>s+(Number(x.v)||0),0)});
  }
  return out;
 }
