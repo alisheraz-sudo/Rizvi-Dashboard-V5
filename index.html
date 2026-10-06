@@ -166,8 +166,11 @@
     if(currentSymbol()!=='BTCUSD')return;
     const seq=++requestSeq;
     try{
-      const x=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());
-      const p=Number(x?.data?.amount);
+      const x=await fetch('/market/btc/intraday?granularity=60',{cache:'no-store'});
+      if(!x.ok)throw new Error('BTC feed HTTP '+x.status);
+      const d=await x.json();
+      const bars=Array.isArray(d?.bars)?d.bars:[];
+      const p=Number(bars.length?bars[bars.length-1]?.c:NaN);
       if(seq===requestSeq&&currentSymbol()==='BTCUSD')applyPrice(p,'BTCUSD');
     }catch(e){if(currentSymbol()==='BTCUSD'&&live)live.textContent='● Offline';}
   }
