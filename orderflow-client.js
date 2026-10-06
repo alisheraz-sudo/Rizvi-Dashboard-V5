@@ -1,5 +1,5 @@
 /* Rizvi Dashboard V5 — real order-flow monitor.
-   BTCUSD: Binance public depth WebSocket (no credentials).
+   BTCUSD: Coinbase Exchange level2 WebSocket (same venue as the BTC price/candle engine).
    XAU/USD + US Oil: cTrader depth events from the existing read-only adapter.
    No synthetic/fake order-book values are generated. */
 (function(){
@@ -28,14 +28,39 @@
   }
   function render(){
     const b=document.getElementById('rofBody');if(!b)return;
-    b.innerHTML=book('BTCUSD • Binance',state.btc)+book((state.broker.symbol||'Broker')+' • cTrader',state.broker)+'<div style="margin-top:10px;color:#657d90;font-size:10px">Read-only market data. Order flow is confirmation only; Auto Trading remains OFF.</div>';
+    b.innerHTML=book('BTCUSD • Coinbase L2',state.btc)+book((state.broker.symbol||'Broker')+' • cTrader',state.broker)+'<div style="margin-top:10px;color:#657d90;font-size:10px">Read-only market data. Order flow is confirmation only; Auto Trading remains OFF.</div>';
   }
-  function connectBinance(){
-    let ws;try{ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms')}catch(e){state.btc.status='UNAVAILABLE';return}
-    ws.onopen=()=>{state.btc.status='LIVE';render()};
-    ws.onmessage=e=>{try{const d=JSON.parse(e.data);const bids={},asks={};(d.bids||[]).forEach(x=>bids[x[0]]={price:Number(x[0]),size:Number(x[1])});(d.asks||[]).forEach(x=>asks[x[0]]={price:Number(x[0]),size:Number(x[1])});state.btc={status:'LIVE',bids,asks,updatedAt:Date.now()};window.RIZVI_ORDER_FLOW={...(window.RIZVI_ORDER_FLOW||{}),BTCUSDT:state.btc};render()}catch{}};
-    ws.onerror=()=>{state.btc.status='UNAVAILABLE';render()};ws.onclose=()=>{state.btc.status='RECONNECTING';setTimeout(connectBinance,3000)};
+  function connectCoinbase(){
+    let ws;try{ws=new WebSocket('wss://ws-feed.exchange.coinbase.com')}catch(e){state.btc.status='UNAVAILABLE';render();setTimeout(connectCoinbase,3000);return}
+    ws.onopen=()=>{
+      state.btc.status='LIVE';
+      ws.send(JSON.stringify({type:'subscribe',product_ids:['BTC-USD'],channels:['level2']}));
+      render();
+    };
+    ws.onmessage=e=>{try{
+      const d=JSON.parse(e.data);
+      if(d.type==='snapshot'){
+        const bids={},asks={};
+        (d.bids||[]).forEach(x=>{const price=String(x[0]),size=Number(x[1]);if(Number.isFinite(size)&&size>0)bids[price]={price:Number(price),size};});
+        (d.asks||[]).forEach(x=>{const price=String(x[0]),size=Number(x[1]);if(Number.isFinite(size)&&size>0)asks[price]={price:Number(price),size};});
+        state.btc={status:'LIVE',bids,asks,updatedAt:Date.now()};
+      } else if(d.type==='l2update'){
+        for(const x of (d.changes||[])){
+          const side=x[0],price=String(x[1]),size=Number(x[2]);
+          const book=side==='buy'?state.btc.bids:state.btc.asks;
+          if(!book)continue;
+          if(Number.isFinite(size)&&size>0)book[price]={price:Number(price),size}; else delete book[price];
+        }
+        state.btc.status='LIVE';state.btc.updatedAt=Date.now();
+      }
+      if(d.type==='snapshot'||d.type==='l2update'){
+        window.RIZVI_ORDER_FLOW={...(window.RIZVI_ORDER_FLOW||{}),BTCUSDT:state.btc};
+        render();
+      }
+    }catch{}};
+    ws.onerror=()=>{state.btc.status='UNAVAILABLE';render()};
+    ws.onclose=()=>{state.btc.status='RECONNECTING';render();setTimeout(connectCoinbase,3000)};
   }
   window.addEventListener('rizvi:ctrader',e=>{const d=e.detail||{};if(d.type==='depth'&&d.depth){state.broker={status:'LIVE',symbol:(window.__RIZVI_ACTIVE_SYMBOL||'XAU/USD'),bids:d.depth.bids||{},asks:d.depth.asks||{},updatedAt:d.depth.updatedAt||Date.now()};render()}else if(d.type==='status'&&d.status){if(!/AUTHORIZED|CONNECTED|REAL BROKER/.test(d.status))state.broker.status=d.status;render()}});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();connectBinance()});else{mount();connectBinance()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();connectCoinbase()});else{mount();connectBinance()}
 })();
