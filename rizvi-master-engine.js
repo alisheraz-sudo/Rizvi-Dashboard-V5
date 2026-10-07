@@ -83,19 +83,39 @@
     ['dayHigh','h4High','h1High','m30High','m15High'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c>Number(rangeLevels[k])?'BUY':'NEUTRAL';});
     ['dayLow','h4Low','h1Low','m30Low','m15Low'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c<Number(rangeLevels[k])?'SELL':'NEUTRAL';});
 
+    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
+    // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
+    const WEIGHTS={
+      trend:16, structure:14, liquidity:12, orderFlow:12, momentum:8,
+      rsi:7, divergence:8, vwap:7, volumeProfile:5, delta:4,
+      candlePattern:4, candleBias:3
+    };
     let buy=0,sell=0;
     const add=(s,w)=>{if(s==='BUY')buy+=w;if(s==='SELL')sell+=w};
-    add(trend,20); add(structure,18); add(momentum,10); add(candleBias,7);
-    if(r!==null){if(r>=55&&r<72)buy+=8;if(r<=45&&r>28)sell+=8;}
-    if(closePos>0.72)buy+=5; if(closePos<0.28)sell+=5;
-    if(bodyPct>=0.55)add(candleBias,5);
-    if(of.signal==='BUY')buy+=12; if(of.signal==='SELL')sell+=12;
-    if(deltaSignal==='BUY')buy+=6; if(deltaSignal==='SELL')sell+=6;
-    if(vwapSignal==='BUY')buy+=6; if(vwapSignal==='SELL')sell+=6;
-    if(vpSignal==='BUY')buy+=4; if(vpSignal==='SELL')sell+=4;
-    if(divergence==='BUY')buy+=8; if(divergence==='SELL')sell+=8;
-    if(candlePattern==='BUY')buy+=5; if(candlePattern==='SELL')sell+=5;
-    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){if(liq.direction==='SELL')sell+=10;else if(liq.direction==='BUY')buy+=10;}
+    add(trend,WEIGHTS.trend);
+    add(structure,WEIGHTS.structure);
+    add(momentum,WEIGHTS.momentum);
+    add(candleBias,WEIGHTS.candleBias);
+    if(r!==null){
+      if(r>=55&&r<72)buy+=WEIGHTS.rsi;
+      if(r<=45&&r>28)sell+=WEIGHTS.rsi;
+    }
+    if(of.signal==='BUY')buy+=WEIGHTS.orderFlow;
+    if(of.signal==='SELL')sell+=WEIGHTS.orderFlow;
+    if(deltaSignal==='BUY')buy+=WEIGHTS.delta;
+    if(deltaSignal==='SELL')sell+=WEIGHTS.delta;
+    if(vwapSignal==='BUY')buy+=WEIGHTS.vwap;
+    if(vwapSignal==='SELL')sell+=WEIGHTS.vwap;
+    if(vpSignal==='BUY')buy+=WEIGHTS.volumeProfile;
+    if(vpSignal==='SELL')sell+=WEIGHTS.volumeProfile;
+    if(divergence==='BUY')buy+=WEIGHTS.divergence;
+    if(divergence==='SELL')sell+=WEIGHTS.divergence;
+    if(candlePattern==='BUY')buy+=WEIGHTS.candlePattern;
+    if(candlePattern==='SELL')sell+=WEIGHTS.candlePattern;
+    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){
+      if(liq.direction==='SELL')sell+=WEIGHTS.liquidity;
+      else if(liq.direction==='BUY')buy+=WEIGHTS.liquidity;
+    }
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
@@ -136,7 +156,7 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000,confidenceWindowMs:15000,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:4,minConfidence:80},
+      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:4,minConfidence:80,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
       indicatorStatus:{ema:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4}
     };
