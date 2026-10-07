@@ -394,7 +394,10 @@ const cache=window.__RIZVI_CHART_CACHE=window.__RIZVI_CHART_CACHE||{};
 let timer=null,generation=0,inFlight=null;
 
 function normalizeBars(a){
- return (Array.isArray(a)?a:[]).map(x=>({t:+x.t,l:+x.l,h:+x.h,o:+x.o,c:+x.c}))
+ return (Array.isArray(a)?a:[]).map(x=>({
+   t:+x.t,l:+x.l,h:+x.h,o:+x.o,c:+x.c,
+   v:Number.isFinite(Number(x.v??x.volume))?Number(x.v??x.volume):0
+ }))
   .filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite))
   .sort((a,b)=>a.t-b.t);
 }
@@ -3150,7 +3153,40 @@ function run(){try{paint(build())}catch(e){console.warn('Rizvi final indicator e
 ['rizvi:candle-update','rizvi:timeframe-update','rizvi:order-flow-update','rizvi:liquidity-update'].forEach(ev=>W.addEventListener(ev,run));
 run();setInterval(run,750);
 })();
-</script>\n</body></html><script id="rizvi-v98-final-signal-noise-gate">
+</script>\n</script><script id="rizvi-canonical-authority-v104">
+(function(){
+  'use strict';
+  /* V104: Master Confirmation Engine is the single visible signal authority. */
+  function render(){
+    const m=window.RIZVI_MASTER_CONFIRMATION;
+    if(!m)return;
+    const d=m.direction==='BUY'||m.direction==='SELL'?m.direction:'WAIT';
+    const score=Math.round(Number(m.confidence)||50);
+    window.RIZVI_SIGNAL_DIRECTION=d;
+    const head=document.querySelector('.signalHead');
+    const card=document.querySelector('.right .card:first-child');
+    const exec=document.querySelector('.right .card:nth-child(2)');
+    const hd=head?.querySelector('div:first-child b');
+    const hq=head?.querySelector('div:nth-child(2) b');
+    const hb=head?.querySelector('.badge');
+    const bd=card?.querySelector('.big span:first-child');
+    const bq=card?.querySelector('.big span:nth-child(2)');
+    const eq=exec?.querySelector('.row b');
+    const ready=exec?.querySelector('.ready');
+    if(hd)hd.textContent=d;
+    if(hq)hq.textContent=score+'%';
+    if(hb){hb.textContent=m.qualified?'HIGH QUALITY':'WAIT';}
+    if(bd)bd.textContent=d;
+    if(bq)bq.innerHTML=score+'% <em class="badge">'+(m.qualified?'HIGH QUALITY':score>=65?'WATCH':'WAIT')+'</em>';
+    if(eq)eq.innerHTML=score+'% &nbsp; <em class="badge">'+(m.qualified?'HIGH QUALITY':'WAIT')+'</em>';
+    if(ready)ready.textContent=m.qualified?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';
+    window.RIZVI_VISIBLE_MASTER_STATE={direction:d,confidence:score,qualified:!!m.qualified,confirmations:m.confirmations,updatedAt:m.updatedAt};
+  }
+  window.addEventListener('rizvi:master-confirmation-update',render);
+  setInterval(render,1000);
+  render();
+})();
+</script></body></html><script id="rizvi-v98-final-signal-noise-gate">
 (function(){
 'use strict';
 if(window.__RIZVI_V98_FINAL_GATE)return;window.__RIZVI_V98_FINAL_GATE=true;
