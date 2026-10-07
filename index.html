@@ -3186,6 +3186,39 @@ run();setInterval(run,750);
   setInterval(render,1000);
   render();
 })();
+</script><style id="rizvi-v105-stable-quote-bar">
+/* V105: keep the market quote bar dimensionally stable while price ticks. */
+.quote{min-width:420px;justify-content:flex-end;white-space:nowrap;flex-wrap:nowrap}
+.quote #quoteSymbol{display:inline-block;min-width:68px;text-align:left}
+.quote #quotePrice{display:inline-block;min-width:108px;text-align:right;font-variant-numeric:tabular-nums}
+.quote #quoteChange{display:inline-block;min-width:132px;text-align:right;font-variant-numeric:tabular-nums}
+.quote #quoteLive{display:inline-block;min-width:58px}
+@media(max-width:900px){
+ .quote{min-width:0!important;gap:5px!important}
+ .quote #quoteSymbol{min-width:52px}
+ .quote #quotePrice{min-width:78px}
+ .quote #quoteChange{min-width:92px}
+ .quote #quoteLive{min-width:42px}
+}
+</style>
+<script id="rizvi-v105-quote-stability">
+(function(){
+'use strict';
+if(window.__RIZVI_V105_QUOTE_STABILITY)return;
+window.__RIZVI_V105_QUOTE_STABILITY=true;
+const W=window;
+let lastSymbol=null;
+function sync(){
+ const sym=W.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD';
+ if(sym===lastSymbol)return;
+ lastSymbol=sym;
+ const q=document.getElementById('quoteSymbol'), coin=document.querySelector('.quote .coin');
+ if(q)q.textContent=sym;
+ if(coin)coin.textContent=sym==='XAU/USD'?'Au':'₿';
+}
+W.addEventListener('rizvi:symbol-change',sync);
+sync();
+})();
 </script></body></html><script id="rizvi-v98-final-signal-noise-gate">
 (function(){
 'use strict';
