@@ -849,66 +849,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
   run();setInterval(run,30000);
 })();
 </script><script src="orderflow-client.js"></script><script src="rizvi-master-engine.js"></script><script src="signal-learning-journal.js"></script><script src="rizvi-test-monitor.js"></script>
-<script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script id="rizvi-live-canvas-chart-v72">
-(function(){
-'use strict';
-const host=document.querySelector('.chart'); if(!host)return;
-let c=document.getElementById('rizviCandleCanvasV66');
-if(!c){
-  c=document.createElement('canvas'); c.id='rizviCandleCanvasV66';
-  c.style.cssText='position:absolute;left:0;right:82px;top:47px;width:calc(100% - 82px);height:calc(100% - 75px);display:block;z-index:1;pointer-events:none';
-  host.appendChild(c);
-}
-const ctx=c.getContext('2d');
-let raw=[];
-function visible(){const a=window.RIZVI_AGG_BARS;return Array.isArray(a)&&a.length?a:raw;}
-function resize(){
-  const rect=c.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1);
-  const w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));
-  if(c.width!==w||c.height!==h){c.width=w;c.height=h;ctx.setTransform(dpr,0,0,dpr,0,0);}
-  draw();
-}
-function draw(){
-  const rect=c.getBoundingClientRect(),w=rect.width,h=rect.height;
-  ctx.clearRect(0,0,w,h);
-  const data=visible(), view=data.slice(-70);
-  if(!view.length)return;
-  let max=-Infinity,min=Infinity;
-  view.forEach(b=>{max=Math.max(max,Number(b.h));min=Math.min(min,Number(b.l));});
-  if(!Number.isFinite(max)||!Number.isFinite(min)||max<=min)return;
-  ctx.strokeStyle='#ffffff18';ctx.lineWidth=1;
-  for(let i=1;i<6;i++){const y=i*h/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-  const padTop=14,padBottom=12,step=w/view.length,body=Math.max(3,Math.min(10,step*.58));
-  const sy=v=>padTop+(max-v)/(max-min)*(h-padTop-padBottom);
-  view.forEach((b,i)=>{
-    const o=Number(b.o),cl=Number(b.c),hi=Number(b.h),lo=Number(b.l),x=i*step+step/2;
-    const up=cl>=o;ctx.strokeStyle=up?'#31d17c':'#ff5b68';ctx.lineWidth=Math.max(1,Math.min(2,step*.16));
-    ctx.beginPath();ctx.moveTo(x,sy(hi));ctx.lineTo(x,sy(lo));ctx.stroke();
-    const y=Math.min(sy(o),sy(cl)),bh=Math.max(2,Math.abs(sy(cl)-sy(o)));
-    ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(x-body/2,y,body,bh);
-  });
-}
-function sync(){draw();}
-async function load(){
- try{
-  const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
-  if(!Array.isArray(d)||!d.length)return;
-  raw=d.slice().reverse().map(x=>({t:Number(x[0]),l:Number(x[1]),h:Number(x[2]),o:Number(x[3]),c:Number(x[4])})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite));
-  window.RIZVI_RAW_BARS=raw;
-  const tf=window.RIZVI_CANDLE_TIMEFRAME||'1M';
-  if(typeof window.RIZVI_SET_TIMEFRAME==='function')window.RIZVI_SET_TIMEFRAME(tf,raw);
-  else window.RIZVI_AGG_BARS=raw;
-  window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',source:'COINBASE 1M',bars:raw.length,updatedAt:Date.now(),live:true};
-  document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
-  draw();
- }catch(e){}
-}
-addEventListener('resize',resize);
-addEventListener('rizvi:candle-update',sync);
-addEventListener('rizvi:timeframe-update',sync);
-setTimeout(resize,0);window.RIZVI_V72_HISTORY_LOADER=load;
-})();
-</script><script id="rizvi-live-timeframe-v72">
+<script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script id="rizvi-live-canvas-chart-v72"><!-- V114 LOCKED OFF: legacy BTC history/canvas writer. Canonical chart feed owns bars. --></script></script><script id="rizvi-live-timeframe-v72">
 (function(){
 'use strict';
 const tfEls=[...document.querySelectorAll('.tf span')];
@@ -929,64 +870,7 @@ window.RIZVI_SET_TIMEFRAME=function(label,raw){
 };
 tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.textContent.trim(),window.RIZVI_RAW_BARS||[])));
 })();
-</script>.rizvi-v72-ready{}<style id="rizvi-live-time-axis-v71">.rizvi-live-time-axis{position:absolute;left:0;right:82px;bottom:0;height:28px;z-index:5;display:flex;align-items:center;justify-content:space-around;padding:0 6px;color:#8fa3b4;font-size:10px;background:linear-gradient(transparent,#031421 45%);pointer-events:none}.rizvi-live-time-axis span{white-space:nowrap}.rizvi-live-time-axis .live{color:#00e39a;font-weight:800}</style><script id="rizvi-live-time-axis-v71">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><style id="rizvi-v73-svg">#rizviCandleCanvasV66{display:none!important}#rizviSvgChartV73{position:absolute;left:0;right:82px;top:47px;width:calc(100% - 82px);height:calc(100% - 75px);z-index:1;display:block;pointer-events:none}</style><script id="rizvi-v73-svg-renderer">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-btc-live-websocket-v74">
-(function(){
-'use strict';
-/* V74 FIX: symbol-aware live engine. BTC WebSocket must never overwrite XAU data. */
-const PRODUCT='BTC-USD', WS_URL='wss://ws-feed.exchange.coinbase.com';
-let raw=[], ws=null, retry=1000, lastTick=0, retryTimer=null, active=false;
-function isBTC(){return (window.RIZVI_CURRENT_SYMBOL||'BTCUSD')==='BTCUSD';}
-function fmt(p){return Number(p).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function publish(){
-  if(!active||!isBTC()||!raw.length)return;
-  const b=raw[raw.length-1],p=Number(b.c);
-  if(Number.isFinite(p)){
-    window.RIZVI_LIVE_PRICE=p;window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};window.RIZVI_LIVE_PRICES.BTCUSD=p;
-    const z=fmt(p);['quotePrice','chartClose','chartPriceTag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=z;});
-    const live=document.getElementById('quoteLive');if(live)live.textContent='LIVE';
-  }
-  window.RIZVI_CANDLE_STATUS={symbol:'BTCUSD',source:'Coinbase Exchange WebSocket + REST OHLC',bars:raw.length,updatedAt:Date.now(),live:true};
-  window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.candles=true;
-  document.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:window.RIZVI_CANDLE_STATUS}));
-  document.dispatchEvent(new CustomEvent('rizvi:price-update',{detail:{symbol:'BTCUSD',price:Number(b.c),direction:window.RIZVI_SIGNAL_DIRECTION||'BUY'}}));
-}
-function mergeTick(price,ts,size){
-  if(!active||!isBTC())return;
-  price=Number(price);ts=Number(ts);size=Number(size)||0;if(!Number.isFinite(price)||!Number.isFinite(ts))return;
-  const key=Math.floor(ts/60000)*60000;let b=raw[raw.length-1];
-  if(!b||Number(b.t)!==key){if(b)b.closed=true;b={t:key,o:price,h:price,l:price,c:price,v:0,closed:false,source:'Coinbase live ticker'};raw.push(b);}
-  else{b.h=Math.max(Number(b.h),price);b.l=Math.min(Number(b.l),price);b.c=price;b.v=(Number(b.v)||0)+Math.max(0,size);b.closed=false;}
-  raw=raw.slice(-300);lastTick=Date.now();publish();
-}
-async function loadHistory(){
-  if(!isBTC())return;
-  try{
-    const d=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60',{cache:'no-store'}).then(r=>r.json());
-    if(!Array.isArray(d)||!d.length)throw new Error('No BTC candle data');
-    raw=d.slice().reverse().map(x=>({t:Number(x[0])*1000,l:Number(x[1]),h:Number(x[2]),o:Number(x[3]),c:Number(x[4]),v:Number(x[5]||0),closed:true,source:'Coinbase REST OHLC'})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)).slice(-300);
-    publish();
-  }catch(e){}
-}
-function schedule(){if(retryTimer||!active)return;retryTimer=setTimeout(()=>{retryTimer=null;connect();retry=Math.min(retry*2,30000);},retry);}
-function connect(){
-  if(!active||!isBTC())return;
-  try{ws&&ws.close();}catch(e){}try{ws=new WebSocket(WS_URL);}catch(e){schedule();return;}
-  ws.onopen=function(){retry=1000;ws.send(JSON.stringify({type:'subscribe',product_ids:[PRODUCT],channels:['ticker']}));};
-  ws.onmessage=function(ev){try{const m=JSON.parse(ev.data);if(m.type==='ticker'&&m.product_id===PRODUCT){const p=Number(m.price),ts=Date.parse(m.time||'');if(Number.isFinite(p))mergeTick(p,Number.isFinite(ts)?ts:Date.now(),Number(m.last_size)||0);}}catch(e){}};
-  ws.onerror=function(){try{ws.close();}catch(e){}};ws.onclose=function(){if(active&&isBTC())schedule();};
-}
-async function fallback(){
-  if(!active||!isBTC()||Date.now()-lastTick<7000)return;
-  try{const x=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());const p=Number(x?.data?.amount);if(Number.isFinite(p))mergeTick(p,Date.now());}catch(e){}
-}
-function clock(){const e=document.getElementById('liveClock');if(e)e.innerHTML='<b>'+new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+'</b><br><span>PKT</span>';}
-function stop(){active=false;try{ws&&ws.close();}catch(e){}ws=null;if(retryTimer){clearTimeout(retryTimer);retryTimer=null;}}
-async function start(){stop();active=isBTC();if(!active)return;await loadHistory();connect();lastTick=Date.now();}
-window.RIZVI_BTC_LIVE_CONTROL={start,stop,isBTC};
-window.addEventListener('rizvi:symbol-change',()=>setTimeout(start,50));
-start();setInterval(fallback,3000);setInterval(clock,1000);clock();
-})();
-</script><style id="rizvi-chart-v76">
+</script>.rizvi-v72-ready{}<style id="rizvi-live-time-axis-v71">.rizvi-live-time-axis{position:absolute;left:0;right:82px;bottom:0;height:28px;z-index:5;display:flex;align-items:center;justify-content:space-around;padding:0 6px;color:#8fa3b4;font-size:10px;background:linear-gradient(transparent,#031421 45%);pointer-events:none}.rizvi-live-time-axis span{white-space:nowrap}.rizvi-live-time-axis .live{color:#00e39a;font-weight:800}</style><script id="rizvi-live-time-axis-v71">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><style id="rizvi-v73-svg">#rizviCandleCanvasV66{display:none!important}#rizviSvgChartV73{position:absolute;left:0;right:82px;top:47px;width:calc(100% - 82px);height:calc(100% - 75px);z-index:1;display:block;pointer-events:none}</style><script id="rizvi-v73-svg-renderer">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-btc-live-websocket-v74"><!-- V114 LOCKED OFF: legacy BTC websocket/price writer. Canonical chart feed owns BTC. --></script><style id="rizvi-chart-v76"></script><style id="rizvi-chart-v76">
 #rizviSvgChartV73{left:0!important;right:82px!important;top:47px!important;width:calc(100% - 82px)!important;height:calc(100% - 75px)!important}
 </style>
 <script id="rizvi-chart-v76">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><style id="rizvi-chart-v77">
@@ -1110,7 +994,7 @@ wait();
   window.RIZVI_ENTRY_POLICY={minimum:70,belowAction:'WAIT',requireAllIndicators:true};
 })();
 </script>
-<script id="rizvi-live-signal-engine-v80">(function(){'use strict';if(window.__RIZVI_SIGNAL_ENGINE_V80)return;window.__RIZVI_SIGNAL_ENGINE_V80=true;function A(){return Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS.slice(-200):[]}function E(a,n){if(a.length<n)return null;let x=a.slice(0,n).reduce((s,b)=>s+b.c,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)x=a[i].c*k+x*(1-k);return x}function R(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i].c-a[i-1].c;if(d>0)g+=d;else l-=d}return l?100-100/(1+(g/14)/(l/14)):100}function U(){let a=A();if(a.length<20)return;let e20=E(a,20),e50=E(a,50),r=R(a),p=a[a.length-1].c,t=p>e20&&e20>e50?'BULLISH':p<e20&&e20<e50?'BEARISH':p>e20?'BULLISH':'BEARISH',m=p>a[a.length-6].c?'BULLISH':p<a[a.length-6].c?'BEARISH':'NEUTRAL',q=Math.max(0,Math.min(95,Math.round(50+(t===m?15:0)+(r>55&&r<70?8:0)+(t==='BULLISH'&&p>e20||t==='BEARISH'&&p<e20?10:0))));window.RIZVI_SIGNAL_HYSTERESIS=window.RIZVI_SIGNAL_HYSTERESIS||{direction:'WAIT',pending:'WAIT',count:0};let hs=window.RIZVI_SIGNAL_HYSTERESIS,cand=q>=70?(t==='BEARISH'?'SELL':'BUY'):'WAIT';if(q<70){hs.pending='WAIT';hs.count=0;hs.direction='WAIT'}else if(q<75){if(cand!=='WAIT'&&cand!==hs.direction){hs.pending=cand;hs.count++}else if(cand===hs.direction){hs.pending=cand;hs.count=0}if(hs.count>=3){hs.direction=hs.pending;hs.count=0}}else{if(cand===hs.direction){hs.pending=cand;hs.count=0}else{hs.pending=cand;hs.count++}if(hs.count>=2){hs.direction=cand;hs.count=0}}let d=hs.direction,hq=q>=70;window.RIZVI_MASTER_SIGNAL={direction:d,quality:q,trend:t,momentum:m,rsi:r,ema20:e20,ema50:e50,entry:p,highQuality:hq,updatedAt:Date.now()};window.RIZVI_OPERATIONAL_STATUS=window.RIZVI_OPERATIONAL_STATUS||{};window.RIZVI_OPERATIONAL_STATUS.indicators=true;window.RIZVI_OPERATIONAL_STATUS.signalEngine=true;document.dispatchEvent(new CustomEvent('rizvi:signal-engine-update',{detail:window.RIZVI_MASTER_SIGNAL}))}addEventListener('rizvi:candle-update',U);setInterval(U,5000);setTimeout(U,2000)})();</script><script id="rizvi-v85-signal-stability">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){/* V86: engine state only; V98 owns visible signal UI. */}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87-disabled">/* V87 legacy range disabled; V88 is the only live trade-range renderer. */</script><style id="rizvi-v88-live-trade-range">
+<script id="rizvi-live-signal-engine-v80"><!-- V114 LOCKED OFF: legacy signal writer. Master Confirmation Engine is sole signal authority. --></script><script id="rizvi-v85-signal-stability"></script><script id="rizvi-v85-signal-stability">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-value-stability-v86">(function(){'use strict';if(window.__RIZVI_VALUE_STABILITY_V86)return;window.__RIZVI_VALUE_STABILITY_V86=true;let last=0;function n(v){return Number(v)}function tick(){const p=n(window.RIZVI_LIVE_PRICE);if(!Number.isFinite(p))return;const now=Date.now();if(now-last<2000)return;last=now;const s=window.RIZVI_STABLE_VISIBLE_SIGNAL;if(s){const q=Math.round(n(s.quality));const d=s.direction;if((d==='BUY'||d==='SELL'||d==='WAIT')&&Number.isFinite(q)){/* V86: engine state only; V98 owns visible signal UI. */}}}setInterval(tick,1000);tick()})();</script><script id="rizvi-trade-range-v87-disabled">/* V87 legacy range disabled; V88 is the only live trade-range renderer. */</script><style id="rizvi-v88-live-trade-range">
 .rizvi-live-trade-range{position:absolute;z-index:30;pointer-events:none;width:74px;min-width:74px;max-width:74px;overflow:visible;display:none}
 .rizvi-live-trade-range .zone{position:absolute;left:0;width:74px;border:1px solid;border-radius:2px}
 .rizvi-live-trade-range .tp-zone{background:rgba(0,190,115,.07);border-color:rgba(0,217,145,.45)}
