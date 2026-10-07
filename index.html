@@ -3228,6 +3228,40 @@ function sync(){
 W.addEventListener('rizvi:symbol-change',sync);
 sync();
 })();
+</script><script id="rizvi-final-symbol-aware-range-v107">
+(function(){
+'use strict';
+if(window.__RIZVI_V107_SYMBOL_AWARE)return;
+window.__RIZVI_V107_SYMBOL_AWARE=true;
+function sym(){return window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD'}
+function fmt(v){return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function sync(){
+ const s=sym(), q=document.getElementById('quoteSymbol');
+ if(q)q.textContent=s;
+ const head=document.querySelector('.chart .head>div:first-child');
+ const b=head?.querySelector('b');
+ if(head&&b){
+   const label=head.childNodes[0];
+   if(label&&label.nodeType===3)label.nodeValue=s+' · ';
+   b.textContent=(window.RIZVI_CANDLE_TIMEFRAME||'1M').toLowerCase();
+ }
+ const labels=document.querySelectorAll('.right .card:nth-child(3) .rangeRow');
+ const lv=window.RIZVI_TRADE_RANGE;
+ if(labels.length>=5&&lv){
+   const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3];
+   ['Entry','SL','TP1','TP2','TP3'].forEach((name,i)=>{
+     const row=labels[i], el=row?.querySelector('b');
+     if(el&&Number.isFinite(Number(vals[i])))el.textContent=s+' '+fmt(vals[i]);
+   });
+ }
+}
+window.addEventListener('rizvi:symbol-change',sync);
+window.addEventListener('rizvi:signal-levels-update',sync);
+window.addEventListener('rizvi:candle-update',sync);
+window.addEventListener('rizvi:timeframe-update',sync);
+setInterval(sync,1000);
+sync();
+})();
 </script></body></html><script id="rizvi-v98-final-signal-noise-gate">
 (function(){
 'use strict';
