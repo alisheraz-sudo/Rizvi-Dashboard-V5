@@ -88,7 +88,7 @@
     const WEIGHTS={
       trend:16, structure:14, liquidity:12, orderFlow:12, momentum:8,
       rsi:7, divergence:8, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:3, fvg:5
+      candlePattern:4, candleBias:3, fvg:8
     };
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
