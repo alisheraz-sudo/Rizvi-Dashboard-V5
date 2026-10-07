@@ -416,10 +416,19 @@ async function btc(){
 async function gold(){
  const d=await json('/market/xau/intraday?hours=12');
  const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
+ // V106: preserve true OHLC when the XAU feed supplies it. Do not collapse
+ // candles to close-to-close synthetic ranges, otherwise real intrabar wicks vanish.
+ const ohlc=a.map(x=>Array.isArray(x)
+   ? {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}
+   : {t:+(x.timestamp??x.time??x.t),o:+(x.open??x.o),h:+(x.high??x.h),l:+(x.low??x.l),c:+(x.close??x.c)})
+   .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite))
+   .sort((x,y)=>x.t-y.t);
+ if(ohlc.length)return normalizeBars(ohlc);
+ // Fallback only when the upstream source genuinely provides price points.
  const pts=a.map(x=>Array.isArray(x)
    ?{t:+x[0],p:+x[1]}
    :{t:+(x.timestamp??x.time??x.t),p:+(x.p??x.price??x.close??x.c)})
-  .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
+   .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
  return normalizeBars(pts.map((x,i)=>{
    const prev=i?pts[i-1].p:x.p;
    return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};
