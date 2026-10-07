@@ -3830,11 +3830,9 @@ function render(){
   placeRange(m);
 }
 function observe(){
-  const targets=['.signalHead','.right .card:first-child','.right .card:nth-child(2)'];
-  const nodes=targets.map(s=>document.querySelector(s)).filter(Boolean);
-  if(!nodes.length)return;
-  const mo=new MutationObserver(()=>{render()});
-  nodes.forEach(n=>mo.observe(n,{subtree:true,childList:true,characterData:true,attributes:true}));
+  /* V108 intentionally avoids a MutationObserver here. Older engines still
+     repaint their legacy DOM, so the single-authority 500ms reconciliation
+     below is the safe boundary without creating a self-triggering render loop. */
 }
 function tick(){
   const m=master();
