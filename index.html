@@ -1429,38 +1429,6 @@ sync();
 
 <!-- RIZVI V111 LIVE FEED + SINGLE VISIBLE AUTHORITY -->
 <script id="rizvi-v111-live-feed-and-authority">/* V113 DISABLED: native chart feed is sole candle owner */</script>
-<!-- RIZVI V112 INDICATOR RESET -->
-<script id="rizvi-v112-unified-indicator-reset">
-(function(){
-'use strict';
-if(window.__RIZVI_V112_INDICATOR_RESET)return;window.__RIZVI_V112_INDICATOR_RESET=true;
-const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x)), n=x=>Number.isFinite(Number(x))?Number(x):NaN;
-let stable='WAIT',candidate='WAIT',ticks=0,lastChange=0,lastScore=0;
-function bars(){const a=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[];return a.map(b=>({t:n(b.t),o:n(b.o),h:n(b.h),l:n(b.l),c:n(b.c),v:n(b.v)})).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t).slice(-250)}
-function ema(a,p){if(a.length<p)return NaN;let e=a.slice(0,p).reduce((x,y)=>x+y,0)/p,k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
-function rsi(a,p=14){if(a.length<=p)return NaN;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){let d=a[i]-a[i-1];g+=Math.max(0,d);l+=Math.max(0,-d)}let ag=g/p,al=l/p;return al===0?100:100-100/(1+ag/al)}
-function atr(a,p=14){if(a.length<p+1)return NaN;let t=[];for(let i=1;i<a.length;i++)t.push(Math.max(a[i].h-a[i].l,Math.abs(a[i].h-a[i-1].c),Math.abs(a[i].l-a[i-1].c)));return t.slice(-p).reduce((x,y)=>x+y,0)/Math.min(p,t.length)}
-function calc(){
- const b=bars();if(b.length<50)return null;const c=b.map(x=>x.c),last=c.at(-1),e20=ema(c,20),e50=ema(c,50),r=rsi(c),a=atr(b),v=W.RIZVI_ORDER_FLOW_DEPTH;
- const vol=b.slice(-30).reduce((s,x)=>s+(Number.isFinite(x.v)&&x.v>0?x.v:1),0);
- const delta=b.slice(-20).reduce((s,x)=>s+((x.c-x.o)/Math.max(x.h-x.l,1e-9))*(Number.isFinite(x.v)&&x.v>0?x.v:1),0);
- const last20=b.slice(-20),hi=Math.max(...last20.map(x=>x.h)),lo=Math.min(...last20.map(x=>x.l));
- const trend=e20>e50?1:e20<e50?-1:0, mom=r>55?1:r<45?-1:0, candle=last>b.at(-1).o?1:-1, del=delta>0?1:delta<0?-1:0;
- const vwap=b.slice(-100).reduce((s,x)=>s+(x.h+x.l+x.c)/3,0)/Math.min(100,b.length), vw=last>vwap?1:last<vwap?-1:0;
- const liq=last>hi?1:last<lo?-1:0;
- const of=Array.isArray(v)?v.reduce((s,x)=>s+(n(x.bid)||0)-(n(x.ask)||0),0):0, ofb=of>0?1:of<0?-1:0;
- const parts={EMA:trend,RSI:mom,VWAP:vw,CANDLE:candle,DELTA:del,TREND:trend,LIQUIDITY:liq,ORDER_FLOW:ofb};
- const core=['EMA','RSI','VWAP','CANDLE','DELTA','TREND'];const active=core.filter(k=>parts[k]!==0).length;
- const buy=Object.values(parts).filter(x=>x>0).length,sell=Object.values(parts).filter(x=>x<0).length;
- const raw=buy>sell?'BUY':sell>buy?'SELL':'WAIT', agreement=Math.round((Math.max(buy,sell)/Object.values(parts).filter(x=>x!==0).length||0)*100);
- const score=Math.round(clamp(50+Math.abs(buy-sell)*7+(active>=5?10:0)+(agreement>=70?8:0),0,95));
- const qualified=active>=5&&agreement>=70&&(raw==='BUY'||raw==='SELL')&&score>=70;
- if(raw===candidate)ticks++;else{candidate=raw;ticks=1}
- if(stable==='WAIT'&&qualified&&ticks>=3){stable=raw;lastChange=Date.now()}else if(stable!==raw&&stable!=='WAIT'&&ticks>=5&&Date.now()-lastChange>15000){stable=raw;lastChange=Date.now()}else if(!qualified&&stable!=='WAIT'&&Date.now()-lastChange>20000){stable='WAIT';lastChange=Date.now()}
- return {timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',direction:stable,rawDirection:raw,confidence:score,score,agreement,qualified:qualified&&stable===raw,activeCore:active,components:parts,metrics:{ema20:e20,ema50:e50,rsi:r,vwap,atr:a,delta,volume:vol,high:hi,low:lo,orderFlow:of},reset:'V112'};
-}
-function run(){const s=calc();if(!s)return;W.RIZVI_INDICATOR_RESET_STATE=s;W.RIZVI_FINAL_INDICATOR_STATE=s;W.RIZVI_INDICATOR_CONFLUENCE=s;W.RIZVI_SIGNAL_DIRECTION=s.direction;W.RIZVI_SIGNAL_QUALITY=s.confidence;W.RIZVI_SIGNAL_QUALIFICATION={status:s.qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',marketDirection:s.direction,signalDirection:s.direction,patternConfidence:s.confidence,indicatorAgreement:s.agreement,allIndicatorsAligned:s.qualified,qualified:s.qualified,reset:'V112'};W.RIZVI_MASTER_CONFIRMATION={...W.RIZVI_MASTER_CONFIRMATION,...s,direction:s.direction,confidence:s.confidence,qualified:s.qualified,updatedAt:s.timestamp}}
-run();setInterval(run,2000);
-})();
-</script>
+<!-- RIZVI V112 INDICATOR RESET: DISABLED/LOCKED. Unified master engine is sole signal authority. -->
+<script id="rizvi-v112-unified-indicator-reset"><!-- LOCKED OFF: prevents legacy 2s state overwrite/flicker. --></script>
 <!-- RIZVI V113 NATIVE CHART FEED AUTHORITY --><script id="rizvi-v113-chart-authority">(function(){if(window.__RIZVI_V113_CHART_AUTHORITY)return;window.__RIZVI_V113_CHART_AUTHORITY=true;function c(){const s=window.RIZVI_CHART_STATUS||{};window.RIZVI_CHART_AUTHORITY={owner:"NATIVE_CHART_FEED",symbol:window.RIZVI_CURRENT_SYMBOL||"BTCUSD",status:s.status||"UNKNOWN",bars:Number(s.bars)||0,updatedAt:s.updatedAt||null,live:s.status==="LIVE"}}window.addEventListener("rizvi:chart-status",c);window.addEventListener("rizvi:candle-update",c);c()})();</script>
