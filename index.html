@@ -2117,24 +2117,28 @@ function host(){
 }
 function rows(){
  const raw=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];
- return raw.map(b=>{
+ const byTime=new Map();
+ raw.forEach(b=>{
    let t=N(b.t);
    /* Normalize feed timestamps: Coinbase/XAUS may return seconds, while some feeds return milliseconds. */
    if(Number.isFinite(t)&&t<100000000000)t*=1000;
-   return {t,o:N(b.o),h:N(b.h),l:N(b.l),c:N(b.c)};
- })
- .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite))
- .sort((a,b)=>a.t-b.t);
+   const o=N(b.o),h=N(b.h),l=N(b.l),c=N(b.c);
+   if(!Number.isFinite(t)||![o,h,l,c].every(Number.isFinite))return;
+   /* One canonical bar per timestamp. Merge duplicates instead of sending duplicate times to Lightweight Charts. */
+   const k=Math.floor(t/1000)*1000,prev=byTime.get(k);
+   if(!prev)byTime.set(k,{t:k,o,h,l,c});
+   else{prev.h=Math.max(prev.h,h,o,c);prev.l=Math.min(prev.l,l,o,c);prev.c=c;}
+ });
+ return [...byTime.values()].sort((a,b)=>a.t-b.t);
 }
 function aggregate(a,m){
- if(m===1)return a.slice(-520).map(b=>({time:Math.floor(b.t/1000),open:b.o,high:b.h,low:b.l,close:b.c}));
  const out=[],ms=m*60000;
  for(const b of a){
    const bucket=Math.floor(b.t/ms)*ms,last=out[out.length-1];
-   if(!last||last._t!==bucket)out.push({_t:bucket,time:Math.floor(bucket/1000),open:b.o,high:b.h,low:b.l,close:b.c});
-   else{last.high=Math.max(last.high,b.h);last.low=Math.min(last.low,b.l);last.close=b.c}
+   if(!last||last._t!==bucket)out.push({_t:bucket,time:Math.floor(bucket/1000),open:b.o,high:Math.max(b.h,b.o,b.c),low:Math.min(b.l,b.o,b.c),close:b.c});
+   else{last.high=Math.max(last.high,b.h,b.o,b.c);last.low=Math.min(last.low,b.l,b.o,b.c);last.close=b.c}
  }
- return out.slice(-240).map(({_t,...x})=>x);
+ return out.slice(-(m===1?520:240)).map(({_t,...x})=>x);
 }
 function init(){
  if(ready)return;
@@ -2174,7 +2178,7 @@ function refresh(force){
  if(!ready||!series)return;
  const sym=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
  if(sym!==lastSymbol){
-   try{series.setData([]);chart.timeScale().fitContent()}catch(e){}
+   /* Do not blank the series during symbol changes; replace it atomically with the next valid dataset. */
    lastSymbol=sym;lastTf='';lastFirst=0;lastLast=0;force=true;
  }
  const a=rows();if(!a.length)return;
