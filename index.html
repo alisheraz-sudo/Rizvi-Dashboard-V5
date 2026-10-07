@@ -2997,7 +2997,7 @@ function run(){
  W.RIZVI_SIGNAL_DIRECTION='WAIT';
  W.RIZVI_SIGNAL_QUALITY=0;
 }
-setInterval(run,500);
+/* V5 STABILITY: legacy noise UI repaint disabled; Master Confirmation owns visible state. */
 })();
 </script>\n
 
@@ -3305,7 +3305,7 @@ function run(){
  W.RIZVI_SIGNAL_DIRECTION=ST.dir;W.RIZVI_SIGNAL_QUALITY=Math.round(ST.score);
  W.RIZVI_SIGNAL_GATE=Object.assign({},W.RIZVI_SIGNAL_GATE||{},{finalNoiseGate:true,confirmTicks:CONFIRM_TICKS,flipTicks:FLIP_TICKS,minConfidence:MIN,strongConfidence:STRONG,agreement:AGREEMENT,updatedAt:now});
 }
-setInterval(run,1000);setTimeout(run,500);
+/* V5 STABILITY: legacy final signal repaint disabled; Master Confirmation owns visible state. */
 })();
 </script>
 <script id="rizvi-v99-canonical-indicator-alignment">
@@ -3467,10 +3467,10 @@ function paint(){
 }
 function run(){
   try{
-    if(W.RIZVI_INDICATOR_CONFLUENCE)paint();
+    if(false && W.RIZVI_INDICATOR_CONFLUENCE)paint();
   }catch(e){console.warn('Rizvi canonical indicator alignment',e)}
 }
-W.addEventListener('rizvi:indicator-confluence-update',run);
+/* V5 STABILITY: legacy indicator alignment no longer repaints visible UI. */
 W.addEventListener('rizvi:candle-update',run);
 W.addEventListener('rizvi:signal-qualification-update',run);
 setTimeout(run,3500);
