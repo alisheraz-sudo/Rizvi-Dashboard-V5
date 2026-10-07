@@ -1344,168 +1344,7 @@ const initial=get();setTimeout(()=>switchSymbol(initial),0);
 
 <script id="rizvi-v95-indicator-alignment-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>\n<script id="rizvi-v96-sideways-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>\n<script id="rizvi-v97-noise-ui-enforcement">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>\n
 
-<script id="rizvi-v5-final-indicator-authority">
-(function(){
-'use strict';
-if(window.__RIZVI_FINAL_INDICATOR_AUTHORITY)return;
-window.__RIZVI_FINAL_INDICATOR_AUTHORITY=true;
-const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
-const num=x=>Number.isFinite(Number(x))?Number(x):NaN;
-
-function getBars(){
- const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
- return a.map(b=>({
-  t:num(b.t??b.time??b.timestamp),
-  o:num(b.o??b.open),h:num(b.h??b.high),l:num(b.l??b.low),c:num(b.c??b.close),
-  v:num(b.v??b.volume)
- })).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
-}
-function ema(a,n){
- if(a.length<n)return NaN;
- let e=a.slice(0,n).reduce((s,x)=>s+x,0)/n,k=2/(n+1);
- for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);
- return e;
-}
-function rsi(a,n=14){
- if(a.length<=n)return NaN;
- let g=0,l=0;
- for(let i=a.length-n;i<a.length;i++){const d=a[i]-a[i-1];if(d>0)g+=d;else l-=d;}
- let ag=g/n,al=l/n;
- for(let i=a.length-n+1;i<a.length;i++){const d=a[i]-a[i-1],gg=Math.max(0,d),ll=Math.max(0,-d);ag=(ag*(n-1)+gg)/n;al=(al*(n-1)+ll)/n;}
- return al===0?100:100-100/(1+ag/al);
-}
-function atr(bs,n=14){
- if(bs.length<=n)return NaN;
- const tr=[];
- for(let i=1;i<bs.length;i++)tr.push(Math.max(bs[i].h-bs[i].l,Math.abs(bs[i].h-bs[i-1].c),Math.abs(bs[i].l-bs[i-1].c)));
- return tr.slice(-n).reduce((s,x)=>s+x,0)/Math.min(n,tr.length);
-}
-function vwap(bs){
- let pv=0,v=0;
- for(const b of bs.slice(-100)){const q=Number.isFinite(b.v)&&b.v>0?b.v:1;pv+=((b.h+b.l+b.c)/3)*q;v+=q;}
- return v?pv/v:NaN;
-}
-function candle(bs){
- if(bs.length<3)return {score:0,bias:0,name:'INSUFFICIENT'};
- const b=bs.at(-1),p=bs.at(-2),body=Math.abs(b.c-b.o),range=Math.max(b.h-b.l,1e-9),up=b.h-Math.max(b.o,b.c),dn=Math.min(b.o,b.c)-b.l;
- if(dn>body*2&&up<body)return {score:80,bias:1,name:'HAMMER'};
- if(up>body*2&&dn<body)return {score:80,bias:-1,name:'SHOOTING STAR'};
- if(b.c>b.o&&p.c<p.o&&b.c>=p.o&&b.o<=p.c)return {score:90,bias:1,name:'BULL ENGULF'};
- if(b.c<b.o&&p.c>p.o&&b.o>=p.c&&b.c<=p.o)return {score:90,bias:-1,name:'BEAR ENGULF'};
- if(body/range<.18)return {score:45,bias:0,name:'DOJI'};
- return {score:60,bias:b.c>b.o?1:-1,name:b.c>b.o?'BULL CANDLE':'BEAR CANDLE'};
-}
-function volumeProfile(bs){
- const s=bs.slice(-100),lo=Math.min(...s.map(x=>x.l)),hi=Math.max(...s.map(x=>x.h)),bins=24,w=Math.max((hi-lo)/bins,1e-9),vol=Array(bins).fill(0);
- for(const b of s){const q=Number.isFinite(b.v)&&b.v>0?b.v:1,k=Math.max(0,Math.min(bins-1,Math.floor((b.c-lo)/w)));vol[k]+=q;}
- const k=vol.indexOf(Math.max(...vol)),p=lo+(k+.5)*w,c=s.at(-1).c;
- return {score:clamp(50+Math.min(40,Math.abs(c-p)/w*8)),bias:c>p?1:c<p?-1:0,poc:p};
-}
-function delta(bs){
- const s=bs.slice(-30); let d=0,hasVolume=false;
- for(const b of s){
-  if(Number.isFinite(b.v)&&b.v>0)hasVolume=true;
-  const q=Number.isFinite(b.v)&&b.v>0?b.v:1;
-  d+=((b.c-b.o)/Math.max(b.h-b.l,1e-9))*q;
- }
- const avg=s.reduce((a,b)=>a+(Number.isFinite(b.v)&&b.v>0?b.v:1),0)/Math.max(1,s.length);
- return {score:clamp(50+Math.min(45,Math.abs(d)/Math.max(avg,1)*10)),bias:d>0?1:d<0?-1:0,delta:d,source:hasVolume?'BAR_VOLUME':'OHLC_PROXY'};
-}
-function divergence(bs){
- if(bs.length<35)return {score:0,bias:0,name:'INSUFFICIENT'};
- const c=bs.map(x=>x.c), n=10;
- function rr(end){
-  const a=c.slice(Math.max(0,end-14),end+1);return rsi(a,Math.min(14,a.length-1));
- }
- const r1=rr(c.length-1),r0=rr(c.length-1-n),pc=c.at(-1)-c.at(-1-n),pr=r1-r0;
- if(pc>0&&pr<0)return {score:85,bias:-1,name:'BEAR DIVERGENCE'};
- if(pc<0&&pr>0)return {score:85,bias:1,name:'BULL DIVERGENCE'};
- return {score:50,bias:0,name:'NONE'};
-}
-function trend(bs){
- const c=bs.map(x=>x.c),e20=ema(c,20),e50=ema(c,50),last=c.at(-1);
- if(!Number.isFinite(e20)||!Number.isFinite(e50))return {score:0,bias:0,name:'INSUFFICIENT'};
- const bias=last>e20&&e20>e50?1:last<e20&&e20<e50?-1:0;
- return {score:bias?85:55,bias,name:bias>0?'UPTREND':bias<0?'DOWNTREND':'MIXED',ema20:e20,ema50:e50};
-}
-function orderFlow(){
- const d=W.RIZVI_ORDER_FLOW||{},levels=Array.isArray(W.RIZVI_ORDER_FLOW_DEPTH)?W.RIZVI_ORDER_FLOW_DEPTH:[];
- if(!levels.length)return {score:0,bias:0,status:'UNAVAILABLE',reason:'LIVE_L2_NOT_ATTACHED'};
- const bid=levels.reduce((s,x)=>s+Math.max(0,num(x.bid)||0),0),ask=levels.reduce((s,x)=>s+Math.max(0,num(x.ask)||0),0),t=bid+ask,im=t?(bid-ask)/t:0;
- return {score:clamp(50+Math.abs(im)*100),bias:im>.08?1:im<-.08?-1:0,status:'LIVE',imbalance:im};
-}
-function build(){
- const bs=getBars(); if(bs.length<20)return null;
- const c=bs.map(x=>x.c),last=c.at(-1),e20=ema(c,20),e50=ema(c,50),rv=rsi(c),vw=vwap(bs),a=atr(bs),pat=candle(bs),vp=volumeProfile(bs),de=delta(bs),dv=divergence(bs),tr=trend(bs),of=orderFlow();
- const parts=[
-  ['EMA',Number.isFinite(e20)&&Number.isFinite(e50)?85:0,e20>e50?1:e20<e50?-1:0],
-  ['RSI',Number.isFinite(rv)?(rv>50?Math.min(90,50+(rv-50)):Math.max(10,50-(50-rv))),rv>55?1:rv<45?-1:0],
-  ['VWAP',Number.isFinite(vw)?clamp(50+Math.min(35,Math.abs(last-vw)/Math.max(a||1,0.000001)*5)):0,last>vw?1:last<vw?-1:0],
-  ['CANDLE',pat.score,pat.bias],
-  ['VOLUME_PROFILE',vp.score,vp.bias],
-  ['DELTA',de.score,de.bias],
-  ['DIVERGENCE',dv.score,dv.bias],
-  ['TREND',tr.score,tr.bias],
-  ['ORDER_FLOW',of.score,of.bias]
- ];
- const usable=parts.filter(x=>x[1]>0), directional=usable.filter(x=>x[2]!==0);
- const signed=directional.reduce((s,x)=>s+(x[1]/100)*x[2],0);
- const direction=signed>0?'BUY':signed<0?'SELL':'WAIT';
- const agreement=directional.length?directional.filter(x=>x[2]===Math.sign(signed)).length/directional.length:0;
- const score=usable.length?usable.reduce((s,x)=>s+x[1],0)/usable.length:0;
- const core=['EMA','RSI','VWAP','CANDLE','VOLUME_PROFILE','DELTA','DIVERGENCE','TREND'];
- const activeCore=core.filter(n=>{const x=parts.find(p=>p[0]===n);return x&&x[1]>0}).length;
- const qualified=activeCore>=7&&score>=70&&agreement>=0.70&&(direction==='BUY'||direction==='SELL');
- return {
-  timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',bars:bs.length,last,
-  score:Math.round(score),agreement:Math.round(agreement*100),direction:qualified?direction:'WAIT',rawDirection:direction,qualified,
-  activeCore,missingCore:core.filter(n=>!parts.find(p=>p[0]===n&&p[1]>0)),
-  components:Object.fromEntries(parts.map(x=>[x[0],{score:Math.round(x[1]),bias:x[2]}])),
-  raw:{ema20:e20,ema50:e50,rsi:rv,vwap:vw,atr:a,candle:pat,volumeProfile:vp,delta:de,divergence:dv,trend:tr,orderFlow:of}
- };
-}
-function paint(s){
- if(!s)return;
- W.RIZVI_FINAL_INDICATOR_STATE=s;
- W.RIZVI_INDICATOR_CONFLUENCE=s;
- W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
- W.RIZVI_OPERATIONAL_STATUS.indicators={
-  status:s.qualified?'ALIGNED':'WAIT',
-  coreActive:s.activeCore,score:s.score,agreement:s.agreement,
-  missing:s.missingCore,orderFlow:s.raw.orderFlow.status
- };
- W.RIZVI_SIGNAL_DIRECTION=s.direction;
- W.RIZVI_SIGNAL_QUALITY=s.score;
- W.RIZVI_SIGNAL_QUALIFICATION={
-  status:s.qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',
-  marketDirection:s.direction,signalDirection:s.direction,
-  patternConfidence:s.score,indicatorAgreement:s.agreement,
-  missingIndicators:s.missingCore,allIndicatorsAligned:s.qualified,
-  qualified:s.qualified
- };
- const color=s.direction==='BUY'?'#00e39a':s.direction==='SELL'?'#ff5b68':'#ffc43d';
- const head=document.querySelector('.signalHead'), hd=head?.querySelector('div:first-child b'),hq=head?.querySelector('div:nth-child(2) b'),hb=head?.querySelector('.badge');
- if(hd){hd.textContent=s.direction;hd.style.color=color} if(hq)hq.textContent=s.score+'%';
- if(hb){hb.textContent=s.qualified?'HIGH QUALITY':'WAIT';hb.style.background=s.qualified?'#10b875':'#173c75'}
- const card=document.querySelector('.right .card:first-child'),big=card?.querySelector('.big'),rows=card?.querySelectorAll('.row b')||[];
- if(big){const a1=big.querySelector('span:first-child'),a2=big.querySelector('span:nth-child(2)');if(a1)a1.textContent=s.direction;if(a2)a2.innerHTML=s.score+'% <em class="badge">'+(s.qualified?'HIGH QUALITY':'WAIT')+'</em>'}
- const trendText=s.raw.trend.bias>0?'Bullish ↑':s.raw.trend.bias<0?'Bearish ↓':'Neutral →';
- const mom=c=>c>0?'Bullish ↑':c<0?'Bearish ↓':'Neutral →';
- if(rows[0])rows[0].textContent=trendText;
- if(rows[1])rows[1].textContent=mom(s.raw.ema20-s.raw.ema50);
- if(rows[2])rows[2].textContent=Number.isFinite(s.raw.rsi)?Math.round(s.raw.rsi):'--';
- if(rows[3])rows[3].textContent=s.raw.candle.name;
- if(rows[4])rows[4].textContent=s.raw.delta.source==='OHLC_PROXY'?'Proxy delta '+(s.raw.delta.bias>0?'↑':s.raw.delta.bias<0?'↓':'→'):(s.raw.delta.bias>0?'Positive ↑':s.raw.delta.bias<0?'Negative ↓':'Neutral →');
- const exec=document.querySelector('.right .card:nth-child(2)'),scoreEl=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');
- if(scoreEl)scoreEl.innerHTML=s.score+'% <em class="badge">'+(s.qualified?'HIGH QUALITY':'WAIT')+'</em>';
- if(ready){ready.textContent=s.qualified?'SIGNAL QUALIFIED':'WAIT — INDICATORS NOT FULLY ALIGNED';ready.style.background=s.qualified?'#087e58':'#173c75';}
- W.dispatchEvent(new CustomEvent('rizvi:final-indicator-update',{detail:s}));
-}
-function run(){try{build()}catch(e){console.warn('Rizvi final indicator engine',e)}}
-['rizvi:candle-update','rizvi:timeframe-update','rizvi:order-flow-update','rizvi:liquidity-update'].forEach(ev=>W.addEventListener(ev,run));
-run();setInterval(run,750);
-})();
-</script>\n</script><script id="rizvi-canonical-authority-v104">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><style id="rizvi-v105-stable-quote-bar">
+<script id="rizvi-v5-final-indicator-authority">/* V112 RESET: replaced by unified indicator authority */</script>\n</script><script id="rizvi-canonical-authority-v104">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><style id="rizvi-v105-stable-quote-bar">
 /* V105: keep the market quote bar dimensionally stable while price ticks. */
 .quote{min-width:420px;justify-content:flex-end;white-space:nowrap;flex-wrap:nowrap}
 .quote #quoteSymbol{display:inline-block;min-width:68px;text-align:left}
@@ -1653,5 +1492,39 @@ function paint(){
 function loop(){feed();paint();setTimeout(loop,1000)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loop,{once:true});else loop();
 W.addEventListener('rizvi:symbol-change',()=>{setTimeout(feed,50);setTimeout(paint,50)});
+})();
+</script>
+<!-- RIZVI V112 INDICATOR RESET -->
+<script id="rizvi-v112-unified-indicator-reset">
+(function(){
+'use strict';
+if(window.__RIZVI_V112_INDICATOR_RESET)return;window.__RIZVI_V112_INDICATOR_RESET=true;
+const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x)), n=x=>Number.isFinite(Number(x))?Number(x):NaN;
+let stable='WAIT',candidate='WAIT',ticks=0,lastChange=0,lastScore=0;
+function bars(){const a=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[];return a.map(b=>({t:n(b.t),o:n(b.o),h:n(b.h),l:n(b.l),c:n(b.c),v:n(b.v)})).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t).slice(-250)}
+function ema(a,p){if(a.length<p)return NaN;let e=a.slice(0,p).reduce((x,y)=>x+y,0)/p,k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function rsi(a,p=14){if(a.length<=p)return NaN;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){let d=a[i]-a[i-1];g+=Math.max(0,d);l+=Math.max(0,-d)}let ag=g/p,al=l/p;return al===0?100:100-100/(1+ag/al)}
+function atr(a,p=14){if(a.length<p+1)return NaN;let t=[];for(let i=1;i<a.length;i++)t.push(Math.max(a[i].h-a[i].l,Math.abs(a[i].h-a[i-1].c),Math.abs(a[i].l-a[i-1].c)));return t.slice(-p).reduce((x,y)=>x+y,0)/Math.min(p,t.length)}
+function calc(){
+ const b=bars();if(b.length<50)return null;const c=b.map(x=>x.c),last=c.at(-1),e20=ema(c,20),e50=ema(c,50),r=rsi(c),a=atr(b),v=W.RIZVI_ORDER_FLOW_DEPTH;
+ const vol=b.slice(-30).reduce((s,x)=>s+(Number.isFinite(x.v)&&x.v>0?x.v:1),0);
+ const delta=b.slice(-20).reduce((s,x)=>s+((x.c-x.o)/Math.max(x.h-x.l,1e-9))*(Number.isFinite(x.v)&&x.v>0?x.v:1),0);
+ const last20=b.slice(-20),hi=Math.max(...last20.map(x=>x.h)),lo=Math.min(...last20.map(x=>x.l));
+ const trend=e20>e50?1:e20<e50?-1:0, mom=r>55?1:r<45?-1:0, candle=last>b.at(-1).o?1:-1, del=delta>0?1:delta<0?-1:0;
+ const vwap=b.slice(-100).reduce((s,x)=>s+(x.h+x.l+x.c)/3,0)/Math.min(100,b.length), vw=last>vwap?1:last<vwap?-1:0;
+ const liq=last>hi?1:last<lo?-1:0;
+ const of=Array.isArray(v)?v.reduce((s,x)=>s+(n(x.bid)||0)-(n(x.ask)||0),0):0, ofb=of>0?1:of<0?-1:0;
+ const parts={EMA:trend,RSI:mom,VWAP:vw,CANDLE:candle,DELTA:del,TREND:trend,LIQUIDITY:liq,ORDER_FLOW:ofb};
+ const core=['EMA','RSI','VWAP','CANDLE','DELTA','TREND'];const active=core.filter(k=>parts[k]!==0).length;
+ const buy=Object.values(parts).filter(x=>x>0).length,sell=Object.values(parts).filter(x=>x<0).length;
+ const raw=buy>sell?'BUY':sell>buy?'SELL':'WAIT', agreement=Math.round((Math.max(buy,sell)/Object.values(parts).filter(x=>x!==0).length||0)*100);
+ const score=Math.round(clamp(50+Math.abs(buy-sell)*7+(active>=5?10:0)+(agreement>=70?8:0),0,95));
+ const qualified=active>=5&&agreement>=70&&(raw==='BUY'||raw==='SELL')&&score>=70;
+ if(raw===candidate)ticks++;else{candidate=raw;ticks=1}
+ if(stable==='WAIT'&&qualified&&ticks>=3){stable=raw;lastChange=Date.now()}else if(stable!==raw&&stable!=='WAIT'&&ticks>=5&&Date.now()-lastChange>15000){stable=raw;lastChange=Date.now()}else if(!qualified&&stable!=='WAIT'&&Date.now()-lastChange>20000){stable='WAIT';lastChange=Date.now()}
+ return {timestamp:Date.now(),symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD',direction:stable,rawDirection:raw,confidence:score,score,agreement,qualified:qualified&&stable===raw,activeCore:active,components:parts,metrics:{ema20:e20,ema50:e50,rsi:r,vwap,atr:a,delta,volume:vol,high:hi,low:lo,orderFlow:of},reset:'V112'};
+}
+function run(){const s=calc();if(!s)return;W.RIZVI_INDICATOR_RESET_STATE=s;W.RIZVI_FINAL_INDICATOR_STATE=s;W.RIZVI_INDICATOR_CONFLUENCE=s;W.RIZVI_SIGNAL_DIRECTION=s.direction;W.RIZVI_SIGNAL_QUALITY=s.confidence;W.RIZVI_SIGNAL_QUALIFICATION={status:s.qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',marketDirection:s.direction,signalDirection:s.direction,patternConfidence:s.confidence,indicatorAgreement:s.agreement,allIndicatorsAligned:s.qualified,qualified:s.qualified,reset:'V112'};W.RIZVI_MASTER_CONFIRMATION={...W.RIZVI_MASTER_CONFIRMATION,...s,direction:s.direction,confidence:s.confidence,qualified:s.qualified,updatedAt:s.timestamp}}
+run();setInterval(run,2000);
 })();
 </script>
