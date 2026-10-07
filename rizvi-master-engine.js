@@ -7,7 +7,7 @@
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
-  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,orderFlowSamples:[],confidenceSamples:[]};
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[]};
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
@@ -137,15 +137,42 @@
       note:'95 is confluence compatibility, not win probability.'
     };
 
+    // V105: signal hysteresis. Indicators may recalculate every tick, but the
+    // visible/master direction only changes after persistence; WAIT is also held
+    // so transient indicator disagreement cannot create BUY/SELL/WAIT flicker.
+    const now=Date.now();
+    const FLIP_CONFIRM=4;
+    const WAIT_CONFIRM=4;
+    const HOLD_MS=15000;
+    const SCORE_ALPHA=0.20;
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else{state.pendingDirection=rawDirection;state.pendingCount=1;}
 
-    if(rawDirection==='WAIT')state.stableDirection='WAIT';
-    else if(rawDirection===state.stableDirection)state.stableDirection=rawDirection;
-    else if(state.pendingCount>=2)state.stableDirection=rawDirection;
+    if(rawDirection===state.stableDirection){
+      state.waitCount=0;
+      state.stableConfidence=state.stableConfidence*(1-SCORE_ALPHA)+rawConfidence*SCORE_ALPHA;
+    }else if(rawDirection==='WAIT'){
+      state.waitCount++;
+      if(state.stableDirection==='WAIT'){
+        state.stableConfidence=state.stableConfidence*(1-SCORE_ALPHA)+50*SCORE_ALPHA;
+      }else if(state.waitCount>=WAIT_CONFIRM && now-state.lastDirectionChange>=HOLD_MS){
+        state.stableDirection='WAIT';
+        state.lastDirectionChange=now;
+        state.stableConfidence=50;
+      }
+    }else{
+      state.waitCount=0;
+      if(state.pendingCount>=FLIP_CONFIRM && now-state.lastDirectionChange>=HOLD_MS){
+        state.stableDirection=rawDirection;
+        state.lastDirectionChange=now;
+        state.stableConfidence=rawConfidence;
+      }else{
+        state.stableConfidence=state.stableConfidence*(1-SCORE_ALPHA)+rawConfidence*SCORE_ALPHA;
+      }
+    }
 
     const direction=state.stableDirection;
-    const confidence=direction===rawDirection?rawConfidence:50;
+    const confidence=Math.round(clamp(state.stableConfidence));
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
 
@@ -168,7 +195,7 @@
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
       confirmations,trend,structure,momentum,rsi:r,
-      rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000,confidenceWindowMs:15000,holdCycles:3},
+      rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
       settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
