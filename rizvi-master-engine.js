@@ -90,38 +90,52 @@
       rsi:7, divergence:8, vwap:7, volumeProfile:5, delta:4,
       candlePattern:4, candleBias:3
     };
-    let buy=0,sell=0;
-    const add=(s,w)=>{if(s==='BUY')buy+=w;if(s==='SELL')sell+=w};
-    add(trend,WEIGHTS.trend);
-    add(structure,WEIGHTS.structure);
-    add(momentum,WEIGHTS.momentum);
-    add(candleBias,WEIGHTS.candleBias);
-    if(r!==null){
-      if(r>=55&&r<72)buy+=WEIGHTS.rsi;
-      if(r<=45&&r>28)sell+=WEIGHTS.rsi;
-    }
-    if(of.signal==='BUY')buy+=WEIGHTS.orderFlow;
-    if(of.signal==='SELL')sell+=WEIGHTS.orderFlow;
-    if(deltaSignal==='BUY')buy+=WEIGHTS.delta;
-    if(deltaSignal==='SELL')sell+=WEIGHTS.delta;
-    if(vwapSignal==='BUY')buy+=WEIGHTS.vwap;
-    if(vwapSignal==='SELL')sell+=WEIGHTS.vwap;
-    if(vpSignal==='BUY')buy+=WEIGHTS.volumeProfile;
-    if(vpSignal==='SELL')sell+=WEIGHTS.volumeProfile;
-    if(divergence==='BUY')buy+=WEIGHTS.divergence;
-    if(divergence==='SELL')sell+=WEIGHTS.divergence;
-    if(candlePattern==='BUY')buy+=WEIGHTS.candlePattern;
-    if(candlePattern==='SELL')sell+=WEIGHTS.candlePattern;
-    if(liq.status&&Number.isFinite(liqScore)&&liqScore>=70){
-      if(liq.direction==='SELL')sell+=WEIGHTS.liquidity;
-      else if(liq.direction==='BUY')buy+=WEIGHTS.liquidity;
-    }
+    const votes={
+      trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
+      orderFlow:of.signal,momentum,rsi:(r===null?'WAIT':r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'),
+      divergence,vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,
+      candlePattern,candleBias
+    };
+    let buy=0,sell=0,activeWeight=0;
+    const contribution={};
+    const add=(key,s,w,active=true)=>{
+      if(!active||s==='WAIT'||s===null)return;
+      activeWeight+=w;
+      if(s==='BUY')buy+=w;
+      if(s==='SELL')sell+=w;
+      contribution[key]={signal:s,weight:w,points:s==='BUY'||s==='SELL'?w:0,active:true};
+    };
+    add('trend',trend,WEIGHTS.trend);
+    add('structure',structure,WEIGHTS.structure);
+    add('liquidity',votes.liquidity,WEIGHTS.liquidity,liq.status&&liqScore>=70);
+    add('orderFlow',of.signal,WEIGHTS.orderFlow,of.status==='LIVE');
+    add('momentum',momentum,WEIGHTS.momentum);
+    add('rsi',votes.rsi,WEIGHTS.rsi,r!==null);
+    add('divergence',divergence,WEIGHTS.divergence,true);
+    add('vwap',vwapSignal,WEIGHTS.vwap,vwap!==null);
+    add('volumeProfile',vpSignal,WEIGHTS.volumeProfile,volumeProfile!==null);
+    add('delta',deltaSignal,WEIGHTS.delta,delta!==null);
+    add('candlePattern',candlePattern,WEIGHTS.candlePattern,true);
+    add('candleBias',candleBias,WEIGHTS.candleBias,true);
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
-    // Current-evidence confidence. No 74/75 smoothing floor.
+    const weightedScore=activeWeight?clamp((lead/activeWeight)*100):0;
+    const directionalMargin=activeWeight?clamp(((lead-conflict)/activeWeight)*100):0;
+    // 95 = strict confluence/compatibility quality, NOT 95% probability of profit.
     const rawConfidence=rawDirection==='WAIT'?50:
-      clamp(Math.round(52+lead*0.42+(lead-conflict)*0.28+(total>=75?6:0)));
+      clamp(Math.round(45+weightedScore*0.38+directionalMargin*0.32+(total>=activeWeight*0.75?8:0)));
+    const activeIndicators=Object.keys(contribution).length;
+    const alignedIndicators=Object.values(contribution).filter(x=>x.signal===rawDirection).length;
+    const compatibility95=rawDirection!=='WAIT'&&weightedScore>=95&&directionalMargin>=70&&activeIndicators>=8&&alignedIndicators>=7;
+    const algoRunReport={
+      timestamp:Date.now(),symbol,
+      threshold:95,score:Math.round(weightedScore),confidence:Math.round(rawConfidence),
+      direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
+      directionalMargin:Math.round(directionalMargin),compatibility95,
+      weights:WEIGHTS,contributions:contribution,
+      note:'95 is confluence compatibility, not win probability.'
+    };
 
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else{state.pendingDirection=rawDirection;state.pendingCount=1;}
@@ -132,8 +146,8 @@
 
     const direction=state.stableDirection;
     const confidence=direction===rawDirection?rawConfidence:50;
-    const confirmations=[trend===direction,structure===direction,momentum===direction,candleBias===direction,of.signal===direction,(liq.status&&liqScore>=70&&liq.direction===direction)].filter(Boolean).length;
-    const qualified=direction!=='WAIT'&&confirmations>=4&&confidence>=80;
+    const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
+    const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
 
     const engines={
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
@@ -156,9 +170,10 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,windowMs:15000,confidenceWindowMs:15000,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:4,minConfidence:80,weights:WEIGHTS},
+      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
-      indicatorStatus:{ema:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4}
+      indicatorStatus:{ema:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4},
+      algoRunReport
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
       symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
