@@ -424,15 +424,20 @@ async function gold(){
    .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite))
    .sort((x,y)=>x.t-y.t);
  if(ohlc.length)return normalizeBars(ohlc);
- // Fallback only when the upstream source genuinely provides price points.
+ // Fallback for feeds that provide price points only: aggregate observed points into
+ // genuine 1-minute OHLC bars. Never make one candle per tick (that creates fake wicks).
  const pts=a.map(x=>Array.isArray(x)
    ?{t:+x[0],p:+x[1]}
    :{t:+(x.timestamp??x.time??x.t),p:+(x.p??x.price??x.close??x.c)})
    .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
- return normalizeBars(pts.map((x,i)=>{
-   const prev=i?pts[i-1].p:x.p;
-   return {t:x.t,o:prev,h:Math.max(prev,x.p),l:Math.min(prev,x.p),c:x.p};
- }));
+ const out=[];
+ for(const x of pts){
+   const bucket=Math.floor(x.t/60000)*60000;
+   let b=out[out.length-1];
+   if(!b||b.t!==bucket){b={t:bucket,o:x.p,h:x.p,l:x.p,c:x.p,v:0,source:'XAUS price-point 1m aggregation'};out.push(b);}
+   else{b.h=Math.max(b.h,x.p);b.l=Math.min(b.l,x.p);b.c=x.p;}
+ }
+ return normalizeBars(out);
 }
 async function fetchBars(sym){
  if(sym==='XAU/USD')return gold();
