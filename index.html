@@ -429,28 +429,43 @@ async function btc(){
 async function gold(){
  const d=await json('/market/xau/intraday?hours=36');
  const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
- // V106: preserve true OHLC when the XAU feed supplies it. Do not collapse
- // candles to close-to-close synthetic ranges, otherwise real intrabar wicks vanish.
  const ohlc=a.map(x=>Array.isArray(x)
    ? {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}
    : {t:+(x.timestamp??x.time??x.t),o:+(x.open??x.o),h:+(x.high??x.h),l:+(x.low??x.l),c:+(x.close??x.c)})
    .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite))
    .sort((x,y)=>x.t-y.t);
- if(ohlc.length)return normalizeBars(ohlc);
- // Fallback for feeds that provide price points only: aggregate observed points into
- // genuine 1-minute OHLC bars. Never make one candle per tick (that creates fake wicks).
- const pts=a.map(x=>Array.isArray(x)
-   ?{t:+x[0],p:+x[1]}
-   :{t:+(x.timestamp??x.time??x.t),p:+(x.p??x.price??x.close??x.c)})
-   .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
- const out=[];
- for(const x of pts){
-   const bucket=Math.floor(x.t/60000)*60000;
-   let b=out[out.length-1];
-   if(!b||b.t!==bucket){b={t:bucket,o:x.p,h:x.p,l:x.p,c:x.p,v:0,source:'XAUS price-point 1m aggregation'};out.push(b);}
-   else{b.h=Math.max(b.h,x.p);b.l=Math.min(b.l,x.p);b.c=x.p;}
+ let bars=normalizeBars(ohlc);
+ if(!bars.length){
+   const pts=a.map(x=>Array.isArray(x)
+     ?{t:+x[0],p:+x[1]}
+     :{t:+(x.timestamp??x.time??x.t),p:+(x.p??x.price??x.close??x.c)})
+     .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
+   const out=[];
+   for(const x of pts){
+     const bucket=Math.floor(x.t/60000)*60000;
+     let z=out[out.length-1];
+     if(!z||z.t!==bucket)out.push(z={t:bucket,o:x.p,h:x.p,l:x.p,c:x.p,v:0});
+     else{z.h=Math.max(z.h,x.p);z.l=Math.min(z.l,x.p);z.c=x.p;}
+   }
+   bars=normalizeBars(out);
  }
- return normalizeBars(out);
+ /* Always anchor the active XAU candle to the dashboard's current minute.
+    The upstream historical feed can lag even while its HTTP request succeeds. */
+ try{
+   const s=await json('/market/xau/spot');
+   const p=Number(s?.data?.spot_usd_oz??s?.spot_usd_oz);
+   if(Number.isFinite(p)){
+     const now=Math.floor(Date.now()/60000)*60000;
+     const last=bars[bars.length-1];
+     if(!last||last.t<now){
+       const prev=last?.c??p;
+       bars.push({t:now,o:prev,h:Math.max(prev,p),l:Math.min(prev,p),c:p,v:0,source:'XAUS live spot'});
+     }else if(last.t===now){
+       last.h=Math.max(last.h,p);last.l=Math.min(last.l,p);last.c=p;
+     }
+   }
+ }catch{}
+ return normalizeBars(bars);
 }
 async function fetchBars(sym){
  if(sym==='XAU/USD')return gold();
