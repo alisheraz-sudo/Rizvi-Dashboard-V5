@@ -414,7 +414,7 @@ async function btc(){
  return normalizeBars(d?.bars);
 }
 async function gold(){
- const d=await json('/market/xau/intraday?hours=12');
+ const d=await json('/market/xau/intraday?hours=36');
  const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
  // V106: preserve true OHLC when the XAU feed supplies it. Do not collapse
  // candles to close-to-close synthetic ranges, otherwise real intrabar wicks vanish.
@@ -3851,5 +3851,72 @@ function start(){
   W.addEventListener('rizvi:symbol-change',render);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
+
+<script id="rizvi-v109-final-stability-and-range-anchor">
+(function(){
+'use strict';
+if(window.__RIZVI_V109_FINAL_STABILITY)return;window.__RIZVI_V109_FINAL_STABILITY=true;
+const W=window;
+let displayDir='WAIT',displayQ=0,lastQualifiedKey='';
+function num(v){v=Number(v);return Number.isFinite(v)?v:null}
+function master(){
+ const m=W.RIZVI_MASTER_CONFIRMATION||{};
+ return {symbol:m.symbol||W.RIZVI_CURRENT_SYMBOL||'BTCUSD',direction:['BUY','SELL'].includes(m.direction)?m.direction:'WAIT',confidence:Math.max(0,Math.min(100,Math.round(num(m.confidence)??50))),qualified:!!m.qualified,updatedAt:num(m.updatedAt)||0};
+}
+function visibleState(){
+ const m=master();
+ if(m.symbol!==W.RIZVI_CURRENT_SYMBOL)return m;
+ if(displayDir==='WAIT'&&m.direction!=='WAIT'&&m.confidence>=70){displayDir=m.direction;displayQ=m.confidence;}
+ else if(m.direction===displayDir){displayQ=Math.round(displayQ*0.9+m.confidence*0.1);}
+ else if(m.direction==='WAIT'){
+   displayQ=Math.round(displayQ*0.95+50*0.05);
+   if(m.confidence<70)displayDir='WAIT';
+ } else if(m.direction!==displayDir && m.confidence>=95){displayDir=m.direction;displayQ=m.confidence;}
+ displayQ=Math.max(0,Math.min(100,displayQ));
+ return {...m,direction:displayDir,confidence:displayQ,qualified:displayDir!=='WAIT'&&m.qualified&&displayQ>=95};
+}
+function paint(){
+ const s=visibleState(),q=Math.round(s.confidence),vc=s.direction==='BUY'?'#00e39a':s.direction==='SELL'?'#ff5b68':'#ffc43d';
+ const h=document.querySelector('.signalHead'),card=document.querySelector('.right .card:first-child'),exec=document.querySelector('.right .card:nth-child(2)');
+ const hd=h?.querySelector('div:first-child b'),hq=h?.querySelector('div:nth-child(2) b'),hb=h?.querySelector('.badge');
+ const bd=card?.querySelector('.big span:first-child'),bq=card?.querySelector('.big span:nth-child(2)'),eq=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');
+ if(hd){hd.textContent=s.direction;hd.style.color=vc} if(hq){hq.textContent=q+'%';hq.style.color=vc}
+ if(hb){hb.textContent=s.qualified?'HIGH QUALITY':'WAIT';hb.style.background=s.qualified?'#10b875':'#173c75'}
+ if(bd){bd.textContent=s.direction;bd.style.color=vc} if(bq)bq.innerHTML=q+'% <em class="badge" style="background:'+(s.qualified?'#10b875':'#173c75')+'">'+(s.qualified?'QUALIFIED':q>=70?'WATCH':'WAIT')+'</em>';
+ if(eq)eq.innerHTML=q+'% &nbsp; <em class="badge" style="background:'+(s.qualified?'#10b875':'#173c75')+'">'+(s.qualified?'QUALIFIED':'WAIT')+'</em>';
+ if(ready){ready.textContent=s.qualified?'SIGNAL QUALIFIED':'WAIT — MASTER ENGINE FILTER';ready.style.background=s.qualified?'#087e58':'#173c75'}
+ W.RIZVI_VISIBLE_MASTER_STATE={direction:s.direction,confidence:q,qualified:s.qualified,updatedAt:s.updatedAt,stability:'V109-FINAL'};
+ W.RIZVI_SIGNAL_DIRECTION=s.direction;W.RIZVI_SIGNAL_QUALITY=q;
+}
+function alignChart(){
+ const chart=W.RIZVI_TV_CHART,series=W.RIZVI_TV_SERIES,host=document.querySelector('.chart'),el=document.getElementById('rizviTvChartV55');
+ if(!chart||!series||!host||!el)return;
+ const bars=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:W.RIZVI_RAW_BARS;
+ const b=bars?.[bars.length-1];if(!b)return;
+ const t=Math.floor((num(b.t)||0)<1e12?(num(b.t)||0)/1000:(num(b.t)||0));
+ try{
+   chart.timeScale().scrollToRealTime();
+   const x=chart.timeScale().timeToCoordinate(t);
+   if(!Number.isFinite(x))return;
+   const hr=host.getBoundingClientRect(),cr=el.getBoundingClientRect();
+   const localX=(cr.left-hr.left)+x;
+   W.RIZVI_LIVE_CHART_PRICE=num(b.c);
+   W.RIZVI_CHART_LATEST_COORD={x:localX,t:b.t,updatedAt:Date.now()};
+   const o=document.getElementById('rizviStableTradeOverlay');
+   if(o&&o.style.display!=='none'){
+     const width=parseFloat(o.style.width)||108;
+     const left=Math.max(8,Math.min(hr.width-width-8,localX-width/2));
+     o.style.left=left+'px';
+   }
+ }catch(e){}
+}
+function tick(){paint();alignChart()}
+W.addEventListener('rizvi:candle-update',()=>setTimeout(tick,0));
+W.addEventListener('rizvi:timeframe-update',()=>setTimeout(tick,0));
+W.addEventListener('rizvi:master-confirmation-update',()=>setTimeout(tick,0));
+W.addEventListener('resize',tick);
+tick();setInterval(tick,250);
 })();
 </script>
