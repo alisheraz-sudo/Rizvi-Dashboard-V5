@@ -227,9 +227,22 @@
   }
 
   function levels(p,dir){
-    const step=p*0.0025, risk=p*0.0015;
-    if(dir==='SELL') return {entry:p,sl:p+risk,tp1:p-step,tp2:p-step*2,tp3:p-step*3};
-    return {entry:p,sl:p-risk,tp1:p+step,tp2:p+step*2,tp3:p+step*3};
+    // V110 RR floor: for XAUUSD a qualified setup must start at
+    // >=1.33R on TP1. 30-pip risk -> 40-pip TP1, then 70/100 pips
+    // cumulative to TP2/TP3. Do not let the visual range collapse
+    // to the old percentage-based 0.25% / 0.15% levels.
+    const sym=String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase();
+    const isXAU=sym==='XAU/USD'||sym==='XAUUSD'||sym==='GOLD';
+    const pip=isXAU?0.01:1;
+    const riskPips=isXAU?30:Math.max(1,Math.round(p*0.0015/pip));
+    const tp1Pips=isXAU?40:Math.max(riskPips+1,Math.round(riskPips*1.33));
+    const tp2Pips=isXAU?70:Math.max(tp1Pips+1,Math.round(riskPips*2));
+    const tp3Pips=isXAU?100:Math.max(tp2Pips+1,Math.round(riskPips*3));
+    const risk=riskPips*pip, tp1=tp1Pips*pip, tp2=tp2Pips*pip, tp3=tp3Pips*pip;
+    if(dir==='SELL') return {entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
+      riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
+    return {entry:p,sl:p-risk,tp1:p+tp1,tp2:p+tp2,tp3:p+tp3,
+      riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
   }
 
   let frozen=null, frozenDirection=null;
