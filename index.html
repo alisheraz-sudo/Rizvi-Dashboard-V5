@@ -510,7 +510,21 @@ async function select(sym){
 window.RIZVI_SELECT_CHART_SYMBOL=select;
 window.addEventListener('rizvi:symbol-change',e=>{
  const sym=e.detail?.symbol||'BTCUSD';
+ if(sym==='XAU/USD')window.dispatchEvent(new CustomEvent('rizvi:ctrader-subscribe',{detail:{symbol:'XAUUSD',tf:window.RIZVI_CANDLE_TIMEFRAME||'1M'}}));
  select(sym);
+});
+window.addEventListener('rizvi:ctrader',e=>{
+ const d=e.detail||{};
+ if(window.RIZVI_CURRENT_SYMBOL!=='XAU/USD')return;
+ if(d.type==='history'&&Array.isArray(d.bars)&&d.bars.length){
+   try{publish('XAU/USD',d.bars,'CTRADER')}catch{}
+ }
+ if(d.type==='bar'&&d.bar){
+   const current=cache['XAU/USD']||[];
+   const b=d.bar,i=current.findIndex(x=>x.t===b.t);
+   if(i>=0)current[i]=b;else current.push(b);
+   publish('XAU/USD',current.slice(-260),'CTRADER');
+ }
 });
 select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
 })();
