@@ -3648,3 +3648,210 @@ function run(){try{calculate()}catch(e){console.warn('Rizvi V102',e)}}
 (function(){'use strict';if(window.__RIZVI_V107_SINGLE_WRITER)return;window.__RIZVI_V107_SINGLE_WRITER=true;const W=window;let state={direction:'WAIT',confidence:0,entry:null,sl:null,tp1:null,tp2:null,tp3:null,symbol:null,updatedAt:0};function n(v){v=Number(v);return Number.isFinite(v)?v:null}function source(){const m=W.RIZVI_MASTER_CONFIRMATION||W.RIZVI_VISIBLE_MASTER_STATE||{},q=W.RIZVI_FINAL_SIGNAL||W.RIZVI_SIGNAL_QUALIFICATION||{};return{direction:['BUY','SELL','WAIT'].includes(m.direction)?m.direction:(['BUY','SELL','WAIT'].includes(q.signalDirection)?q.signalDirection:'WAIT'),confidence:n(m.confidence??m.quality??q.weightedScore??W.RIZVI_SIGNAL_QUALITY)??0,symbol:W.RIZVI_CURRENT_SYMBOL||'BTCUSD'}}function render(){const s=W.RIZVI_SINGLE_WRITER_STATE;if(!s)return;const card=document.querySelector('.right .card:first-child'),exec=document.querySelector('.right .card:nth-child(2)'),range=document.querySelector('.right .card:nth-child(3)');const dir=s.direction==='BUY'||s.direction==='SELL'?s.direction:'WAIT',q=Math.round(Math.max(0,Math.min(100,s.confidence)));const d=card?.querySelector('.big span:first-child'),p=card?.querySelector('.big span:nth-child(2)'),eq=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');if(d)d.textContent=dir;if(p)p.childNodes[0].nodeValue=q+'% ';if(eq)eq.childNodes[0].nodeValue=q+'% ';if(ready)ready.textContent=(dir!=='WAIT'&&q>=95)?'SIGNAL QUALIFIED':'WAIT FOR CONFIRMATION';if(range&&s.entry!=null){const rows=range.querySelectorAll('.rangeRow b');const vals=[s.entry,s.sl,s.tp1,s.tp2,s.tp3];rows.forEach((el,i)=>{if(vals[i]!=null)el.textContent=s.symbol+' '+Number(vals[i]).toFixed(2)})}}function tick(){const x=source(),newDir=x.direction,newQ=x.confidence;if(!state.symbol||state.symbol!==x.symbol){state={...state,symbol:x.symbol,direction:newDir,confidence:newQ,updatedAt:Date.now()}}else{state.confidence=Math.round(state.confidence*0.85+newQ*0.15);if(newDir!==state.direction&&newDir!=='WAIT')state.direction=newDir;state.updatedAt=Date.now()}W.RIZVI_SINGLE_WRITER_STATE=state;W.RIZVI_VISIBLE_MASTER_STATE={direction:state.direction,confidence:state.confidence,updatedAt:state.updatedAt,stability:'V107-SINGLE-WRITER'};render()}tick();setInterval(tick,1000)})();
 </script>
 <!-- RIZVI V107 DEPLOY TRIGGER 2026-10-07 -->
+
+
+<!-- RIZVI V108 — SINGLE VISIBLE AUTHORITY + CANDLE/TRADE-RANGE ALIGNMENT -->
+<style id="rizvi-v108-stability-css">
+#rizviCandleCanvasV66,#rizviSvgChartV73,#rizviLiveSvgV78,#rizviLevelsCanvasV67,
+.rizvi-live-trade-range{display:none!important;visibility:hidden!important;pointer-events:none!important}
+#rizviTvChartV55{display:block!important;visibility:visible!important;z-index:10!important}
+#rizviStableTradeOverlay{position:absolute;z-index:30;pointer-events:none;display:none;box-sizing:border-box;border:1px solid rgba(70,220,165,.9);border-radius:2px;overflow:visible}
+#rizviStableTradeOverlay .tpZone{position:absolute;left:0;right:0;background:rgba(0,210,145,.13);border-top:1px solid rgba(0,225,155,.65)}
+#rizviStableTradeOverlay .slZone{position:absolute;left:0;right:0;background:rgba(130,70,190,.16);border-bottom:1px solid rgba(170,105,235,.75)}
+#rizviStableTradeOverlay .rLine{position:absolute;left:0;right:0;height:1px;background:rgba(210,225,235,.8)}
+#rizviStableTradeOverlay .rLabel{position:absolute;right:-2px;transform:translateX(100%) translateY(-50%);white-space:nowrap;font:800 9px Arial,sans-serif;padding:2px 4px;border-radius:3px;background:#071725;color:#eaf3f8;border:1px solid #31536e}
+#rizviStableTradeOverlay .rLabel.tp{background:#0a8d68;color:#eafff7;border-color:#23d9a5}
+#rizviStableTradeOverlay .rLabel.sl{background:#583178;color:#f4e9ff;border-color:#9b67ca}
+#rizviStableTradeOverlay .rLabel.entry{background:#126c93;color:#e8f8ff;border-color:#4bbbe7}
+</style>
+<script id="rizvi-v108-single-visible-authority">
+(function(){
+'use strict';
+if(window.__RIZVI_V108_SINGLE_VISIBLE_AUTHORITY)return;
+window.__RIZVI_V108_SINGLE_VISIBLE_AUTHORITY=true;
+const W=window;
+let lastMasterStamp=0;
+let lastMasterSymbol='';
+let overlay=null;
+let selfRendering=false;
+
+function num(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function clamp(v,a=0,b=100){return Math.max(a,Math.min(b,Number(v)||0))}
+function master(){
+  const m=W.RIZVI_MASTER_CONFIRMATION||{};
+  const d=m.direction==='BUY'||m.direction==='SELL'?m.direction:'WAIT';
+  return {
+    symbol:m.symbol||W.RIZVI_CURRENT_SYMBOL||'BTCUSD',
+    direction:d,
+    confidence:Math.round(clamp(m.confidence??50)),
+    qualified:!!m.qualified,
+    confirmations:Number(m.confirmations)||0,
+    updatedAt:Number(m.updatedAt)||0,
+    engines:m.engines||{},
+    contributions:m.contributions||{}
+  };
+}
+function latestBar(){
+  const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);
+  if(!a.length)return null;
+  const b=a[a.length-1];
+  return {t:num(b.t??b.time),o:num(b.o??b.open),h:num(b.h??b.high),l:num(b.l??b.low),c:num(b.c??b.close)};
+}
+function ensureOverlay(){
+  const host=document.querySelector('.chart');
+  if(!host)return null;
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='rizviStableTradeOverlay';
+    overlay.innerHTML='<div class="tpZone"></div><div class="slZone"></div>'+
+      '<div class="rLine entryLine"></div><div class="rLine slLine"></div><div class="rLine tp1Line"></div><div class="rLine tp2Line"></div><div class="rLine tp3Line"></div>'+
+      '<span class="rLabel entry entryLabel"></span><span class="rLabel sl slLabel"></span>'+
+      '<span class="rLabel tp tp1Label"></span><span class="rLabel tp tp2Label"></span><span class="rLabel tp tp3Label"></span>';
+    host.appendChild(overlay);
+  }
+  return overlay;
+}
+function rangeFor(m,b){
+  if(!b||!Number.isFinite(b.c)||m.direction==='WAIT')return null;
+  const existing=W.RIZVI_STABLE_TRADE_RANGE||W.RIZVI_TRADE_RANGE;
+  if(existing){
+    const e=num(existing.entry),sl=num(existing.sl),t1=num(existing.tp1),t2=num(existing.tp2),t3=num(existing.tp3);
+    if([e,sl,t1,t2,t3].every(Number.isFinite))return {entry:e,sl,tp1:t1,tp2:t2,tp3:t3};
+  }
+  const entry=b.c,risk=Math.abs(entry)*0.0015,step=Math.abs(entry)*0.0025;
+  if(m.direction==='BUY')return {entry,sl:entry-risk,tp1:entry+step,tp2:entry+step*2,tp3:entry+step*3};
+  return {entry,sl:entry+risk,tp1:entry-step,tp2:entry-step*2,tp3:entry-step*3};
+}
+function placeRange(m){
+  const o=ensureOverlay();
+  const chart=W.RIZVI_TV_CHART,series=W.RIZVI_TV_SERIES,b=latestBar();
+  if(!o||!chart||!series||!b||!m.qualified||m.direction==='WAIT'){if(o)o.style.display='none';return}
+  const r=rangeFor(m,b);
+  if(!r){o.style.display='none';return}
+  const cr=document.querySelector('.chart')?.getBoundingClientRect();
+  if(!cr){o.style.display='none';return}
+  let x=null;
+  try{x=chart.timeScale().timeToCoordinate(Math.floor(b.t<1e12?b.t/1000:b.t))}catch(e){}
+  if(!Number.isFinite(x)){
+    try{x=chart.timeScale().logicalToCoordinate(Math.max(0,(W.RIZVI_TV_SERIES._rizviDataLength||1)-1))}catch(e){}
+  }
+  const ys={};
+  for(const k of ['sl','entry','tp1','tp2','tp3']){try{ys[k]=series.priceToCoordinate(r[k])}catch(e){ys[k]=null}}
+  if(!Number.isFinite(x)||Object.values(ys).some(v=>!Number.isFinite(v))){o.style.display='none';return}
+  const chartEl=document.getElementById('rizviTvChartV55');
+  const chartRect=chartEl?.getBoundingClientRect();
+  const offsetTop=chartRect?chartRect.top-cr.top:47;
+  const top=offsetTop+Math.min(ys.sl,ys.entry,ys.tp3);
+  const bottom=offsetTop+Math.max(ys.sl,ys.entry,ys.tp3);
+  const height=Math.max(28,bottom-top);
+  const width=108;
+  const hostW=cr.width;
+  const left=Math.max(60,Math.min(hostW-width-70,x-width/2));
+  o.style.left=left+'px';o.style.top=Math.max(48,top)+'px';o.style.width=width+'px';o.style.height=height+'px';o.style.display='block';
+  const topLocal=offsetTop+Math.min(ys.sl,ys.entry,ys.tp3);
+  function line(name,y){
+    const el=o.querySelector('.'+name+'Line');if(el)el.style.top=(offsetTop+y-topLocal)+'px';
+    const lab=o.querySelector('.'+name+'Label');if(lab){lab.style.top=(offsetTop+y-topLocal)+'px';lab.textContent=name==='entry'?'Entry '+r.entry.toFixed(2):name.toUpperCase()+' '+r[name].toFixed(2)}
+  }
+  line('entry',ys.entry);line('sl',ys.sl);line('tp1',ys.tp1);line('tp2',ys.tp2);line('tp3',ys.tp3);
+  const tpTop=offsetTop+Math.min(ys.entry,ys.tp3)-topLocal;
+  const tpBottom=offsetTop+Math.max(ys.entry,ys.tp3)-topLocal;
+  const slTop=offsetTop+Math.min(ys.entry,ys.sl)-topLocal;
+  const slBottom=offsetTop+Math.max(ys.entry,ys.sl)-topLocal;
+  const tpz=o.querySelector('.tpZone'),slz=o.querySelector('.slZone');
+  if(tpz){tpz.style.top=tpTop+'px';tpz.style.height=Math.max(2,tpBottom-tpTop)+'px'}
+  if(slz){slz.style.top=slTop+'px';slz.style.height=Math.max(2,slBottom-slTop)+'px'}
+}
+function setText(){
+  if(selfRendering)return;
+  const m=master(),q=m.confidence;
+  W.RIZVI_VISIBLE_MASTER_STATE={direction:m.direction,confidence:q,qualified:m.qualified,updatedAt:m.updatedAt,stability:'V108-MASTER-ONLY'};
+  W.RIZVI_SIGNAL_DIRECTION=m.direction;
+  W.RIZVI_SIGNAL_QUALITY=q;
+  W.RIZVI_SIGNAL_QUALIFICATION=Object.assign({},W.RIZVI_SIGNAL_QUALIFICATION||{},{
+    symbol:m.symbol,signalDirection:m.direction,marketDirection:m.direction,
+    patternConfidence:q,weightedScore:q,masterConfirmations:m.confirmations,
+    status:m.qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',
+    qualified:m.qualified,allIndicatorsAligned:m.qualified,l2Excluded:true
+  });
+  const head=document.querySelector('.signalHead');
+  const hd=head?.querySelector('div:first-child b'),hq=head?.querySelector('div:nth-child(2) b'),badge=head?.querySelector('.badge');
+  const card=document.querySelector('.right .card:first-child');
+  const cd=card?.querySelector('.big span:first-child'),cq=card?.querySelector('.big span:nth-child(2)');
+  const exec=document.querySelector('.right .card:nth-child(2)');
+  const eq=exec?.querySelector('.row b'),ready=exec?.querySelector('.ready');
+  const vc=m.direction==='BUY'?'#00e39a':m.direction==='SELL'?'#ff5b68':'#ffc43d';
+  if(hd){hd.textContent=m.direction;hd.style.color=vc}
+  if(hq){hq.textContent=q+'%';hq.style.color=vc}
+  if(badge){badge.textContent=m.qualified?(q>=95?'HIGH QUALITY':'QUALIFIED'):'WAIT';badge.style.background=m.qualified?'#10b875':'#173c75';badge.style.color=m.qualified?'#04150d':'#7fb8ff'}
+  if(cd){cd.textContent=m.direction;cd.style.color=vc}
+  if(cq){cq.innerHTML=q+'% <em class="badge" style="background:'+(m.qualified?'#10b875':'#173c75')+';color:'+(m.qualified?'#04150d':'#7fb8ff')+'">'+(m.qualified?'QUALIFIED':'WAIT')+'</em>'}
+  if(eq){eq.innerHTML=q+'% &nbsp; <em class="badge" style="background:'+(m.qualified?'#10b875':'#173c75')+';color:'+(m.qualified?'#04150d':'#7fb8ff')+'">'+(m.qualified?'QUALIFIED':'WAIT')+'</em>'}
+  if(ready){ready.textContent=m.qualified?'SIGNAL QUALIFIED':'WAIT — MASTER ENGINE FILTER';ready.style.background=m.qualified?'#087e58':'#173c75'}
+  const rows=card?.querySelectorAll('.row b')||[];
+  const e=m.engines||{};
+  const label=s=>s==='BUY'?'Bullish ↑':s==='SELL'?'Bearish ↓':s==='NEUTRAL'?'Neutral →':'Waiting';
+  if(rows[0])rows[0].textContent=label(e.trend?.signal);
+  if(rows[1])rows[1].textContent=label(e.momentum?.signal);
+  if(rows[2])rows[2].textContent=num(m.engines?.rsi?.value??W.RIZVI_MASTER_CONFIRMATION?.rsi)?.toFixed(0)||'--';
+  if(rows[3])rows[3].textContent=label(e.structure?.signal);
+  if(rows[4])rows[4].textContent=label(e.delta?.signal);
+  const mr=W.RIZVI_MARKET_RANGE||{};
+  const ids=['dayHigh','dayLow','h4High','h4Low','h1High','h1Low','m30High','m30Low','m15High','m15Low'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el&&Number.isFinite(Number(mr[id])))el.textContent=Number(mr[id]).toFixed(2)});
+}
+function syncChart(){
+  const b=latestBar(),chart=W.RIZVI_TV_CHART;
+  if(!b||!chart)return;
+  const tf=W.RIZVI_CANDLE_TIMEFRAME||'1M';
+  const head=document.querySelector('.chart .head > div:first-child');
+  if(head){
+    const sym=(W.RIZVI_CURRENT_SYMBOL||'BTCUSD').replace('XAU/USD','XAUUSD');
+    head.innerHTML=sym+' · <b>'+tf.replace('M','m')+'</b> &nbsp; <small>O '+b.o.toFixed(2)+' &nbsp; H '+b.h.toFixed(2)+' &nbsp; L '+b.l.toFixed(2)+' &nbsp; C <span id="chartClose">'+b.c.toFixed(2)+'</span></small>';
+  }
+  const price=b.c,tag=document.getElementById('chartPriceTag');
+  if(tag)tag.textContent=price.toFixed(2);
+  const qp=document.getElementById('quotePrice');if(qp)qp.textContent=price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const qs=document.getElementById('quoteSymbol');if(qs)qs.textContent=W.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+  const select=document.getElementById('symbolSelect');if(select)select.value=W.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+  try{
+    const el=document.getElementById('rizviTvChartV55');
+    const x=chart.timeScale().timeToCoordinate(Math.floor(b.t<1e12?b.t/1000:b.t));
+    if(el&&Number.isFinite(x)){
+      const w=el.clientWidth;
+      if(x<w*0.45)chart.timeScale().scrollToRealTime();
+    }
+  }catch(e){}
+}
+function render(){
+  const m=master();
+  setText();
+  syncChart();
+  placeRange(m);
+}
+function observe(){
+  const targets=['.signalHead','.right .card:first-child','.right .card:nth-child(2)'];
+  const nodes=targets.map(s=>document.querySelector(s)).filter(Boolean);
+  if(!nodes.length)return;
+  const mo=new MutationObserver(()=>{render()});
+  nodes.forEach(n=>mo.observe(n,{subtree:true,childList:true,characterData:true,attributes:true}));
+}
+function tick(){
+  const m=master();
+  if(m.updatedAt!==lastMasterStamp||m.symbol!==lastMasterSymbol){
+    lastMasterStamp=m.updatedAt;lastMasterSymbol=m.symbol;
+  }
+  render();
+}
+function start(){
+  render();
+  observe();
+  setInterval(tick,500);
+  W.addEventListener('rizvi:master-confirmation-update',render);
+  W.addEventListener('rizvi:candle-update',render);
+  W.addEventListener('rizvi:timeframe-update',render);
+  W.addEventListener('rizvi:symbol-change',render);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
