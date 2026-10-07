@@ -141,10 +141,10 @@
     // visible/master direction only changes after persistence; WAIT is also held
     // so transient indicator disagreement cannot create BUY/SELL/WAIT flicker.
     const now=Date.now();
-    const FLIP_CONFIRM=4;
-    const WAIT_CONFIRM=4;
-    const HOLD_MS=15000;
-    const SCORE_ALPHA=0.20;
+    const FLIP_CONFIRM=6;
+    const WAIT_CONFIRM=6;
+    const HOLD_MS=30000;
+    const SCORE_ALPHA=0.08;
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else{state.pendingDirection=rawDirection;state.pendingCount=1;}
 
@@ -172,7 +172,7 @@
     }
 
     const direction=state.stableDirection;
-    const confidence=Math.round(clamp(state.stableConfidence));
+    const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
 
