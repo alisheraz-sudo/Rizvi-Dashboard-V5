@@ -11,7 +11,12 @@ const TF={ '1M':60, '5M':300, '15M':900, '30M':1800, '1H':3600, '2H':7200, '4H':
 let chart=null, series=null, timer=null, loading=false;
 let baseBars=[], lastPrice=null, activeTF='1M';
 
-function sym(){return window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD'}
+function sym(){
+ const raw=String(window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAUUSD').toUpperCase().trim();
+ if(raw==='XAUUSD'||raw==='XAU/USD'||raw==='GOLD'||raw==='XAU')return 'XAU/USD';
+ if(raw==='BTCUSD'||raw==='BTC/USD'||raw==='BTC')return 'BTCUSD';
+ return raw;
+}
 function host(){return document.getElementById('rizviTvChartV55')}
 function normTime(v){let n=Number(v);if(!Number.isFinite(n))return null;if(n>1e12)n=Math.floor(n/1000);return Math.floor(n)}
 function cleanBars(rows){
