@@ -83,12 +83,12 @@
     ['dayHigh','h4High','h1High','m30High','m15High'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c>Number(rangeLevels[k])?'BUY':'NEUTRAL';});
     ['dayLow','h4Low','h1Low','m30Low','m15Low'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c<Number(rangeLevels[k])?'SELL':'NEUTRAL';});
 
-    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
+    // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.\n    // Bullish FVG: current low > candle two bars back high.\n    // Bearish FVG: current high < candle two bars back low.\n    const fvgLookback=Math.min(80,bars.length);\n    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};\n    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){\n      const a=bars[i-2], mid=bars[i-1], b=bars[i];\n      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);\n      if([ah,al,bh,bl].every(Number.isFinite)){\n        if(bl>ah){\n          const top=bl,bottom=ah;\n          const filled=Number(last.l)<=bottom;\n          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}\n        }\n        if(bh<al){\n          const top=al,bottom=bh;\n          const filled=Number(last.h)>=top;\n          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}\n        }\n      }\n    }\n    const fvgSignal=fvg.signal;\n\n    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
     const WEIGHTS={
       trend:16, structure:14, liquidity:12, orderFlow:12, momentum:8,
       rsi:7, divergence:8, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:3
+      candlePattern:4, candleBias:3, fvg:5
     };
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
@@ -189,7 +189,7 @@
       vwap:{signal:vwapSignal,confidence:vwap===null?null:70,reason:vwap===null?'volume data unavailable':'price vs session VWAP',value:vwap},
       volumeProfile:{signal:vpSignal,confidence:volumeProfile===null?null:68,reason:volumeProfile===null?'volume data unavailable':'POC context',poc:volumeProfile?.poc??null},
       delta:{signal:deltaSignal,confidence:delta===null?null:of.confidence,reason:delta===null?'L2 unavailable':'L2 bid/ask imbalance',imbalance:delta},
-      candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},
+      candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},\n      fvg:{signal:fvg.signal,confidence:fvg.confidence,reason:fvg.reason,type:fvg.type,top:fvg.top,bottom:fvg.bottom,filled:fvg.filled},
       rangeLevels:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:'Day/4H/1H/30M/15M high-low context',levels:rangeLevels}
     };
     window.RIZVI_MASTER_CONFIRMATION={
@@ -198,8 +198,8 @@
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
       settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,weights:WEIGHTS},
-      contributions:{trend:trend,structure:structure,momentum:momentum,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
-      indicatorStatus:{ema:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4},
+      contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
+      indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
