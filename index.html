@@ -2183,16 +2183,23 @@ function refresh(force){
  }
  const a=rows();if(!a.length)return;
  const tf=window.RIZVI_CANDLE_TIMEFRAME||'1M',mins=TF[tf]||1,data=aggregate(a,mins);if(!data.length)return;
- const first=data[0].time,last=data[data.length-1].time,changed=tf!==lastTf||first!==lastFirst||last!==lastLast;
- if(force||changed){
+ const first=data[0].time,last=data[data.length-1].time;
+ const structureChanged=force||tf!==lastTf||first!==lastFirst||data.length!==series._rizviDataLength;
+ if(structureChanged){
+   // Full replacement only when the dataset structure actually changes.
+   // Live price/close changes must use update(), otherwise Lightweight Charts
+   // repeatedly rebuilds the whole series and causes candle flicker/jumping.
    series.setData(data);
    if(force||tf!==lastTf)requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(e){}});
    else {
      try{const pos=chart.timeScale().scrollPosition();if(Number.isFinite(pos)&&pos<=2)chart.timeScale().scrollToRealTime()}catch(e){}
    }
    lastTf=tf;lastFirst=first;lastLast=last;
+   series._rizviDataLength=data.length;
  }else{
+   // Same bar/timeline: update only the active candle.
    series.update(data[data.length-1]);
+   lastLast=last;
  }
  const b=data[data.length-1];
  window.RIZVI_LIVE_CHART_PRICE=b.close;window.RIZVI_PRICE_SOURCE='LIVE_CHART';
