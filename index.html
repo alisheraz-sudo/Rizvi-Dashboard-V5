@@ -1348,3 +1348,35 @@ sync();
 <!-- RIZVI V112 INDICATOR RESET: DISABLED/LOCKED. Unified master engine is sole signal authority. -->
 <script id="rizvi-v112-unified-indicator-reset"><!-- LOCKED OFF: prevents legacy 2s state overwrite/flicker. --></script>
 <!-- RIZVI V113 NATIVE CHART FEED AUTHORITY --><script id="rizvi-v113-chart-authority">(function(){if(window.__RIZVI_V113_CHART_AUTHORITY)return;window.__RIZVI_V113_CHART_AUTHORITY=true;function c(){const s=window.RIZVI_CHART_STATUS||{};window.RIZVI_CHART_AUTHORITY={owner:"NATIVE_CHART_FEED",symbol:window.RIZVI_CURRENT_SYMBOL||"BTCUSD",status:s.status||"UNKNOWN",bars:Number(s.bars)||0,updatedAt:s.updatedAt||null,live:s.status==="LIVE"}}window.addEventListener("rizvi:chart-status",c);window.addEventListener("rizvi:candle-update",c);c()})();</script>
+<script id="rizvi-v130-live-master-writer">
+(function(){
+'use strict';
+if(window.__RIZVI_V130_LIVE_MASTER_WRITER)return;
+window.__RIZVI_V130_LIVE_MASTER_WRITER=true;
+function cap(v){return Math.max(0,Math.min(100,Number(v)||0));}
+function sync(){
+ const m=window.RIZVI_MASTER_CONFIRMATION||{}, q=window.RIZVI_SIGNAL_QUALIFICATION||{}, bus=window.RIZVI_INDICATOR_BUS||{};
+ const dir=(m.direction==='BUY'||m.direction==='SELL')?m.direction:'WAIT';
+ const conf=cap(m.confidence);
+ const qualified=!!m.qualified;
+ const head=document.querySelector('.signalBlock b'); if(head){head.textContent=dir;head.style.color=dir==='BUY'?'#00e39a':dir==='SELL'?'#ff5c69':'#7fb8ff';}
+ const qb=document.querySelector('.qualityBlock b'); if(qb){qb.textContent=Math.round(conf)+'%';}
+ const badge=document.querySelector('.qualityBlock .badge'); if(badge){badge.textContent=qualified?'HIGH QUALITY SETUP':'CONFIRMATION '+(m.confirmations||0)+'/7';badge.style.background=qualified?'#10b875':'#173c75';}
+ const cards=document.querySelectorAll('.right .card');
+ const c1=cards[0],c2=cards[1];
+ if(c1){const big=c1.querySelector('.big span');if(big)big.textContent=dir;const pct=c1.querySelector('.big span:nth-child(2)');if(pct)pct.firstChild.textContent=Math.round(conf)+'% ';
+  const vals={Trend:m.engines?.trend?.signal, Momentum:m.engines?.momentum?.signal, 'RSI (14)':m.rsi, Structure:m.engines?.structure?.signal, 'Volume / Delta':m.engines?.delta?.signal};
+  c1.querySelectorAll('.row').forEach(r=>{const label=r.querySelector('span')?.textContent?.trim(),b=r.querySelector('b');if(!b)return;const v=vals[label];if(label==='RSI (14)'){b.textContent=Number.isFinite(Number(v))?Number(v).toFixed(1):'--';return;}if(v){const u=String(v).toUpperCase();b.textContent=u==='BUY'?'Bullish ↑':u==='SELL'?'Bearish ↓':'Neutral';}});
+  const note=c1.querySelector('.note');if(note)note.innerHTML='ⓘ Live Master Engine result.<br>Indicators are evaluated from the live feed.';
+ }
+ if(c2){const row=c2.querySelector('.row b');if(row)row.innerHTML=Math.round(conf)+'% &nbsp; <em class="badge">'+(qualified?'HIGH QUALITY':'WAITING CONFIRMATION')+'</em>';const ready=c2.querySelector('.ready');if(ready)ready.textContent=qualified?'SIGNAL QUALIFIED':(dir==='WAIT'?'WAIT FOR SETUP':'SIGNAL DETECTED — CONFIRMING');
+  c2.querySelectorAll('.check').forEach((el,i)=>{const names=['Entry Valid','SL Valid','RR Acceptable (1:2)','Structure Intact','No Major Reversal'];const ok=qualified?true:(i===3?m.engines?.structure?.signal===dir:false);el.textContent=(ok?'✓ ':'• ')+names[i];});
+ }
+ window.RIZVI_VISIBLE_MASTER={direction:dir,confidence:conf,qualified,updatedAt:m.updatedAt||Date.now(),activeIndicators:bus.activeCount||0,totalIndicators:bus.total||0};
+}
+window.addEventListener('rizvi:master-confirmation-update',sync);
+window.addEventListener('rizvi:indicator-bus-update',sync);
+window.addEventListener('rizvi:signal-qualification-update',sync);
+setInterval(sync,2000);sync();
+})();
+</script>
