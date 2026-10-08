@@ -1380,3 +1380,31 @@ window.addEventListener('rizvi:signal-qualification-update',sync);
 setInterval(sync,2000);sync();
 })();
 </script>
+
+<style id="rizvi-v131-bold-dark-signal-visibility">
+/* Signal readability only; keep the approved chart layout unchanged. */
+.signalBlock b,
+.qualityBlock b,
+.right .big span:first-child {
+  font-size: clamp(22px, 1.8vw, 30px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .03em !important;
+  text-shadow: 0 0 12px currentColor !important;
+}
+.signalBlock b { color: #d7e7ff; }
+.signalBlock[data-direction="BUY"] b,
+.signalBlock.buy b { color: #00f0a0 !important; }
+.signalBlock[data-direction="SELL"] b,
+.signalBlock.sell b { color: #ff4358 !important; }
+.signalBlock[data-direction="WAIT"] b,
+.signalBlock.wait b { color: #54a9ff !important; }
+.qualityBlock b { font-weight: 900 !important; }
+.btn.buy, .btn.sell, .btn.wait {
+  font-weight: 900 !important;
+  letter-spacing: .025em !important;
+  text-shadow: 0 0 8px currentColor !important;
+}
+.btn.buy { background: #063f2d !important; color: #00f0a0 !important; border-color: #00d88e !important; }
+.btn.sell { background: #4a101a !important; color: #ff5365 !important; border-color: #f52c47 !important; }
+.btn.wait { background: #0b2858 !important; color: #65b5ff !important; border-color: #267eff !important; }
+</style>
