@@ -268,6 +268,9 @@
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
+    // V129: expose the stabilized directional signal independently from the exceptional 95% quality gate.
+    // BUY/SELL can therefore be shown to the operator while High Quality remains strictly qualified.
+    const visibleSignal=direction!=='WAIT'?direction:'WAIT';
 
     const engines={
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
@@ -319,7 +322,7 @@
     }catch{}
     window.dispatchEvent(new CustomEvent('rizvi:indicator-bus-update',{detail:window.RIZVI_INDICATOR_BUS}));
     window.RIZVI_SIGNAL_QUALIFICATION={
-      symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
+      symbol,updatedAt:Date.now(),signalDirection:visibleSignal,marketDirection:visibleSignal,
       liquidityScore:Math.round(liqScore),patternConfidence:confidence,aligned:true,
       confirmedSweep:Boolean(liq.sweeps?.length),confirmedBreakout:Boolean(liq.breakouts?.length),
       multiTimeframe:confirmations>=3,
@@ -329,7 +332,7 @@
       orderFlow:engines.orderFlow,momentum:engines.momentum,candleBias:engines.candleBias,divergence:engines.divergence,
       priceAction:engines.priceAction,volatility:engines.volatility
     };
-    window.RIZVI_SIGNAL_DIRECTION=direction;
+    window.RIZVI_SIGNAL_DIRECTION=visibleSignal;
     window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
     window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
   }
