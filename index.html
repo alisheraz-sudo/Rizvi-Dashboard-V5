@@ -138,11 +138,10 @@
  .badge{font-size:7px!important;padding:3px 5px!important}
 }
 </style><style id="rizvi-v127-remove-legacy-static-chart">
-/* V127 hotfix: hide the old hard-coded mock candles/price axis; only the live chart renderer may paint candles. */
-.chart>.grid,.chart>.candles,.chart>.price,.chart>#chartPriceTag,.chart>.axis{display:none!important}
-#rizviTvChartV55{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;z-index:2!important}
+/* V128: user requested chart source INACTIVE. Do not display or initialize chart renderers. */
+.chart>.grid,.chart>.candles,.chart>.price,.chart>#chartPriceTag,.chart>.axis,#rizviTvChartV55{display:none!important}
 .chart{position:relative!important;overflow:hidden!important}
-</style></head>
+</style><script id="rizvi-chart-source-inactive">window.RIZVI_CHART_SOURCE_INACTIVE=true;window.RIZVI_CHART_SOURCE_STATUS="INACTIVE_BY_USER";</script></head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
 <section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>88%</b><em class="badge">HIGH QUALITY SETUP</em></div></div></section>
@@ -358,6 +357,8 @@
 </script><script id="rizvi-single-chart-owner-v3">
 (function(){
 'use strict';
+/* V128: source intentionally inactive per user instruction; do not request or publish candles. */
+if(window.RIZVI_CHART_SOURCE_INACTIVE)return;
 /* V3: one chart-data owner, generation guarded, no destructive clear before a valid fetch. */
 const direct={BTCUSD:'coinbase','XAU/USD':'xaus',USOIL:'ctrader'};
 window.RIZVI_DIRECT_CHART_SOURCE=direct;
@@ -926,6 +927,7 @@ tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.
 <script id="rizvi-chart-v78">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-v55-tradingview-engine">
 (function(){
 'use strict';
+if(window.RIZVI_CHART_SOURCE_INACTIVE)return;
 if(window.__RIZVI_V55_TV_ENGINE)return;window.__RIZVI_V55_TV_ENGINE=true;
 const TF={'1M':1,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
 let chart=null,series=null,ready=false,lastTf='',lastFirst=0,lastLast=0,lastSymbol='',attempts=0,L=null;
