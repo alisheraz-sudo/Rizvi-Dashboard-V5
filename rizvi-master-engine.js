@@ -305,7 +305,18 @@
     const _indicatorBus={};
     for(const _name of _indicatorNames){
       const _src=engines[_name]||{};
-      _indicatorBus[_name]={active:_name==='rsi'?r!==null:Boolean(_src.confidence!==null),signal:String(_src.signal??contribution[_name]?.signal??'WAIT').toUpperCase(),confidence:Number.isFinite(Number(_src.confidence))?Number(_src.confidence):null,reason:_src.reason||null,value:_src.value??null};
+      const _confidence=Number(_src.confidence);
+      const _hasConfidence=_src.confidence!==null&&_src.confidence!==undefined&&Number.isFinite(_confidence);
+      const _feedReady=_name==='rsi'?r!==null:
+        _name==='orderFlow'?of.status==='LIVE':
+        _name==='delta'?delta!==null:
+        _name==='vwap'?vwap!==null:
+        _name==='volumeProfile'?volumeProfile!==null:
+        _name==='liquidity'?Boolean(liq.status):
+        _name==='rangeLevels'?Object.keys(rangeLevels).length>=4:
+        _name==='atr'||_name==='volatility'?a14!==null:
+        _name==='macd'?mx!==null:true;
+      _indicatorBus[_name]={active:_feedReady&&_hasConfidence,signal:String(_src.signal??contribution[_name]?.signal??'WAIT').toUpperCase(),confidence:_hasConfidence?_confidence:null,reason:_src.reason||(!_feedReady?'Required live input unavailable':null),value:_src.value??null};
     }
     window.RIZVI_INDICATOR_BUS={symbol,updatedAt:Date.now(),total:_indicatorNames.length,activeCount:Object.values(_indicatorBus).filter(x=>x.active).length,indicators:_indicatorBus,attachedTo:'RIZVI_MASTER_CONFIRMATION',autoTrading:false,adaptiveScoring:{enabled:true,regime:adaptive.regime,learningSamples:adaptive.learningSamples,weights:WEIGHTS,baseWeights:BASE_WEIGHTS,bounds:ADAPTIVE_LIMITS}};
     // Compact adaptive audit log: records the weights used during trade discovery.
