@@ -24,6 +24,7 @@
       ofm={status:btc.status,imbalance:total?((bid-ask)/total)*100:0};
     }
     const me=m.engines||{};
+    const allEngines={...me};
     return {
       trend:me.trend||q.trend||q.marketTrend||q.htfTrend||null,
       structure:me.structure||q.structure||q.marketStructure||null,
@@ -35,7 +36,8 @@
       volatility:me.volatility||q.volatility||null,
       qualificationStatus:q.status||v.status||null,
       confidence:clamp(m.confidence??q.patternConfidence??v.confidence),
-      direction:m.direction||q.marketDirection||v.direction||window.RIZVI_SIGNAL_DIRECTION||'WAIT'
+      direction:m.direction||q.marketDirection||v.direction||window.RIZVI_SIGNAL_DIRECTION||'WAIT',
+      allEngines
     };
   }
   function currentPrice(symbol){
@@ -103,7 +105,7 @@
   }
   function standardizeEngines(snap){
     const out={};
-    ['trend','structure','liquidity','orderFlow','momentum','divergence','priceAction','volatility'].forEach(k=>{
+    ['trend','structure','liquidity','orderFlow','momentum','rsi','divergence','vwap','volumeProfile','delta','candlePattern','candleBias','fvg','rangeLevels','atr','volatility','macd','priceAction'].forEach(k=>{
       const e=normalizeEngine(snap[k]);
       if(k==='orderFlow'&&snap[k]&&typeof snap[k]==='object'&&Number.isFinite(Number(snap[k].imbalance)))e.reason='imbalance '+Number(snap[k].imbalance).toFixed(1)+'% • '+(snap[k].status||'UNKNOWN');
       e.correct=null;out[k]=e;
@@ -143,7 +145,7 @@
     if(!d.startedAt)d.startedAt=now;
     const snap=engineSnapshot();
     const engines=standardizeEngines(snap);
-    d.trades.push({id:String(now)+'-'+Math.random().toString(36).slice(2,7),ts:now,symbol,direction,entry:Number.isFinite(p)?p:null,confidence:snap.confidence,engines,qualificationStatus:snap.qualificationStatus});
+    d.trades.push({id:String(now)+'-'+Math.random().toString(36).slice(2,7),ts:now,symbol,direction,entry:Number.isFinite(p)?p:null,confidence:snap.confidence,engines,adaptiveScoring:window.RIZVI_INDICATOR_BUS?.adaptiveScoring||null,qualificationStatus:snap.qualificationStatus});
     save(d);render();
   }
   window.RIZVI_SIGNAL_JOURNAL={capture,render,load,evaluateForward};
