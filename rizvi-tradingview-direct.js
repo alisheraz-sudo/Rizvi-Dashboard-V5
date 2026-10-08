@@ -17,14 +17,17 @@ let currentSymbol='', currentTF='1M', rebuildTimer=null;
 
 function host(){return document.getElementById('rizviTvChartV55')}
 function selectedSymbol(){
- const raw=String(window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD').toUpperCase();
- return MAP[raw]?raw:'BTCUSD';
+ const raw=String(window.RIZVI_DIRECT_SYMBOL||window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD').trim().toUpperCase();
+ return raw||'BTCUSD';
+}
+function tvSymbol(){
+ const raw=selectedSymbol();
+ return MAP[raw]||raw;
 }
 function interval(){
  const tf=String(window.RIZVI_CANDLE_TIMEFRAME||currentTF||'1M').toUpperCase();
  return TF[tf]||'1';
 }
-function tvSymbol(){return MAP[selectedSymbol()]||MAP.BTCUSD}
 
 function setHeader(tf,symbol){
  const head=document.querySelector('.chart .head>div:first-child');
@@ -60,6 +63,7 @@ function build(){
    style:'1',
    locale:'en',
    allow_symbol_change:true,
+   details:true,
    withdateranges:true,
    hide_top_toolbar:false,
    hide_side_toolbar:false,
@@ -97,16 +101,29 @@ function setTf(tf){
  document.querySelectorAll('.tf span').forEach(x=>x.classList.toggle('sel',x.textContent.trim().toUpperCase()===tf));
  build();
 }
+function addUniversalSearch(){
+ const h=document.querySelector('.chart .head');
+ if(!h||h.querySelector('#rizviUniversalSymbol'))return;
+ const box=document.createElement('div');
+ box.id='rizviUniversalSymbol';
+ box.style.cssText='display:flex;align-items:center;gap:5px;margin-left:auto;margin-right:8px;';
+ box.innerHTML='<input id="rizviUniversalSymbolInput" aria-label="Universal market symbol" placeholder="Search symbol e.g. EURUSD / NASDAQ:AAPL" style="width:210px;height:24px;border:1px solid #28506f;border-radius:4px;background:#061522;color:#eaf3f8;padding:3px 7px;font-size:10px;outline:none"><button id="rizviUniversalSymbolGo" style="height:24px;border:1px solid #1689ff;border-radius:4px;background:#0a2940;color:#eaf3f8;font-size:10px;font-weight:800;padding:0 7px">GO</button>';
+ h.appendChild(box);
+ const input=box.querySelector('#rizviUniversalSymbolInput'),go=box.querySelector('#rizviUniversalSymbolGo');
+ const apply=()=>{const v=input.value.trim().toUpperCase();if(!v)return;window.RIZVI_DIRECT_SYMBOL=v;build();};
+ go.addEventListener('click',apply);input.addEventListener('keydown',e=>{if(e.key==='Enter')apply()});
+}
 function wire(){
+ addUniversalSearch();
  const sel=document.getElementById('symbolSelect');
  if(sel)sel.addEventListener('change',()=>{
-   window.RIZVI_CURRENT_SYMBOL=sel.value;
+   window.RIZVI_DIRECT_SYMBOL=sel.value;
    build();
  });
  document.querySelectorAll('.tf span').forEach(x=>{
    x.addEventListener('click',()=>setTf(x.textContent.trim()));
  });
- window.addEventListener('rizvi:symbol-change',build);
+ window.addEventListener('rizvi:symbol-change',e=>{if(e.detail?.symbol)window.RIZVI_DIRECT_SYMBOL=e.detail.symbol;build();});
 }
 function boot(){
  const el=host();
