@@ -137,10 +137,59 @@
  .qualityBlock b{font-size:14px!important}
  .badge{font-size:7px!important;padding:3px 5px!important}
 }
-</style></head>
+</style>
+<style id="rizvi-main-action-buttons-bold-v127">
+/* V127: restore the approved one-line action/signal row; clear, bold, dark controls. */
+.actions{
+ display:grid!important;
+ grid-template-columns:112px 112px 132px minmax(360px,1fr)!important;
+ gap:9px!important;
+ margin:10px 0 12px!important;
+ align-items:stretch!important;
+}
+.actions>.btn{
+ height:48px!important;
+ min-height:48px!important;
+ padding:0 12px!important;
+ border-radius:7px!important;
+ font-family:Arial,sans-serif!important;
+ font-size:16px!important;
+ font-weight:900!important;
+ letter-spacing:.35px!important;
+ line-height:1!important;
+ color:#f5fbff!important;
+ text-shadow:0 1px 1px #000!important;
+ border:1px solid #47627b!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 5px rgba(0,0,0,.35)!important;
+}
+.actions>.btn.buy{background:#075b3e!important;border-color:#13a66c!important}
+.actions>.btn.sell{background:#70202b!important;border-color:#dc4554!important}
+.actions>.btn.unwind{background:#63440b!important;border-color:#d69b20!important}
+.signalHead{
+ display:flex!important;min-width:0!important;min-height:48px!important;height:48px!important;
+ padding:4px 14px!important;gap:24px!important;justify-content:flex-start!important;
+ background:#04111e!important;border:1px solid #24445e!important;border-radius:8px!important;
+}
+.signalHead>div{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+.signalHead span{font-size:12px!important;font-weight:800!important;color:#c2d1dc!important;letter-spacing:.4px!important}
+.signalBlock b,.qualityBlock b{font-size:22px!important;font-weight:900!important;line-height:1!important}
+.signalBlock i{font-style:normal!important;font-size:15px!important;font-weight:900!important;color:#d4e0e9!important;padding:6px 8px!important;border-radius:5px!important;background:#172636!important;border:1px solid #344a5e!important}
+.qualityBlock .badge{font-size:11px!important;font-weight:900!important;letter-spacing:.2px!important;padding:6px 9px!important;color:#f2fff8!important;background:#07583e!important;border:1px solid #159767!important}
+@media(max-width:900px){
+ .actions{grid-template-columns:1fr 1fr 1.15fr minmax(0,2.6fr)!important;gap:5px!important;margin:7px 5px 8px!important}
+ .actions>.btn{height:42px!important;min-height:42px!important;padding:0 4px!important;font-size:12px!important;letter-spacing:0!important}
+ .signalHead{height:42px!important;min-height:42px!important;padding:3px 6px!important;gap:7px!important;overflow:hidden!important}
+ .signalHead>div{gap:4px!important}
+ .signalHead span{font-size:8px!important;letter-spacing:0!important}
+ .signalBlock b,.qualityBlock b{font-size:15px!important}
+ .signalBlock i{font-size:10px!important;padding:5px 4px!important}
+ .qualityBlock .badge{font-size:7px!important;padding:4px 4px!important;white-space:nowrap!important}
+}
+</style>
+</head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
-<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND (STOP)</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>88%</b><em class="badge">HIGH QUALITY SETUP</em></div></div></section>
+<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>88%</b><em class="badge">HIGH QUALITY SETUP</em></div></div></section>
 <div class="main"><main>
 <section class="chart"><div class="grid"></div><div class="candles">
 <i class="c g" style="left:2%;top:78%;height:12%"></i><i class="c g" style="left:6%;top:68%;height:13%"></i><i class="c r" style="left:10%;top:63%;height:10%"></i><i class="c g" style="left:14%;top:57%;height:13%"></i><i class="c g" style="left:18%;top:53%;height:12%"></i><i class="c r" style="left:22%;top:55%;height:10%"></i><i class="c g" style="left:26%;top:45%;height:16%"></i><i class="c g" style="left:30%;top:40%;height:15%"></i><i class="c r" style="left:34%;top:43%;height:9%"></i><i class="c g" style="left:38%;top:35%;height:15%"></i><i class="c g" style="left:42%;top:30%;height:16%"></i><i class="c r" style="left:46%;top:35%;height:10%"></i><i class="c g" style="left:50%;top:28%;height:16%"></i><i class="c g" style="left:54%;top:22%;height:14%"></i><i class="c r" style="left:58%;top:27%;height:10%"></i><i class="c g" style="left:62%;top:18%;height:15%"></i><i class="c g" style="left:66%;top:13%;height:14%"></i><i class="c r" style="left:70%;top:19%;height:9%"></i><i class="c g" style="left:74%;top:12%;height:13%"></i><i class="c r" style="left:78%;top:16%;height:9%"></i></div>
