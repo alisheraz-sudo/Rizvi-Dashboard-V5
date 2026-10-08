@@ -7,7 +7,7 @@
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
-  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[]};
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50};
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
@@ -86,9 +86,9 @@
     // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.\n    // Bullish FVG: current low > candle two bars back high.\n    // Bearish FVG: current high < candle two bars back low.\n    const fvgLookback=Math.min(80,bars.length);\n    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};\n    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){\n      const a=bars[i-2], mid=bars[i-1], b=bars[i];\n      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);\n      if([ah,al,bh,bl].every(Number.isFinite)){\n        if(bl>ah){\n          const top=bl,bottom=ah;\n          const filled=Number(last.l)<=bottom;\n          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}\n        }\n        if(bh<al){\n          const top=al,bottom=bh;\n          const filled=Number(last.h)>=top;\n          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}\n        }\n      }\n    }\n    const fvgSignal=fvg.signal;\n\n    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
     const WEIGHTS={
-      trend:16, structure:14, liquidity:12, orderFlow:12, momentum:8,
-      rsi:7, divergence:8, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:3, fvg:8
+      trend:15, structure:13, liquidity:11, orderFlow:11, momentum:8,
+      rsi:7, divergence:7, vwap:7, volumeProfile:5, delta:4,
+      candlePattern:4, candleBias:3, fvg:5
     };
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
@@ -122,15 +122,20 @@
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
     const weightedScore=activeWeight?clamp((lead/activeWeight)*100):0;
     const directionalMargin=activeWeight?clamp(((lead-conflict)/activeWeight)*100):0;
+    // V129: rolling score average over the latest 30 engine runs smooths noisy candle-to-candle swings.
+    state.scoreSamples.push(weightedScore);
+    if(state.scoreSamples.length>30)state.scoreSamples.shift();
+    state.scoreAverage=state.scoreSamples.length?state.scoreSamples.reduce((a,b)=>a+b,0)/state.scoreSamples.length:weightedScore;
+    const settledScore=state.scoreAverage;
     // 95 = strict confluence/compatibility quality, NOT 95% probability of profit.
     const rawConfidence=rawDirection==='WAIT'?50:
-      clamp(Math.round(45+weightedScore*0.38+directionalMargin*0.32+(total>=activeWeight*0.75?8:0)));
+      clamp(Math.round(45+settledScore*0.38+directionalMargin*0.32+(total>=activeWeight*0.75?8:0)));
     const activeIndicators=Object.keys(contribution).length;
     const alignedIndicators=Object.values(contribution).filter(x=>x.signal===rawDirection).length;
     const compatibility95=rawDirection!=='WAIT'&&weightedScore>=95&&directionalMargin>=70&&activeIndicators>=8&&alignedIndicators>=7;
     const algoRunReport={
       timestamp:Date.now(),symbol,
-      threshold:95,score:Math.round(weightedScore),confidence:Math.round(rawConfidence),
+      threshold:95,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
       direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
       directionalMargin:Math.round(directionalMargin),compatibility95,
       weights:WEIGHTS,contributions:contribution,
@@ -175,6 +180,8 @@
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
+    // V129: directional BUY/SELL visibility is independent of the stricter High Quality Setup gate.
+    const visibleSignal=direction!=='WAIT'?direction:'WAIT';
 
     const engines={
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
@@ -197,13 +204,13 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,weights:WEIGHTS},
+      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
-      symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
+      symbol,updatedAt:Date.now(),signalDirection:visibleSignal,marketDirection:visibleSignal,
       liquidityScore:Math.round(liqScore),patternConfidence:confidence,aligned:true,
       confirmedSweep:Boolean(liq.sweeps?.length),confirmedBreakout:Boolean(liq.breakouts?.length),
       multiTimeframe:confirmations>=3,
@@ -213,7 +220,7 @@
       orderFlow:engines.orderFlow,momentum:engines.momentum,candleBias:engines.candleBias,divergence:engines.divergence,
       priceAction:engines.priceAction,volatility:engines.volatility
     };
-    window.RIZVI_SIGNAL_DIRECTION=direction;
+    window.RIZVI_SIGNAL_DIRECTION=visibleSignal;
     window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
     window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
   }
