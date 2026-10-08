@@ -429,14 +429,19 @@ async function fetchBars(sym){
 function publish(sym,bars,status='LIVE'){
  const clean=normalizeBars(bars);
  if(!clean.length)throw new Error('No valid bars');
+ const updatedAt=Date.now();
  cache[sym]=clean;
- window.RIZVI_CHART_DATA[sym]={source:direct[sym],bars:clean,updatedAt:Date.now(),status};
+ /* Canonical shared feed contract: chart and every selected indicator must consume this same normalized OHLC snapshot. */
+ const packet={symbol:sym,source:direct[sym]||'unknown',bars:clean,updatedAt,status,price:clean[clean.length-1].c,timeframe:window.RIZVI_CANDLE_TIMEFRAME||'1M'};
+ window.RIZVI_CHART_DATA[sym]=packet;
+ window.RIZVI_MARKET_DATA=packet;
  window.RIZVI_RAW_BARS=clean;
  window.RIZVI_AGG_BARS=window.RIZVI_SET_TIMEFRAME
-   ?window.RIZVI_SET_TIMEFRAME(window.RIZVI_CANDLE_TIMEFRAME||'1M',clean):clean;
- window.RIZVI_LIVE_PRICE=clean[clean.length-1].c;
- window.RIZVI_CHART_STATUS={symbol:sym,status,updatedAt:Date.now(),bars:clean.length};
- window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:sym,bars:clean,status}}));
+   ?window.RIZVI_SET_TIMEFRAME(packet.timeframe,clean):clean;
+ window.RIZVI_LIVE_PRICE=packet.price;
+ window.RIZVI_CHART_STATUS={symbol:sym,status,source:packet.source,updatedAt,bars:clean.length,lastCandleTime:clean[clean.length-1].t,price:packet.price};
+ window.dispatchEvent(new CustomEvent('rizvi:market-data',{detail:packet}));
+ window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:packet}));
 }
 function setStatus(sym,status,error){
  window.RIZVI_CHART_STATUS={symbol:sym,status,updatedAt:Date.now(),error:error||null,bars:(cache[sym]||[]).length};
