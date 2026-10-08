@@ -88,13 +88,92 @@
     ['dayHigh','h4High','h1High','m30High','m15High'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c>Number(rangeLevels[k])?'BUY':'NEUTRAL';});
     ['dayLow','h4Low','h1Low','m30Low','m15Low'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c<Number(rangeLevels[k])?'SELL':'NEUTRAL';});
 
-    // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.\n    // Bullish FVG: current low > candle two bars back high.\n    // Bearish FVG: current high < candle two bars back low.\n    const fvgLookback=Math.min(80,bars.length);\n    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};\n    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){\n      const a=bars[i-2], mid=bars[i-1], b=bars[i];\n      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);\n      if([ah,al,bh,bl].every(Number.isFinite)){\n        if(bl>ah){\n          const top=bl,bottom=ah;\n          const filled=Number(last.l)<=bottom;\n          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}\n        }\n        if(bh<al){\n          const top=al,bottom=bh;\n          const filled=Number(last.h)>=top;\n          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}\n        }\n      }\n    }\n    const fvgSignal=fvg.signal;\n\n    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
-    // ATR/Volatility and MACD are now first-class Master Engine inputs.
-    const WEIGHTS={
+    // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.\n    // Bullish FVG: current low > candle two bars back high.\n    // Bearish FVG: current high < candle two bars back low.\n    const fvgLookback=Math.min(80,bars.length);\n    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};\n    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){\n      const a=bars[i-2], mid=bars[i-1], b=bars[i];\n      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);\n      if([ah,al,bh,bl].every(Number.isFinite)){\n        if(bl>ah){\n          const top=bl,bottom=ah;\n          const filled=Number(last.l)<=bottom;\n          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}\n        }\n        if(bh<al){\n          const top=al,bottom=bh;\n          const filled=Number(last.h)>=top;\n          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}\n        }\n      }\n    }\n    const fvgSignal=fvg.signal;\n\n    // V128 Adaptive Scoring Engine:
+    // Fixed weights are replaced by regime-aware, bounded, smoothed weights.
+    // Learning starts only after resolved journal outcomes exist. Until then,
+    // regime adjustments provide context without pretending to have learned accuracy.
+    const BASE_WEIGHTS={
       trend:14, structure:12, liquidity:10, orderFlow:10, momentum:7,
       rsi:6, divergence:6, vwap:6, volumeProfile:5, delta:4,
       candlePattern:4, candleBias:3, fvg:5, atr:4, volatility:2, macd:2
     };
+    const ADAPTIVE_LIMITS={
+      trend:[8,18],structure:[8,18],liquidity:[5,16],orderFlow:[5,16],momentum:[4,12],
+      rsi:[3,10],divergence:[3,10],vwap:[3,10],volumeProfile:[2,9],delta:[2,8],
+      candlePattern:[2,8],candleBias:[1,6],fvg:[2,9],atr:[2,7],volatility:[1,5],macd:[1,6]
+    };
+    const REGIME_PROFILES={
+      TRENDING:{trend:1.16,structure:1.08,liquidity:1.04,orderFlow:1.10,momentum:1.14,rsi:.92,divergence:.88,vwap:1.06,volumeProfile:1.03,delta:1.08,candlePattern:1.00,candleBias:.96,fvg:1.05,atr:1.04,volatility:1.00,macd:1.14},
+      RANGING:{trend:.84,structure:1.10,liquidity:1.14,orderFlow:1.02,momentum:.82,rsi:1.12,divergence:1.14,vwap:1.03,volumeProfile:1.08,delta:.98,candlePattern:1.04,candleBias:1.00,fvg:.92,atr:1.02,volatility:1.06,macd:.84},
+      HIGH_VOL:{trend:1.00,structure:1.12,liquidity:1.14,orderFlow:1.12,momentum:1.08,rsi:.84,divergence:.94,vwap:.92,volumeProfile:1.06,delta:1.10,candlePattern:1.08,candleBias:1.02,fvg:1.08,atr:1.18,volatility:1.20,macd:1.02},
+      LOW_VOL:{trend:.96,structure:1.06,liquidity:1.08,orderFlow:.96,momentum:.84,rsi:1.04,divergence:1.06,vwap:1.08,volumeProfile:1.08,delta:.92,candlePattern:.94,candleBias:.96,fvg:.88,atr:1.12,volatility:1.16,macd:.88},
+      MIXED:{}
+    };
+    const ADAPT_KEY='RIZVI_ADAPTIVE_WEIGHT_STATE_V1';
+    function loadAdaptiveState(){
+      try{return JSON.parse(localStorage.getItem(ADAPT_KEY)||'{"weights":{},"lastRegime":"MIXED","runs":0}')}
+      catch{return {weights:{},lastRegime:'MIXED',runs:0};}
+    }
+    function saveAdaptiveState(s){try{localStorage.setItem(ADAPT_KEY,JSON.stringify(s));}catch{}}
+    function classifyRegime(){
+      const volPct=atrPct??0;
+      const spread=Math.abs(e9-e21)/(Math.abs(Number(last.c))||1)*100;
+      const body=bodyPct;
+      if(volPct>=0.12)return 'HIGH_VOL';
+      if(volPct<=0.025)return 'LOW_VOL';
+      if(spread>=0.035&&body>=0.30)return 'TRENDING';
+      if(spread<=0.012)return 'RANGING';
+      return 'MIXED';
+    }
+    function readResolvedLearning(){
+      try{
+        const d=JSON.parse(localStorage.getItem('RIZVI_SIGNAL_JOURNAL_V1')||'{"trades":[]}');
+        const trades=Array.isArray(d.trades)?d.trades:[];
+        const resolved=trades.filter(t=>t.outcome==='WIN'||t.outcome==='LOSS');
+        const stats={};
+        for(const t of resolved){
+          const outcome=t.outcome==='WIN'?1:0;
+          const engines=t.engines||{};
+          for(const [k,e] of Object.entries(engines)){
+            if(!stats[k])stats[k]={n:0,wins:0};
+            if(String(e?.signal||'').toUpperCase()!=='BUY'&&String(e?.signal||'').toUpperCase()!=='SELL')continue;
+            stats[k].n++;
+            const aligned=String(e.signal).toUpperCase()===String(t.direction).toUpperCase();
+            if(aligned&&outcome===1)stats[k].wins++;
+            else if(!aligned&&outcome===0)stats[k].wins++;
+          }
+        }
+        return {resolved:resolved.length,stats};
+      }catch{return {resolved:0,stats:{}};}
+    }
+    function getAdaptiveWeights(regime){
+      const st=loadAdaptiveState(), profile=REGIME_PROFILES[regime]||{};
+      const learned=readResolvedLearning();
+      const next={};
+      for(const [k,base] of Object.entries(BASE_WEIGHTS)){
+        const factor=Number(profile[k]??1);
+        let target=base*factor;
+        const s=learned.stats[k];
+        // Learning is deliberately conservative: minimum sample size 5 and
+        // shrink observed accuracy toward 50% before it can move the weight.
+        if(s&&s.n>=5){
+          const observed=s.wins/s.n;
+          const reliability=0.50+(observed-0.50)*0.60;
+          target*=clamp(0.70+(reliability-0.50)*1.20,0.70,1.30);
+        }
+        const [mn,mx]=ADAPTIVE_LIMITS[k];
+        target=Math.max(mn,Math.min(mx,target));
+        const previous=Number(st.weights?.[k]??base);
+        // Slow adaptation prevents tick-to-tick weight jumping.
+        next[k]=previous*0.88+target*0.12;
+      }
+      st.weights=next;st.lastRegime=regime;st.runs=(Number(st.runs)||0)+1;
+      if(st.runs%3===0)saveAdaptiveState(st);
+      return {weights:next,regime,learningSamples:learned.resolved};
+    }
+    const regime=classifyRegime();
+    const adaptive=getAdaptiveWeights(regime);
+    const WEIGHTS=adaptive.weights;
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
       orderFlow:of.signal,momentum,rsi:(r===null?'WAIT':r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'),
@@ -147,8 +226,8 @@
       threshold:95,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
       direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
       directionalMargin:Math.round(directionalMargin),compatibility95,
-      weights:WEIGHTS,contributions:contribution,
-      note:'95 is confluence compatibility, not win probability.'
+      weights:WEIGHTS,baseWeights:BASE_WEIGHTS,regime:adaptive.regime,learningSamples:adaptive.learningSamples,contributions:contribution,
+      note:'Adaptive bounded weights; learning activates after resolved outcomes. 95 is confluence compatibility, not win probability.'
     };
 
     // V105: signal hysteresis. Indicators may recalculate every tick, but the
@@ -213,7 +292,7 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
+      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS,baseWeights:BASE_WEIGHTS,adaptiveRegime:adaptive.regime,adaptiveLearningSamples:adaptive.learningSamples,adaptiveLearningMinSamples:5,adaptiveSmoothing:0.12,adaptiveBounds:ADAPTIVE_LIMITS},
       contributions:{trend:trend,structure:structure,momentum,atr:atrSignal,volatility:atrSignal,macd:macdSignal,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,atr:a14!==null,volatility:a14!==null,macd:mx!==null},
       algoRunReport
@@ -225,7 +304,19 @@
       const _src=engines[_name]||{};
       _indicatorBus[_name]={active:_name==='rsi'?r!==null:Boolean(_src.confidence!==null),signal:String(_src.signal??contribution[_name]?.signal??'WAIT').toUpperCase(),confidence:Number.isFinite(Number(_src.confidence))?Number(_src.confidence):null,reason:_src.reason||null,value:_src.value??null};
     }
-    window.RIZVI_INDICATOR_BUS={symbol,updatedAt:Date.now(),total:_indicatorNames.length,activeCount:Object.values(_indicatorBus).filter(x=>x.active).length,indicators:_indicatorBus,attachedTo:'RIZVI_MASTER_CONFIRMATION',autoTrading:false};
+    window.RIZVI_INDICATOR_BUS={symbol,updatedAt:Date.now(),total:_indicatorNames.length,activeCount:Object.values(_indicatorBus).filter(x=>x.active).length,indicators:_indicatorBus,attachedTo:'RIZVI_MASTER_CONFIRMATION',autoTrading:false,adaptiveScoring:{enabled:true,regime:adaptive.regime,learningSamples:adaptive.learningSamples,weights:WEIGHTS,baseWeights:BASE_WEIGHTS,bounds:ADAPTIVE_LIMITS}};
+    // Compact adaptive audit log: records the weights used during trade discovery.
+    // It is intentionally throttled so the browser is not flooded every 5 seconds.
+    try{
+      const nowLog=Date.now(), logKey='RIZVI_ADAPTIVE_WEIGHT_LOG_V1';
+      const logs=JSON.parse(localStorage.getItem(logKey)||'[]');
+      const lastLog=logs.at(-1);
+      if(!lastLog||nowLog-Number(lastLog.ts)>=15000){
+        logs.push({ts:nowLog,symbol,regime:adaptive.regime,learningSamples:adaptive.learningSamples,weights:{...WEIGHTS},rawDirection,score:Math.round(weightedScore),confidence:Math.round(rawConfidence)});
+        while(logs.length>1000)logs.shift();
+        localStorage.setItem(logKey,JSON.stringify(logs));
+      }
+    }catch{}
     window.dispatchEvent(new CustomEvent('rizvi:indicator-bus-update',{detail:window.RIZVI_INDICATOR_BUS}));
     window.RIZVI_SIGNAL_QUALIFICATION={
       symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
