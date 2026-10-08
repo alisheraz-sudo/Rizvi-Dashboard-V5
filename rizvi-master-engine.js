@@ -208,6 +208,15 @@
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
     };
+    // V126 unified indicator activation bridge: all engines publish through the master.
+    const _indicatorNames=['trend','structure','liquidity','orderFlow','momentum','rsi','divergence','vwap','volumeProfile','delta','candlePattern','candleBias','fvg','rangeLevels'];
+    const _indicatorBus={};
+    for(const _name of _indicatorNames){
+      const _src=engines[_name]||{};
+      _indicatorBus[_name]={active:_name==='rsi'?r!==null:Boolean(m?.indicatorStatus?.[_name]??_src.confidence!==null),signal:String(_src.signal??contribution[_name]?.signal??'WAIT').toUpperCase(),confidence:Number.isFinite(Number(_src.confidence))?Number(_src.confidence):null,reason:_src.reason||null,value:_src.value??null};
+    }
+    window.RIZVI_INDICATOR_BUS={symbol,updatedAt:Date.now(),total:_indicatorNames.length,activeCount:Object.values(_indicatorBus).filter(x=>x.active).length,indicators:_indicatorBus,attachedTo:'RIZVI_MASTER_CONFIRMATION',autoTrading:false};
+    window.dispatchEvent(new CustomEvent('rizvi:indicator-bus-update',{detail:window.RIZVI_INDICATOR_BUS}));
     window.RIZVI_SIGNAL_QUALIFICATION={
       symbol,updatedAt:Date.now(),signalDirection:direction,marketDirection:direction,
       liquidityScore:Math.round(liqScore),patternConfidence:confidence,aligned:true,
