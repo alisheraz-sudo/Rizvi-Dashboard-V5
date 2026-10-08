@@ -83,7 +83,30 @@
     ['dayHigh','h4High','h1High','m30High','m15High'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c>Number(rangeLevels[k])?'BUY':'NEUTRAL';});
     ['dayLow','h4Low','h1Low','m30Low','m15Low'].forEach(k=>{if(Number.isFinite(Number(rangeLevels[k])))rangeSignals[k]=last.c<Number(rangeLevels[k])?'SELL':'NEUTRAL';});
 
-    // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.\n    // Bullish FVG: current low > candle two bars back high.\n    // Bearish FVG: current high < candle two bars back low.\n    const fvgLookback=Math.min(80,bars.length);\n    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};\n    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){\n      const a=bars[i-2], mid=bars[i-1], b=bars[i];\n      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);\n      if([ah,al,bh,bl].every(Number.isFinite)){\n        if(bl>ah){\n          const top=bl,bottom=ah;\n          const filled=Number(last.l)<=bottom;\n          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}\n        }\n        if(bh<al){\n          const top=al,bottom=bh;\n          const filled=Number(last.h)>=top;\n          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}\n        }\n      }\n    }\n    const fvgSignal=fvg.signal;\n\n    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
+    // V106 FVG engine: detect the latest 3-candle Fair Value Gap from live OHLC.
+    // Bullish FVG: current low > candle two bars back high.
+    // Bearish FVG: current high < candle two bars back low.
+    const fvgLookback=Math.min(80,bars.length);
+    let fvg={signal:'NEUTRAL',confidence:50,type:null,top:null,bottom:null,filled:false,reason:'No active FVG'};
+    for(let i=bars.length-1;i>=Math.max(2,bars.length-fvgLookback);i--){
+      const a=bars[i-2], mid=bars[i-1], b=bars[i];
+      const ah=Number(a.h), al=Number(a.l), bh=Number(b.h), bl=Number(b.l);
+      if([ah,al,bh,bl].every(Number.isFinite)){
+        if(bl>ah){
+          const top=bl,bottom=ah;
+          const filled=Number(last.l)<=bottom;
+          if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}
+        }
+        if(bh<al){
+          const top=al,bottom=bh;
+          const filled=Number(last.h)>=top;
+          if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}
+        }
+      }
+    }
+    const fvgSignal=fvg.signal;
+
+    // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
     const WEIGHTS={
       trend:15, structure:13, liquidity:11, orderFlow:11, momentum:8,
@@ -196,7 +219,8 @@
       vwap:{signal:vwapSignal,confidence:vwap===null?null:70,reason:vwap===null?'volume data unavailable':'price vs session VWAP',value:vwap},
       volumeProfile:{signal:vpSignal,confidence:volumeProfile===null?null:68,reason:volumeProfile===null?'volume data unavailable':'POC context',poc:volumeProfile?.poc??null},
       delta:{signal:deltaSignal,confidence:delta===null?null:of.confidence,reason:delta===null?'L2 unavailable':'L2 bid/ask imbalance',imbalance:delta},
-      candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},\n      fvg:{signal:fvg.signal,confidence:fvg.confidence,reason:fvg.reason,type:fvg.type,top:fvg.top,bottom:fvg.bottom,filled:fvg.filled},
+      candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},
+      fvg:{signal:fvg.signal,confidence:fvg.confidence,reason:fvg.reason,type:fvg.type,top:fvg.top,bottom:fvg.bottom,filled:fvg.filled},
       rangeLevels:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:'Day/4H/1H/30M/15M high-low context',levels:rangeLevels}
     };
     window.RIZVI_MASTER_CONFIRMATION={
