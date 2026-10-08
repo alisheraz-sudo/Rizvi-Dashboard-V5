@@ -115,7 +115,7 @@
 #rizviSvgChartV73,#rizviLiveSvgV78{display:none!important}
 #rizviTvChartV55{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;z-index:10!important;touch-action:none!important;background:#031421!important}
 #rizviTvChartV55 canvas{touch-action:none!important}
-</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><style id="rizvi-v125-action-row">
+</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><script id="rizvi-direct-tv-source" src="/rizvi-tradingview-direct.js"></script><style id="rizvi-v125-action-row">
 /* V125: restore the approved one-line action/signal row directly under the header and above the chart. */
 .actions{display:grid!important;grid-template-columns:86px 86px 118px minmax(0,1fr)!important;gap:7px!important;align-items:stretch!important;width:100%!important;margin:8px 0 7px!important}
 .actions .btn{height:38px!important;padding:0 8px!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important}
@@ -913,113 +913,7 @@ tfEls.forEach(el=>el.addEventListener('click',()=>window.RIZVI_SET_TIMEFRAME(el.
 #rizviLiveSvgV78{position:absolute;left:0;right:82px;top:47px;width:calc(100% - 82px);height:calc(100% - 75px);z-index:3;display:block;touch-action:none;cursor:grab}
 #rizviLiveSvgV78.dragging{cursor:grabbing}
 </style>
-<script id="rizvi-chart-v78">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-v55-tradingview-engine">
-(function(){
-'use strict';
-if(window.__RIZVI_V55_TV_ENGINE)return;window.__RIZVI_V55_TV_ENGINE=true;
-const TF={'1M':1,'5M':5,'15M':15,'30M':30,'1H':60,'2H':120,'4H':240,'1D':1440};
-let chart=null,series=null,ready=false,lastTf='',lastFirst=0,lastLast=0,lastSymbol='',attempts=0,L=null;
-function N(v){const x=Number(v);return Number.isFinite(x)?x:NaN}
-function host(){
- const area=document.querySelector('.chart');if(!area)return null;
- let el=document.getElementById('rizviTvChartV55');
- if(!el){el=document.createElement('div');el.id='rizviTvChartV55';area.appendChild(el)}
- return el;
-}
-function rows(){
- const raw=Array.isArray(window.RIZVI_RAW_BARS)?window.RIZVI_RAW_BARS:[];
- const byTime=new Map();
- raw.forEach(b=>{
-   let t=N(b.t);
-   /* Normalize feed timestamps: Coinbase/XAUS may return seconds, while some feeds return milliseconds. */
-   if(Number.isFinite(t)&&t<100000000000)t*=1000;
-   const o=N(b.o),h=N(b.h),l=N(b.l),c=N(b.c);
-   if(!Number.isFinite(t)||![o,h,l,c].every(Number.isFinite))return;
-   /* One canonical bar per timestamp. Merge duplicates instead of sending duplicate times to Lightweight Charts. */
-   const k=Math.floor(t/1000)*1000,prev=byTime.get(k);
-   if(!prev)byTime.set(k,{t:k,o,h,l,c});
-   else{prev.h=Math.max(prev.h,h,o,c);prev.l=Math.min(prev.l,l,o,c);prev.c=c;}
- });
- return [...byTime.values()].sort((a,b)=>a.t-b.t);
-}
-function aggregate(a,m){
- const out=[],ms=m*60000;
- for(const b of a){
-   const bucket=Math.floor(b.t/ms)*ms,last=out[out.length-1];
-   if(!last||last._t!==bucket)out.push({_t:bucket,time:Math.floor(bucket/1000),open:b.o,high:Math.max(b.h,b.o,b.c),low:Math.min(b.l,b.o,b.c),close:b.c});
-   else{last.high=Math.max(last.high,b.h,b.o,b.c);last.low=Math.min(last.low,b.l,b.o,b.c);last.close=b.c}
- }
- return out.slice(-(m===1?520:240)).map(({_t,...x})=>x);
-}
-function init(){
- if(ready)return;
- const el=host();if(!el||!window.LightweightCharts)return;
- L=window.LightweightCharts;
- try{
-  chart=L.createChart(el,{
-   autoSize:true,
-   layout:{background:{type:L.ColorType.Solid,color:'#031421'},textColor:'#8095aa',fontFamily:'Inter,system-ui,-apple-system,Segoe UI,sans-serif'},
-   grid:{vertLines:{color:'rgba(25,48,70,.55)'},horzLines:{color:'rgba(25,48,70,.55)'}},
-   crosshair:{mode:L.CrosshairMode.Normal,vertLine:{color:'rgba(125,160,190,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'},horzLine:{color:'rgba(125,160,190,.45)',width:1,style:L.LineStyle.Dashed,labelBackgroundColor:'#18324b'}},
-   rightPriceScale:{borderColor:'#18324b',textColor:'#8095aa',scaleMargins:{top:.08,bottom:.12}},
-   timeScale:{
-    borderColor:'#18324b',timeVisible:true,secondsVisible:false,rightOffset:4,barSpacing:8,minBarSpacing:3,
-    tickMarkFormatter:(time)=>{try{return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(Number(time)*1000))}catch(e){return String(time)}}
-   },
-   localization:{locale:'en-GB',dateFormat:'dd MMM',
-    timeFormatter:(time)=>{try{return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(Number(time)*1000))+' PKT'}catch(e){return String(time)}}
-   },
-   handleScroll:{mouseWheel:false,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
-   handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:{time:true,price:true}}
-  });
-  series=chart.addSeries(L.CandlestickSeries,{
-   upColor:'#29d89a',downColor:'#e44e61',borderUpColor:'#29d89a',borderDownColor:'#e44e61',
-   wickUpColor:'#29d89a',wickDownColor:'#e44e61',borderVisible:true,lastValueVisible:true,
-   priceLineVisible:true,priceLineColor:'#53dca5',priceLineWidth:1,priceLineStyle:L.LineStyle.Dashed
-  });
-  window.RIZVI_TV_CHART=chart;window.RIZVI_TV_SERIES=series;
-  lastSymbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
-  ready=true;
-  window.addEventListener('resize',()=>{try{chart.resize(el.clientWidth,el.clientHeight)}catch(e){}});
-  refresh(true);
-  setInterval(()=>refresh(false),1000);
- }catch(e){window.RIZVI_V55_TV_ERROR=String(e?.message||e)}
-}
-function refresh(force){
- if(!ready||!series)return;
- const sym=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
- if(sym!==lastSymbol){
-   /* Do not blank the series during symbol changes; replace it atomically with the next valid dataset. */
-   lastSymbol=sym;lastTf='';lastFirst=0;lastLast=0;force=true;
- }
- const a=rows();if(!a.length)return;
- const tf=window.RIZVI_CANDLE_TIMEFRAME||'1M',mins=TF[tf]||1,data=aggregate(a,mins);if(!data.length)return;
- const first=data[0].time,last=data[data.length-1].time;
- const structureChanged=force||tf!==lastTf||first!==lastFirst||data.length!==series._rizviDataLength;
- if(structureChanged){
-   // Full replacement only when the dataset structure actually changes.
-   // Live price/close changes must use update(), otherwise Lightweight Charts
-   // repeatedly rebuilds the whole series and causes candle flicker/jumping.
-   series.setData(data);
-   if(force||tf!==lastTf)requestAnimationFrame(()=>{try{chart.timeScale().fitContent()}catch(e){}});
-   else {
-     try{const pos=chart.timeScale().scrollPosition();if(Number.isFinite(pos)&&pos<=2)chart.timeScale().scrollToRealTime()}catch(e){}
-   }
-   lastTf=tf;lastFirst=first;lastLast=last;
-   series._rizviDataLength=data.length;
- }else{
-   // Same bar/timeline: update only the active candle.
-   series.update(data[data.length-1]);
-   lastLast=last;
- }
- const b=data[data.length-1];
- window.RIZVI_LIVE_CHART_PRICE=b.close;window.RIZVI_PRICE_SOURCE='LIVE_CHART';
- const close=document.getElementById('chartClose');if(close)close.textContent=Number(b.close).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-function wait(){if(window.LightweightCharts)init();else if(++attempts<120)setTimeout(wait,250)}
-wait();
-})();
-</script><script id="rizvi-v90-entry-threshold">
+<script id="rizvi-chart-v78">/* V111 DISABLED LEGACY VISIBLE WRITER */</script><script id="rizvi-v55-tradingview-engine">/* DISABLED: legacy local candle writer. TradingView Advanced Chart is the sole visible chart source. */</script><script id="rizvi-v90-entry-threshold">
 (function(){
   'use strict';
   window.RIZVI_MIN_ENTRY_CONFIDENCE=70;
