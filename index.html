@@ -137,6 +137,11 @@
  .qualityBlock b{font-size:14px!important}
  .badge{font-size:7px!important;padding:3px 5px!important}
 }
+</style><style id="rizvi-v127-remove-legacy-static-chart">
+/* V127 hotfix: hide the old hard-coded mock candles/price axis; only the live chart renderer may paint candles. */
+.chart>.grid,.chart>.candles,.chart>.price,.chart>#chartPriceTag,.chart>.axis{display:none!important}
+#rizviTvChartV55{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;z-index:2!important}
+.chart{position:relative!important;overflow:hidden!important}
 </style></head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
