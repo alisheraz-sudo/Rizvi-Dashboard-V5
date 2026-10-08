@@ -60,6 +60,7 @@ function build(){
  const s=selectedSymbol(),tf=String(window.RIZVI_CANDLE_TIMEFRAME||currentTF||'1M').toUpperCase();
  currentTF=TF[tf]?tf:'1M';window.RIZVI_CANDLE_TIMEFRAME=currentTF;setHeader(currentTF);
  const seq=++buildSeq;el.innerHTML='';
+ el.style.setProperty('position','absolute','important');el.style.setProperty('left','0','important');el.style.setProperty('right','0','important');el.style.setProperty('top','47px','important');el.style.setProperty('bottom','0','important');el.style.setProperty('width','100%','important');el.style.setProperty('height','calc(100% - 47px)','important');el.style.setProperty('z-index','4','important');
  const wrap=document.createElement('div');wrap.className='tradingview-widget-container';
  wrap.style.cssText='position:absolute;inset:0;width:100%;height:100%;';
  const widget=document.createElement('div');widget.className='tradingview-widget-container__widget';
@@ -75,7 +76,7 @@ function build(){
    studies:[],support_host:'https://www.tradingview.com'
  });
  script.onerror=()=>{if(seq===buildSeq){window.RIZVI_DIRECT_TV={source:'TradingView Advanced Chart Widget',symbol:s,tradingViewSymbol:tvSymbol(),timeframe:currentTF,status:'ERROR_LOADING_WIDGET',updatedAt:Date.now()};window.dispatchEvent(new CustomEvent('rizvi:direct-tv-status',{detail:window.RIZVI_DIRECT_TV}));}};
- wrap.appendChild(script);el.appendChild(wrap);
+ el.appendChild(wrap);wrap.appendChild(script);
  window.RIZVI_DIRECT_TV={source:'TradingView Advanced Chart Widget',symbol:s,tradingViewSymbol:tvSymbol(),timeframe:currentTF,interval:TF[currentTF],timezone:'Asia/Karachi',status:'LOADING',updatedAt:Date.now()};
  window.dispatchEvent(new CustomEvent('rizvi:direct-tv-status',{detail:window.RIZVI_DIRECT_TV}));
 }
