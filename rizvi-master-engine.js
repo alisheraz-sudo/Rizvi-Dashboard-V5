@@ -25,7 +25,17 @@
     return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:b.status};
   }
   function run(){
-    const symbol=window.RIZVI_CURRENT_SYMBOL||'XAUUSD';
+    const symbol=window.RIZVI_CURRENT_SYMBOL||'XAU/USD';
+    const feed=window.RIZVI_FEED_STATUS;
+    if(!feed||feed.ok!==true||feed.symbol!==symbol){
+      const wait={symbol,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,feedStatus:feed||{ok:false,reason:'Waiting for validated live OHLC feed'}};
+      window.RIZVI_MASTER_CONFIRMATION=wait;
+      window.RIZVI_SIGNAL_DIRECTION='WAIT';
+      window.RIZVI_SIGNAL_QUALIFICATION={symbol,updatedAt:wait.updatedAt,signalDirection:'WAIT',marketDirection:'WAIT',patternConfidence:50,liquidityScore:0,aligned:false,status:'WAIT_FOR_LIVE_FEED',masterConfirmations:0};
+      window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:wait}));
+      window.dispatchEvent(new CustomEvent('rizvi:signal-qualification-update',{detail:window.RIZVI_SIGNAL_QUALIFICATION}));
+      return;
+    }
     const bars=(window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[]).filter(x=>num(x.c)!==null);
     if(bars.length<21)return;
     const closes=bars.map(x=>Number(x.c)), last=bars.at(-1), prev=bars.at(-2);
