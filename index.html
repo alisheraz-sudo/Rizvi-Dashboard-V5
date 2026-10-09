@@ -189,7 +189,7 @@
 </head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
-<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>WAIT</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
+<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
 <div class="main"><main>
 <section class="chart"><div class="grid"></div><div class="candles">
 <i class="c g" style="left:2%;top:78%;height:12%"></i><i class="c g" style="left:6%;top:68%;height:13%"></i><i class="c r" style="left:10%;top:63%;height:10%"></i><i class="c g" style="left:14%;top:57%;height:13%"></i><i class="c g" style="left:18%;top:53%;height:12%"></i><i class="c r" style="left:22%;top:55%;height:10%"></i><i class="c g" style="left:26%;top:45%;height:16%"></i><i class="c g" style="left:30%;top:40%;height:15%"></i><i class="c r" style="left:34%;top:43%;height:9%"></i><i class="c g" style="left:38%;top:35%;height:15%"></i><i class="c g" style="left:42%;top:30%;height:16%"></i><i class="c r" style="left:46%;top:35%;height:10%"></i><i class="c g" style="left:50%;top:28%;height:16%"></i><i class="c g" style="left:54%;top:22%;height:14%"></i><i class="c r" style="left:58%;top:27%;height:10%"></i><i class="c g" style="left:62%;top:18%;height:15%"></i><i class="c g" style="left:66%;top:13%;height:14%"></i><i class="c r" style="left:70%;top:19%;height:9%"></i><i class="c g" style="left:74%;top:12%;height:13%"></i><i class="c r" style="left:78%;top:16%;height:9%"></i></div>
@@ -1418,6 +1418,10 @@ render();setInterval(render,1000);
 <script id="rizvi-v112-unified-indicator-reset"><!-- LOCKED OFF: prevents legacy 2s state overwrite/flicker. --></script>
 <!-- RIZVI V113 NATIVE CHART FEED AUTHORITY --><script id="rizvi-v113-chart-authority">(function(){if(window.__RIZVI_V113_CHART_AUTHORITY)return;window.__RIZVI_V113_CHART_AUTHORITY=true;function c(){const s=window.RIZVI_CHART_STATUS||{};window.RIZVI_CHART_AUTHORITY={owner:"NATIVE_CHART_FEED",symbol:window.RIZVI_CURRENT_SYMBOL||"BTCUSD",status:s.status||"UNKNOWN",bars:Number(s.bars)||0,updatedAt:s.updatedAt||null,live:s.status==="LIVE"}}window.addEventListener("rizvi:chart-status",c);window.addEventListener("rizvi:candle-update",c);c()})();</script>
 
+<style id="rizvi-signal-pulse-style">
+@keyframes rizviSignalPulse{0%,100%{filter:brightness(1);transform:scale(1)}50%{filter:brightness(1.45);transform:scale(1.035)}}
+@media(prefers-reduced-motion:reduce){.signalBlock b,.signalBlock i{animation:none!important}}
+</style>
 <!-- RIZVI V130 — LIVE INDICATOR OUTPUT BINDING; chart/feed owner unchanged -->
 <script id="rizvi-v130-live-indicator-output">
 (function(){
@@ -1440,6 +1444,8 @@ render();setInterval(render,1000);
       const active=d===valid;
       node.style.opacity=active?'1':'.48';
       node.style.fontWeight=active?'900':'700';
+      node.style.animation=active?'rizviSignalPulse 1.25s ease-in-out infinite':'none';
+      node.style.boxShadow=active?(valid==='BUY'?'0 0 0 1px #13a66c, 0 0 10px #13a66c55':valid==='SELL'?'0 0 0 1px #dc4554, 0 0 10px #dc455455':'0 0 0 1px #4d7ca5, 0 0 10px #4d7ca555'):'none';
       if(node.tagName==='I'){
         node.style.borderColor=active?(valid==='BUY'?'#13a66c':valid==='SELL'?'#dc4554':'#4d7ca5'):'#344a5e';
         node.style.background=active?(valid==='BUY'?'#075b3e':valid==='SELL'?'#70202b':'#173c75'):'#172636';
