@@ -1361,6 +1361,8 @@ function render(){
  'RIZVI DASHBOARD — LIVE ENGINE DIAGNOSTICS (read-only)',
  'Symbol: '+(W.RIZVI_CURRENT_SYMBOL||W.state?.symbol||'unknown')+' | Auto trading: OFF',
  'Gold bridge: '+(eng.state||'NOT REPORTED')+' | bridge age: '+age(eng.updatedAt),
+ 'Feed status: '+JSON.stringify({ok:W.RIZVI_FEED_STATUS?.ok??null,source:W.RIZVI_FEED_STATUS?.source||null,bars:W.RIZVI_FEED_STATUS?.bars??null,reason:W.RIZVI_FEED_STATUS?.reason||null,latestBarAt:W.RIZVI_FEED_STATUS?.latestBarAt??null,age:age(W.RIZVI_FEED_STATUS?.latestBarAt)}),
+ 'Chart source: '+JSON.stringify({status:W.RIZVI_DIRECT_TV?.status||null,symbol:W.RIZVI_DIRECT_TV?.symbol||null,timeframe:W.RIZVI_DIRECT_TV?.timeframe||null}),
  'Bars: '+bars.length+' | last bar time: '+(ts==null?'unknown':String(ts))+' | last close: '+(close==null?'unknown':String(close))+' | bar freshness: '+age(ts),
  'Indicators: '+compEntries.length+' reported | active/non-zero: '+compEntries.filter(([k,v])=>Number(v?.score??v?.value??0)!==0).length+' | indicator report bars: '+(ir.bars??conf.bars??'unknown'),
  'Indicator detail: '+(compEntries.length?compEntries.map(([k,v])=>k+'='+(v?.score??v?.value??'?')).join(' | '):'NO COMPONENT RESULTS EXPOSED'),
