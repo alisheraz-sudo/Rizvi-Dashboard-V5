@@ -1345,6 +1345,7 @@ sync();
 'use strict';
 try{if(new URLSearchParams(window.location.search).get('diag')!=='1')return;}catch(e){return;}
 const box=document.createElement('pre');box.id='rizviLiveEngineDiagnostics';box.textContent='Rizvi live diagnostics initializing…';document.body.appendChild(box);
+const copyBtn=document.createElement('button');copyBtn.id='rizviDiagnosticsCopy';copyBtn.textContent='Copy diagnostics';copyBtn.style.cssText='position:fixed;z-index:1000000;right:12px;bottom:calc(42vh + 14px);padding:10px 14px;background:#126c93;color:#fff;border:1px solid #4bbbe7;border-radius:8px;font:600 14px Arial,sans-serif';copyBtn.onclick=async()=>{const report=box.textContent;try{await navigator.clipboard.writeText(report);copyBtn.textContent='Copied — paste into ChatGPT';}catch(e){window.prompt('Copy this diagnostic report and paste it into ChatGPT:',report);}};document.body.appendChild(copyBtn);
 const age=t=>{const n=Number(t);if(!Number.isFinite(n)||n<=0)return 'unknown';const ms=n<1e12?n*1000:n;return Math.max(0,Math.round((Date.now()-ms)/1000))+'s';};
 function render(){
  const W=window, eng=W.RIZVI_GOLD_ENGINE_STATUS||{}, ir=W.RIZVI_INDICATOR_TEST_REPORT||{}, conf=W.RIZVI_INDICATOR_CONFLUENCE||{}, ar=W.RIZVI_MULTI_ALGORITHM_REPORT||{}, master=W.RIZVI_MASTER_CONFIRMATION||{}, act=W.RIZVI_INDICATOR_ACTIVATION||{};
