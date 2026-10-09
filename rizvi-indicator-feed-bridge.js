@@ -76,6 +76,7 @@ async function poll(){
   window.RIZVI_DIRECT_SYMBOL=sym;window.RIZVI_CURRENT_SYMBOL=sym;
   window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
   window.RIZVI_FEED_STATUS={ok:true,symbol:sym,timeframe:tf,source:data.source||'backend OHLC',bars:bars.length,latestBarAt:latest.t,updatedAt:Date.now(),key};
+  try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason:'OK source='+(data.source||'backend OHLC')+' bars='+bars.length+' latestAgeSeconds='+Math.max(0,Math.floor(Date.now()/1000)-latest.t)})}).catch(()=>{});}catch(_){}
   lastGoodAt=Date.now();lastKey=key;
   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
  }catch(e){fail(sym,String(e?.message||e));}
