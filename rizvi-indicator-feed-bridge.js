@@ -7,7 +7,7 @@ const TF_SECONDS={'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400};
 let busy=false,lastKey='',lastGoodAt=0;
 function symbol(){
  const s=String(window.RIZVI_DIRECT_SYMBOL||window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAUUSD').toUpperCase();
- return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAUUSD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
+ return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
 }
 function timeframe(){const t=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();return TF_SECONDS[t]?t:'1M';}
 function normalize(rows){
@@ -28,8 +28,8 @@ function aggregate(rows,seconds){
 }
 function fail(sym,reason){
  window.RIZVI_FEED_STATUS={ok:false,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason};
- window.RIZVI_RAW_BARS=[];window.RIZVI_AGG_BARS=[];
  window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,indicatorStatus:{ema:false,fvg:false,rsi:false,vwap:false,volumeProfile:false,delta:false,divergence:false,candlePattern:false,orderFlow:false,liquidity:false,rangeLevels:false},feedStatus:window.RIZVI_FEED_STATUS};
+ window.RIZVI_SIGNAL_DIRECTION='WAIT';
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
 }
 async function poll(){
