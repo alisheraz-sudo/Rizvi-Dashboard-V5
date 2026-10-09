@@ -25,7 +25,7 @@
     return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:b.status};
   }
   function run(){
-    const symbol=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+    const symbol=window.RIZVI_CURRENT_SYMBOL||'XAUUSD';
     const bars=(window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[]).filter(x=>num(x.c)!==null);
     if(bars.length<21)return;
     const closes=bars.map(x=>Number(x.c)), last=bars.at(-1), prev=bars.at(-2);
@@ -283,7 +283,7 @@
       const m=e.detail||window.RIZVI_MASTER_CONFIRMATION;
       const qualified=!!m?.qualified;
       const dir=m?.direction==='SELL'?'SELL':m?.direction==='BUY'?'BUY':null;
-      const p=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[m?.symbol||'BTCUSD']);
+      const p=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[m?.symbol||'XAUUSD']);
       if(qualified && dir && Number.isFinite(p) && (!wasQualified || dir!==frozenDirection)){
         const lv=original(p,dir);
         if(lv){
