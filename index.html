@@ -1291,3 +1291,66 @@ sync();
 <!-- RIZVI V112 INDICATOR RESET: DISABLED/LOCKED. Unified master engine is sole signal authority. -->
 <script id="rizvi-v112-unified-indicator-reset"><!-- LOCKED OFF: prevents legacy 2s state overwrite/flicker. --></script>
 <!-- RIZVI V113 NATIVE CHART FEED AUTHORITY --><script id="rizvi-v113-chart-authority">(function(){if(window.__RIZVI_V113_CHART_AUTHORITY)return;window.__RIZVI_V113_CHART_AUTHORITY=true;function c(){const s=window.RIZVI_CHART_STATUS||{};window.RIZVI_CHART_AUTHORITY={owner:"NATIVE_CHART_FEED",symbol:window.RIZVI_CURRENT_SYMBOL||"BTCUSD",status:s.status||"UNKNOWN",bars:Number(s.bars)||0,updatedAt:s.updatedAt||null,live:s.status==="LIVE"}}window.addEventListener("rizvi:chart-status",c);window.addEventListener("rizvi:candle-update",c);c()})();</script>
+
+<!-- RIZVI V130 — LIVE INDICATOR OUTPUT BINDING; chart/feed owner unchanged -->
+<script id="rizvi-v130-live-indicator-output">
+(function(){
+  'use strict';
+  if(window.__RIZVI_V130_INDICATOR_BINDING)return;
+  window.__RIZVI_V130_INDICATOR_BINDING=true;
+  const badge=()=>document.querySelector('.qualityBlock .badge');
+  const quality=()=>document.querySelector('.qualityBlock b');
+  const directionNodes=()=> {
+    const root=document.querySelector('.signalBlock');
+    if(!root)return [];
+    return [root.querySelector('b'),...root.querySelectorAll('i')].filter(Boolean);
+  };
+  let lastUpdate=0;
+  function paint(direction,confidence,qualified,detail){
+    const dirs=directionNodes();
+    const valid=['BUY','SELL','WAIT'].includes(direction)?direction:'WAIT';
+    dirs.forEach(node=>{
+      const d=node.textContent.trim().toUpperCase();
+      const active=d===valid;
+      node.style.opacity=active?'1':'.48';
+      node.style.fontWeight=active?'900':'700';
+      if(node.tagName==='I'){
+        node.style.borderColor=active?(valid==='BUY'?'#13a66c':valid==='SELL'?'#dc4554':'#4d7ca5'):'#344a5e';
+        node.style.background=active?(valid==='BUY'?'#075b3e':valid==='SELL'?'#70202b':'#173c75'):'#172636';
+      }
+    });
+    const q=quality();
+    if(q)q.textContent=Number.isFinite(Number(confidence))?Math.round(Number(confidence))+'%':'—';
+    const b=badge();
+    if(b){
+      b.textContent='HIGH QUALITY SETUP';
+      b.style.display=qualified===true?'inline-block':'none';
+    }
+    window.RIZVI_INDICATOR_ACTIVATION={
+      state:'ACTIVE',
+      direction:valid,
+      confidence:Number.isFinite(Number(confidence))?Math.round(Number(confidence)):null,
+      highQualityQualified:qualified===true,
+      updatedAt:detail?.updatedAt||Date.now(),
+      symbol:detail?.symbol||window.RIZVI_CURRENT_SYMBOL||'UNKNOWN',
+      indicators:detail?.indicatorStatus||{},
+      note:'Confidence/confluence score is not a probability of profit.'
+    };
+  }
+  function onMaster(event){
+    const d=event?.detail||window.RIZVI_MASTER_CONFIRMATION;
+    if(!d||!d.updatedAt)return;
+    lastUpdate=Date.now();
+    paint(d.direction,d.confidence,d.qualified===true,d);
+  }
+  window.addEventListener('rizvi:master-confirmation-update',onMaster);
+  if(window.RIZVI_MASTER_CONFIRMATION)onMaster({detail:window.RIZVI_MASTER_CONFIRMATION});
+  else paint('WAIT',null,false,null);
+  setInterval(function(){
+    if(!lastUpdate||Date.now()-lastUpdate>15000){
+      paint('WAIT',null,false,{symbol:window.RIZVI_CURRENT_SYMBOL||'UNKNOWN',updatedAt:null,indicatorStatus:{}});
+      window.RIZVI_INDICATOR_ACTIVATION.state='WAITING_FOR_FRESH_ENGINE_DATA';
+    }
+  },3000);
+})();
+</script>
