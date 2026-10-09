@@ -37,7 +37,7 @@ async function poll(){
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  try{
   if(sym==='UNSUPPORTED'){fail(sym,'No OHLC endpoint configured for this symbol');return;}
-  const url=sym==='BTCUSD'?'/market/btc/intraday?granularity=60':'/market/xau/intraday';
+  const url=sym==='BTCUSD'?('/market/btc/intraday?granularity='+TF_SECONDS[tf]):'/market/xau/intraday';
   const response=await fetch(url,{cache:'no-store',credentials:'same-origin'});
   const data=await response.json();
   if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
