@@ -1293,15 +1293,22 @@ sync();
     try{if(typeof W.RIZVI_RUN_INDICATOR_TESTS==='function')report=W.RIZVI_RUN_INDICATOR_TESTS();}catch(e){W.RIZVI_GOLD_ENGINE_STATUS.engineError=String(e)}
     try{if(typeof W.RIZVI_RUN_MULTI_ALGORITHM_TESTS==='function')W.RIZVI_RUN_MULTI_ALGORITHM_TESTS()}catch(e){W.RIZVI_GOLD_ENGINE_STATUS.algorithmError=String(e)}
     const conf=W.RIZVI_INDICATOR_CONFLUENCE||report?.master||{};
+    const algo=W.RIZVI_MASTER_ALGORITHM||{};
     const components=conf.components||{};
     const active=Object.values(components).filter(x=>Number(x?.score)>0);
-    const agreement=Number(conf.agreement)||0;
-    const confidence=Math.max(0,Math.min(100,Number(conf.score)||0));
-    const direction=['BUY','SELL'].includes(conf.action)?conf.action:'WAIT';
-    const qualified=(direction!=='WAIT'&&confidence>=80&&agreement>=70);
+    const indicatorAgreement=Number(conf.agreement)||0;
+    const indicatorConfidence=Math.max(0,Math.min(100,Number(conf.score)||0));
+    const indicatorDirection=['BUY','SELL'].includes(conf.action)?conf.action:'WAIT';
+    const algoDirection=['BUY','SELL'].includes(algo.action)?algo.action:'WAIT';
+    const algoConfidence=Math.max(0,Math.min(100,Number(algo.confidence)||0));
+    const aligned=indicatorDirection!=='WAIT'&&indicatorDirection===algoDirection;
+    const direction=aligned?indicatorDirection:'WAIT';
+    const confidence=Math.round((indicatorConfidence+algoConfidence)/2);
+    const agreement=indicatorAgreement;
+    const qualified=(aligned&&confidence>=80&&agreement>=70);
     const indicatorStatus={};
     Object.keys(components).forEach(k=>{indicatorStatus[k]={status:Number(components[k]?.score)>0?'CALCULATED':'WAITING_FOR_DATA',score:Number(components[k]?.score)||0,bias:Number(components[k]?.bias)||0}});
-    const master={symbol:'XAU/USD',direction,confidence,qualified,agreement,bars:bars.length,updatedAt:Date.now(),indicatorStatus,source:'Gold OHLC → indicator confluence engine',autoTrading:false};
+    const master={symbol:'XAU/USD',direction,confidence,qualified,agreement,bars:bars.length,updatedAt:Date.now(),indicatorStatus,alignment:{status:aligned?'ALIGNED':'WAIT_FOR_ALIGNMENT',indicatorAction:indicatorDirection,algorithmAction:algoDirection,indicatorScore:indicatorConfidence,algorithmScore:algoConfidence,algorithm:algo.algorithm||null},source:'Gold OHLC → indicator confluence + multi-algorithm engine',autoTrading:false};
     W.RIZVI_MASTER_CONFIRMATION=master;
     W.RIZVI_GOLD_ENGINE_STATUS={...W.RIZVI_GOLD_ENGINE_STATUS,state:'RUNNING',activeIndicators:active.length,indicators:Object.keys(components).length,action:direction,score:confidence,agreement,qualified,updatedAt:master.updatedAt};
     W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:master}));
