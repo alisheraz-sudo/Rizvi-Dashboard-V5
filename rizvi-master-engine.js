@@ -134,7 +134,7 @@
     // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
     const WEIGHTS={
-      trend:15, structure:13, liquidity:11, orderFlow:11, momentum:8,
+      trend:17, structure:15, liquidity:13, momentum:9,
       rsi:7, divergence:7, vwap:7, volumeProfile:5, delta:4,
       candlePattern:4, candleBias:3, fvg:5
     };
@@ -156,7 +156,7 @@
     add('trend',trend,WEIGHTS.trend);
     add('structure',structure,WEIGHTS.structure);
     add('liquidity',votes.liquidity,WEIGHTS.liquidity,liq.status&&liqScore>=70);
-    add('orderFlow',of.signal,WEIGHTS.orderFlow,of.status==='LIVE');
+    // Order flow is an optional add-on; it is deliberately excluded from core scoring.
     add('momentum',momentum,WEIGHTS.momentum);
     add('rsi',votes.rsi,WEIGHTS.rsi,r!==null);
     add('divergence',divergence,WEIGHTS.divergence,true);
@@ -235,7 +235,7 @@
       trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
       structure:{signal:structure,confidence:clamp(70+(structure===direction?15:0)),reason:'recent 10-bar structure'},
       liquidity:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:liq.status||'No liquidity event'},
-      orderFlow:{signal:of.signal,confidence:of.confidence,reason:of.reason},
+      orderFlow:{signal:'DISABLED',confidence:null,reason:'Optional feed disabled; core signals do not depend on it'}, 
       momentum:{signal:momentum,confidence:clamp(momentum===direction?70:50),reason:'latest candle direction'},
       candleBias:{signal:candleBias,confidence:clamp(candleBias===direction?75:50),reason:'current candle body'},
       divergence:{signal:divergence,confidence:divergence==='NEUTRAL'?50:72,reason:'price/RSI divergence'},
@@ -253,9 +253,9 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,orderFlowWindowMs:15000,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
-      contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,orderFlow:of.signal,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
-      indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:of.status==='LIVE',liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
+      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:89,weights:WEIGHTS},
+      contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
+      indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
@@ -266,7 +266,7 @@
       status:qualified?'QUALIFIED_CONTEXT':'WAIT_FOR_CONFIRMATION',
       masterConfirmations:confirmations,
       trend:engines.trend,structure:engines.structure,liquidity:engines.liquidity,
-      orderFlow:engines.orderFlow,momentum:engines.momentum,candleBias:engines.candleBias,divergence:engines.divergence,
+      momentum:engines.momentum,candleBias:engines.candleBias,divergence:engines.divergence,
       priceAction:engines.priceAction,volatility:engines.volatility
     };
     window.RIZVI_SIGNAL_DIRECTION=visibleSignal;
