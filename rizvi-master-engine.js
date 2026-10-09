@@ -11,18 +11,33 @@
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
-    if(symbol!=='BTCUSD')return {signal:null,confidence:null,reason:'No broker depth feed connected'};
-    const b=window.RIZVI_ORDER_FLOW?.BTCUSDT;
-    if(!b||b.status!=='LIVE')return {signal:null,confidence:null,reason:'BTC order book unavailable'};
+    // Consume the actual cTrader Level-2 payload; never synthesize depth from OHLC.
+    const wanted=String(symbol||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const b=window.RIZVI_CTRADER_ORDER_FLOW;
+    const got=String(b?.symbol||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(!b||b.connected!==true||b.source!=='CTRADER_LEVEL2'||!Array.isArray(b.levels))
+      return {signal:null,confidence:null,reason:'cTrader Level-2 depth feed unavailable'};
+    if(!((wanted==='XAUUSD'&&got==='XAUUSD')||(wanted==='BTCUSD'&&(got==='BTCUSD'||got==='BTCUSDT'))))
+      return {signal:null,confidence:null,reason:'cTrader depth symbol mismatch'};
+    const age=Date.now()-Number(b.updatedAt||0);
+    if(!Number.isFinite(age)||age<0||age>15000)
+      return {signal:null,confidence:null,reason:'cTrader depth is stale'};
     let bid=0,ask=0;
-    Object.values(b.bids||{}).forEach(x=>bid+=Number(x.size)||0);
-    Object.values(b.asks||{}).forEach(x=>ask+=Number(x.size)||0);
-    const total=bid+ask, im=total?((bid-ask)/total)*100:0;
-    const now=Date.now();
+    for(const level of b.levels){
+      bid+=Math.max(0,Number(level.bid)||0);
+      ask+=Math.max(0,Number(level.ask)||0);
+      if(!(Number(level.bid)>0)&&!(Number(level.ask)>0)&&Number(level.size)>0){
+        // A size without a bid/ask side cannot establish buyer/seller imbalance.
+        continue;
+      }
+    }
+    const total=bid+ask;
+    if(!total)return {signal:null,confidence:null,reason:'cTrader depth has no usable bid/ask sizes'};
+    const im=((bid-ask)/total)*100,now=Date.now();
     state.orderFlowSamples.push({t:now,im});
     state.orderFlowSamples=state.orderFlowSamples.filter(x=>now-x.t<=15000);
-    const avg=state.orderFlowSamples.length?state.orderFlowSamples.reduce((s,x)=>s+x.im,0)/state.orderFlowSamples.length:im;
-    return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:b.status};
+    const avg=state.orderFlowSamples.length?state.orderFlowSamples.reduce((sum,x)=>sum+x.im,0)/state.orderFlowSamples.length:im;
+    return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s cTrader depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:'LIVE',source:'CTRADER_LEVEL2',symbol:got};
   }
   function run(){
     const symbol=window.RIZVI_CURRENT_SYMBOL||'XAU/USD';
