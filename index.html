@@ -1067,7 +1067,7 @@ publish();
 <script id="rizvi-order-flow-footprint-v1">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-ctrader-live-bridge">
 (function(){
-  const symbols=['XAUUSD','BTCUSD'];
+  const symbols=['XAUUSD'];
   async function pull(symbol){
     try{
       const r=await fetch('/ctrader/orderflow?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
@@ -1078,7 +1078,7 @@ publish();
       }
     }catch(e){}
   }
-  setInterval(function(){symbols.forEach(pull)},1000);
+  setInterval(function(){symbols.forEach(pull)},5000);
   symbols.forEach(pull);
 })();
 </script>
