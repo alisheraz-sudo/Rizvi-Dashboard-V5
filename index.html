@@ -1096,7 +1096,7 @@ publish();
 (function(){
 'use strict';
 const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x)), N=x=>Number.isFinite(Number(x))?Number(x):NaN;
-function getBars(){const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);return a.map(b=>({time:N(b.time??b.timestamp??b.t??b.date),open:N(b.open??b.o),high:N(b.high??b.h),low:N(b.low??b.l),close:N(b.close??b.c),volume:N(b.volume??b.v)})).filter(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite))}
+function getBars(){const arrays=[W.RIZVI_RAW_BARS,W.RIZVI_AGG_BARS,W.state?.ohlc].filter(a=>Array.isArray(a)&&a.length);const stamp=b=>{let t=N(b?.time??b?.timestamp??b?.t??b?.date);if(!Number.isFinite(t)&&typeof (b?.time??b?.date)==='string')t=Date.parse(b.time??b.date);return Number.isFinite(t)?t:-Infinity};const a=arrays.sort((x,y)=>stamp(y[y.length-1])-stamp(x[x.length-1])||y.length-x.length)[0]||[];return a.map(b=>({time:stamp(b),open:N(b.open??b.o),high:N(b.high??b.h),low:N(b.low??b.l),close:N(b.close??b.c),volume:N(b.volume??b.v)})).filter(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite))}
 function sma(a,n){if(a.length<n)return NaN;return a.slice(-n).reduce((s,x)=>s+x,0)/n}
 function ema(a,n){if(!a.length)return NaN;let k=2/(n+1),e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
 function rsi(c,n=14){if(c.length<=n)return NaN;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){let d=c[i]-c[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
@@ -1120,7 +1120,7 @@ W.RIZVI_RUN_INDICATOR_TESTS=tests;W.RIZVI_GET_INDICATOR_CONFLUENCE=build;setTime
 'use strict';
 const W=window, clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x)), now=()=>Date.now();
 const num=x=>Number.isFinite(Number(x))?Number(x):NaN;
-function bars(){const a=Array.isArray(W.RIZVI_AGG_BARS)&&W.RIZVI_AGG_BARS.length?W.RIZVI_AGG_BARS:(Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[]);return a.map(b=>({time:num(b.time??b.timestamp??b.t),open:num(b.open??b.o),high:num(b.high??b.h),low:num(b.low??b.l),close:num(b.close??b.c),volume:num(b.volume??b.v)})).filter(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite))}
+function bars(){const arrays=[W.RIZVI_RAW_BARS,W.RIZVI_AGG_BARS,W.state?.ohlc].filter(a=>Array.isArray(a)&&a.length);const stamp=b=>{let t=num(b?.time??b?.timestamp??b?.t??b?.date);if(!Number.isFinite(t)&&typeof (b?.time??b?.date)==='string')t=Date.parse(b.time??b.date);return Number.isFinite(t)?t:-Infinity};const a=arrays.sort((x,y)=>stamp(y[y.length-1])-stamp(x[x.length-1])||y.length-x.length)[0]||[];return a.map(b=>({time:stamp(b),open:num(b.open??b.o),high:num(b.high??b.h),low:num(b.low??b.l),close:num(b.close??b.c),volume:num(b.volume??b.v)})).filter(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite))}
 function ema(a,n){if(a.length<n)return NaN;let k=2/(n+1),e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
 function sma(a,n){if(a.length<n)return NaN;return a.slice(-n).reduce((s,x)=>s+x,0)/n}
 function rsi(c,n=14){if(c.length<=n)return NaN;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){let d=c[i]-c[i-1];if(d>0)g+=d;else l-=d}return l?100-100/(1+g/l):100}
