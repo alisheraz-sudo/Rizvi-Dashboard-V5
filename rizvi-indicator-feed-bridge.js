@@ -6,7 +6,7 @@ window.__RIZVI_OHLC_BRIDGE_V1=true;
 const TF_SECONDS={'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400};
 let busy=false,lastKey='',lastGoodAt=0;
 function symbol(){
- const s=String(window.RIZVI_DIRECT_SYMBOL||window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD').toUpperCase();
+ const s=String(window.RIZVI_DIRECT_SYMBOL||window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAUUSD').toUpperCase();
  return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAUUSD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
 }
 function timeframe(){const t=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();return TF_SECONDS[t]?t:'1M';}
