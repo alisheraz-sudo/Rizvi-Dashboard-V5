@@ -115,7 +115,7 @@
 #rizviSvgChartV73,#rizviLiveSvgV78{display:none!important}
 #rizviTvChartV55{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;z-index:10!important;touch-action:none!important;background:#031421!important}
 #rizviTvChartV55 canvas{touch-action:none!important}
-</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><script id="rizvi-direct-tv-source" src="/rizvi-tradingview-direct.js"></script><style id="rizvi-v125-action-row">
+</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><script id="rizvi-direct-tv-source" src="/rizvi-tradingview-direct.js"></script><script id="rizvi-indicator-feed-bridge" src="/rizvi-indicator-feed-bridge.js?v=20261009c"></script><style id="rizvi-v125-action-row">
 /* V125: restore the approved one-line action/signal row directly under the header and above the chart. */
 .actions{display:grid!important;grid-template-columns:86px 86px 118px minmax(0,1fr)!important;gap:7px!important;align-items:stretch!important;width:100%!important;margin:8px 0 7px!important}
 .actions .btn{height:38px!important;padding:0 8px!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important}
@@ -1271,7 +1271,7 @@ sync();
   if(window.__RIZVI_V131_GOLD_BRIDGE)return;
   window.__RIZVI_V131_GOLD_BRIDGE=true;
   const W=window;
-  const isGold=()=>/^(XAU\/?USD|XAUUSD|GOLD)$/i.test(String(W.RIZVI_CURRENT_SYMBOL||W.__RIZVI_ACTIVE_SYMBOL||W.state?.symbol||'').replace(/\s/g,''));
+  const isGold=()=>/^(XAU\/?USD|XAUUSD|GOLD)$/i.test(String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||W.__RIZVI_ACTIVE_SYMBOL||W.state?.symbol||document.getElementById('symbolSelect')?.value||'XAUUSD').replace(/\s/g,''));
   const num=x=>{const n=Number(x);return Number.isFinite(n)?n:NaN};
   let lastBarsKey='',lastPublish=0;
   function normalize(list){
