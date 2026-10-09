@@ -378,7 +378,7 @@
   USOIL:{decimals:2,source:'ctrader'}
  };
  window.RIZVI_SYMBOLS=symbols;
- window.RIZVI_CURRENT_SYMBOL=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';
+ window.RIZVI_CURRENT_SYMBOL='XAU/USD';
  window.RIZVI_SET_SYMBOL=function(sym){
   if(!symbols[sym])return false;
   window.RIZVI_CURRENT_SYMBOL=sym;
@@ -1181,14 +1181,14 @@ function sync(sym){
   if(sym==='XAU/USD'&&typeof window.RIZVI_REFRESH_GOLD==='function')window.RIZVI_REFRESH_GOLD();
 }
 window.addEventListener('rizvi:symbol-change',e=>sync(e.detail?.symbol||'BTCUSD'));
-sync(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
+sync('XAU/USD');
 })();
 </script><script id="rizvi-v91-symbol-lock">
 (function(){
 'use strict';
 const KEY='rizvi.selectedSymbol.v1';
-const allowed=new Set(['BTCUSD','XAU/USD','USOIL']);
-function get(){try{const s=localStorage.getItem(KEY);return allowed.has(s)?s:'BTCUSD'}catch(e){return 'BTCUSD'}}
+const allowed=new Set(['XAU/USD']);
+function get(){return 'XAU/USD'}
 function set(sym){try{localStorage.setItem(KEY,sym)}catch(e){}}
 function fire(sym){window.RIZVI_CURRENT_SYMBOL=sym;const sel=document.getElementById('symbolSelect');if(sel)sel.value=sym;const q=document.getElementById('quoteSymbol');if(q)q.textContent=sym;document.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));window.dispatchEvent(new CustomEvent('rizvi:symbol-change',{detail:{symbol:sym}}));}
 function switchSymbol(sym){
