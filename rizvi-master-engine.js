@@ -134,9 +134,9 @@
     // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
     const WEIGHTS={
-      trend:17, structure:15, liquidity:13, momentum:9,
-      rsi:7, divergence:7, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:3, fvg:5
+      trend:17, structure:15, liquidity:13, momentum:10,
+      rsi:8, divergence:7, vwap:7, volumeProfile:5, delta:4,
+      candlePattern:4, candleBias:5, fvg:5
     };
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
@@ -253,7 +253,7 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:96,weights:WEIGHTS},
+      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
