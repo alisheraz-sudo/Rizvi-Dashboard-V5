@@ -4,7 +4,7 @@
 if(window.__RIZVI_OHLC_BRIDGE_V1)return;
 window.__RIZVI_OHLC_BRIDGE_V1=true;
 const TF_SECONDS={'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400};
-let busy=false,lastKey='',lastGoodAt=0;
+let busy=false,rerunRequested=false,lastKey='',lastGoodAt=0;
 function symbol(){
  const s=String(window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||window.RIZVI_DIRECT_SYMBOL||'XAUUSD').toUpperCase();
  return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
@@ -33,7 +33,7 @@ function fail(sym,reason){
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
 }
 async function poll(){
- if(busy)return;busy=true;
+ if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
  function validateRows(rows,label){
@@ -78,7 +78,7 @@ async function poll(){
   lastGoodAt=Date.now();lastKey=key;
   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
  }catch(e){fail(sym,String(e?.message||e));}
- finally{busy=false;}
+ finally{busy=false;if(rerunRequested){rerunRequested=false;setTimeout(poll,50);}}
 }
 function start(){poll();setInterval(poll,15000);const onSymbolChange=()=>setTimeout(poll,0);window.addEventListener('rizvi:symbol-change',onSymbolChange);document.addEventListener('rizvi:symbol-change',onSymbolChange);document.getElementById('symbolSelect')?.addEventListener('change',onSymbolChange);window.addEventListener('rizvi:direct-tv-status',onSymbolChange);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
