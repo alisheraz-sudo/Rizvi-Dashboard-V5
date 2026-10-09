@@ -35,6 +35,7 @@ function fail(sym,reason){
 async function poll(){
  if(busy)return;busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
+ if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
  function validateRows(rows,label){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
   if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
@@ -79,6 +80,6 @@ async function poll(){
  }catch(e){fail(sym,String(e?.message||e));}
  finally{busy=false;}
 }
-function start(){poll();setInterval(poll,15000);window.addEventListener('rizvi:symbol-change',()=>setTimeout(poll,0));document.getElementById('symbolSelect')?.addEventListener('change',()=>setTimeout(poll,0));window.addEventListener('rizvi:direct-tv-status',()=>setTimeout(poll,0));}
+function start(){poll();setInterval(poll,15000);const onSymbolChange=()=>setTimeout(poll,0);window.addEventListener('rizvi:symbol-change',onSymbolChange);document.addEventListener('rizvi:symbol-change',onSymbolChange);document.getElementById('symbolSelect')?.addEventListener('change',onSymbolChange);window.addEventListener('rizvi:direct-tv-status',onSymbolChange);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
