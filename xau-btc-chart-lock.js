@@ -1,1 +1,2 @@
-(function(){'use strict';if(window.__RIZVI_XAU_BTC_LOCK)return;window.__RIZVI_XAU_BTC_LOCK=true;let active=window.RIZVI_CURRENT_SYMBOL||'BTCUSD';window.addEventListener('rizvi:symbol-change',e=>{active=e.detail&&e.detail.symbol||'BTCUSD';if(active==='XAU/USD'){window.RIZVI_RAW_BARS=[];window.RIZVI_AGG_BARS=[];}});})();
+/* XAU/BTC symbol lock — preserve active feed buffers when switching symbols. */
+(function(){'use strict';if(window.__RIZVI_XAU_BTC_LOCK_V2)return;window.__RIZVI_XAU_BTC_LOCK_V2=true;window.RIZVI_CURRENT_SYMBOL=window.RIZVI_CURRENT_SYMBOL||'XAUUSD';window.RIZVI_DIRECT_SYMBOL=window.RIZVI_DIRECT_SYMBOL||'XAUUSD';})();
