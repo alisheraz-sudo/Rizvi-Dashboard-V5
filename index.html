@@ -1335,6 +1335,46 @@ sync();
 })();
 </script>
 
+
+<style id="rizvi-live-engine-diagnostics-css">
+#rizviLiveEngineDiagnostics{position:fixed;z-index:999999;left:8px;right:8px;bottom:8px;max-height:42vh;overflow:auto;background:rgba(2,13,24,.97);border:1px solid #3b89b9;border-radius:8px;padding:10px;color:#e9f2f8;font:12px/1.4 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 3px 18px #0009}
+#rizviLiveEngineDiagnostics strong{color:#5fc8ff}
+</style>
+<script id="rizvi-live-engine-diagnostics">
+(function(){
+'use strict';
+try{if(new URLSearchParams(window.location.search).get('diag')!=='1')return;}catch(e){return;}
+const box=document.createElement('pre');box.id='rizviLiveEngineDiagnostics';box.textContent='Rizvi live diagnostics initializing…';document.body.appendChild(box);
+const age=t=>{const n=Number(t);if(!Number.isFinite(n)||n<=0)return 'unknown';const ms=n<1e12?n*1000:n;return Math.max(0,Math.round((Date.now()-ms)/1000))+'s';};
+function render(){
+ const W=window, eng=W.RIZVI_GOLD_ENGINE_STATUS||{}, ir=W.RIZVI_INDICATOR_TEST_REPORT||{}, conf=W.RIZVI_INDICATOR_CONFLUENCE||{}, ar=W.RIZVI_MULTI_ALGORITHM_REPORT||{}, master=W.RIZVI_MASTER_CONFIRMATION||{}, act=W.RIZVI_INDICATOR_ACTIVATION||{};
+ const raw=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[], agg=Array.isArray(W.RIZVI_AGG_BARS)?W.RIZVI_AGG_BARS:[], state=Array.isArray(W.state?.ohlc)?W.state.ohlc:[];
+ const bars=raw.length?raw:agg.length?agg:state, last=bars.length?bars[bars.length-1]:null, ts=last?(last.t??last.time??last.timestamp):null, close=last?(last.c??last.close):null;
+ const comps=conf.components||ir.components||master.indicatorStatus||{}, compEntries=Object.entries(comps), algos=ar.algorithms||{}, algoEntries=Object.entries(algos);
+ const feedFresh=last&&ts!=null&&Number.isFinite(Number(ts))&&(Date.now()-(Number(ts)<1e12?Number(ts)*1000:Number(ts)))<180000;
+ const indPass=bars.length>0&&feedFresh&&compEntries.length>0&&compEntries.some(([k,v])=>Number(v?.score??v?.value??0)!==0);
+ const algoPass=bars.length>0&&algoEntries.length>=1&&Array.isArray(ar.ranking)&&ar.ranking.length>=1;
+ const align=master.alignment||{};
+ const confPass=!!master.updatedAt&&align.status==='ALIGNED'&&['BUY','SELL'].includes(master.direction)&&Number(master.confidence)>=80&&Number(master.agreement)>=70;
+ const lines=[
+ 'RIZVI DASHBOARD — LIVE ENGINE DIAGNOSTICS (read-only)',
+ 'Symbol: '+(W.RIZVI_CURRENT_SYMBOL||W.state?.symbol||'unknown')+' | Auto trading: OFF',
+ 'Gold bridge: '+(eng.state||'NOT REPORTED')+' | bridge age: '+age(eng.updatedAt),
+ 'Bars: '+bars.length+' | last bar time: '+(ts==null?'unknown':String(ts))+' | last close: '+(close==null?'unknown':String(close))+' | bar freshness: '+age(ts),
+ 'Indicators: '+compEntries.length+' reported | active/non-zero: '+compEntries.filter(([k,v])=>Number(v?.score??v?.value??0)!==0).length+' | indicator report bars: '+(ir.bars??conf.bars??'unknown'),
+ 'Indicator detail: '+(compEntries.length?compEntries.map(([k,v])=>k+'='+(v?.score??v?.value??'?')).join(' | '):'NO COMPONENT RESULTS EXPOSED'),
+ 'Algorithms: '+algoEntries.length+' reported | ranking rows: '+(ar.ranking?.length||0)+' | master: '+JSON.stringify(ar.master||W.RIZVI_MASTER_ALGORITHM||{}),
+ 'Algo detail: '+(algoEntries.length?algoEntries.map(([k,v])=>k+':'+(v?.action||'?')+'/'+(v?.confidence??'?')+'%').join(' | '):'NO ALGORITHM RESULTS EXPOSED'),
+ 'Master confirmation: '+JSON.stringify({direction:master.direction||'unknown',confidence:master.confidence??null,agreement:master.agreement??null,qualified:master.qualified??null,alignment:align,age:age(master.updatedAt)}),
+ 'UI activation: '+JSON.stringify({state:act.state||'unknown',direction:act.direction||'unknown',confidence:act.confidence??null,age:age(act.updatedAt)}),
+ 'CHECKS: Feed '+(feedFresh?'PASS':'WAIT/FAIL')+' | Indicator calculations '+(indPass?'PASS':'NOT PROVEN')+' | Algorithms '+(algoPass?'PASS':'NOT PROVEN')+' | Master aligned high-quality confirmation '+(confPass?'PASS':'WAIT'),
+ 'Note: These checks inspect actual browser globals; non-zero indicator values alone do not mean historical accuracy or guaranteed profitability.'
+ ];
+ box.textContent=lines.join('\n');
+}
+render();setInterval(render,1000);
+})();
+</script>
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
