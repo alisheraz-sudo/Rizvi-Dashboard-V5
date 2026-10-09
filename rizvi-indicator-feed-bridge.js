@@ -35,19 +35,42 @@ function fail(sym,reason){
 async function poll(){
  if(busy)return;busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
+ function validateRows(rows,label){
+  const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
+  if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
+  const now=Math.floor(Date.now()/1000),latest=bars[bars.length-1],age=now-latest.t;
+  if(age<0||age>Math.max(TF_SECONDS[tf]*3,180))throw new Error(label+' stale (latest bar age '+age+'s)');
+  return {bars,latest};
+ }
  try{
   if(sym==='UNSUPPORTED'){fail(sym,'No OHLC endpoint configured for this symbol');return;}
-  const url=sym==='BTCUSD'?('/market/btc/intraday?granularity='+TF_SECONDS[tf]):'/market/xau/intraday';
-  const response=await fetch(url,{cache:'no-store',credentials:'same-origin'});
-  const data=await response.json();
-  if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
-  const base=normalize(data.bars),bars=aggregate(base,TF_SECONDS[tf]);
-  // Keep the full historical window for indicators; freshness applies only to the newest bar.
-  // Filtering every bar to the last 180 seconds left at most ~3 one-minute bars, making the
-  // old "at least 21 fresh bars" check impossible even when the feed was healthy.
-  if(bars.length<21)throw new Error('Insufficient OHLC history: '+bars.length+' bars');
-  const now=Math.floor(Date.now()/1000),latest=bars[bars.length-1];
-  if(now-latest.t>Math.max(TF_SECONDS[tf]*3,180))throw new Error('OHLC feed is stale; latest bar age '+(now-latest.t)+'s');
+  let data=null,validated=null,primaryError='';
+  if(sym==='BTCUSD'){
+   const response=await fetch('/market/btc/intraday?granularity='+TF_SECONDS[tf],{cache:'no-store',credentials:'same-origin'});
+   data=await response.json();
+   if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
+   validated=validateRows(data.bars,data.source||'Coinbase');
+  }else{
+   try{
+    const response=await fetch('/market/xau/intraday',{cache:'no-store',credentials:'same-origin'});
+    data=await response.json();
+    if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
+    validated=validateRows(data.bars,data.source||'XAUS-OHLC');
+   }catch(e){
+    primaryError=String(e?.message||e);
+    // Use cTrader only when it is actually connected, authorized, and returns fresh real OHLC.
+    // No spot-price fabrication: if neither provider has valid candles, keep signals at WAIT.
+    const response=await fetch('/market/ctrader?symbol=XAUUSD',{cache:'no-store',credentials:'same-origin'});
+    const backup=await response.json();
+    if(!response.ok||!backup?.ok||backup.connected!==true||backup.authorized!==true||!Array.isArray(backup.bars)||!backup.bars.length){
+     throw new Error('XAUS failed: '+primaryError+'; cTrader fallback unavailable'+(backup?.error?': '+backup.error:'')+' (connected='+!!backup?.connected+', authorized='+!!backup?.authorized+', bars='+(backup?.bars?.length||0)+')');
+    }
+    data=backup;
+    try{validated=validateRows(backup.bars,'cTrader OHLC');}
+    catch(e2){throw new Error('XAUS failed: '+primaryError+'; cTrader fallback failed: '+String(e2?.message||e2));}
+   }
+  }
+  const bars=validated.bars,latest=validated.latest;
   window.RIZVI_DIRECT_SYMBOL=sym;window.RIZVI_CURRENT_SYMBOL=sym;
   window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
   window.RIZVI_FEED_STATUS={ok:true,symbol:sym,timeframe:tf,source:data.source||'backend OHLC',bars:bars.length,latestBarAt:latest.t,updatedAt:Date.now(),key};
