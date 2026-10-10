@@ -1,6 +1,9 @@
 """Tests for the isolated BTC feed-to-engine bridge; no network calls."""
 import unittest
-from python_engine.btc_bridge import normalize_btc_candles, evaluate_btc
+import json
+from unittest.mock import patch
+from python_engine.btc_bridge import (normalize_btc_candles, evaluate_btc,
+    fetch_binance_btc_candles)
 
 
 def btc_bars(count=80, start=1_800_000_000):
@@ -50,6 +53,26 @@ class BTCBridgeTests(unittest.TestCase):
         self.assertEqual(result["bridge"]["normalized_bars"], 80)
         self.assertFalse(result["autoTrading"])
         self.assertIn(result["signal"], {"BUY", "SELL", "WEAK_BUY", "WEAK_SELL", "WAIT"})
+
+    def test_live_adapter_uses_only_closed_candles(self):
+        now = 1_800_000_000
+        rows = []
+        for i in range(60):
+            open_ms = int((now - 60 * (60 - i)) * 1000)
+            rows.append([open_ms, "60000", "60010", "59990", "60005", "1", open_ms + 59999])
+        rows.append([int(now * 1000), "60005", "60020", "60000", "60015", "1.1", int(now * 1000) + 59999])
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self): return json.dumps(rows).encode("utf-8")
+        with patch("python_engine.btc_bridge.urlopen", return_value=FakeResponse()):
+            bars = fetch_binance_btc_candles("1m", 60, now_seconds=now)
+        self.assertEqual(len(bars), 60)
+        self.assertLess(bars[-1]["timestamp"], now)
+
+    def test_live_adapter_rejects_unsupported_timeframe(self):
+        with self.assertRaisesRegex(ValueError, "Unsupported Binance timeframe"):
+            fetch_binance_btc_candles("2m", 60, now_seconds=1_800_000_000)
 
     def test_rejects_duplicate_timestamps(self):
         rows = btc_bars(2)
