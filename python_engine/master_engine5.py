@@ -111,18 +111,18 @@ def _adaptive_weights(regime: str, structure_score: float, base_engines: Dict[st
         weights["engine_1_trend"] -= 0.08
         weights["engine_3_structure"] -= 0.06
     elif regime == "HIGH_VOLATILITY":
-        weights["engine_4_volatility_price_action"] += 0.10
-        weights["engine_3_volume"] += 0.04
+        weights["engine_4_volatility"] += 0.10
+        weights["engine_3_structure"] += 0.04
         weights["engine_1_trend"] -= 0.07
         weights["engine_2_momentum"] -= 0.07
     elif regime == "LOW_VOLATILITY":
-        weights["engine_4_volatility_price_action"] += 0.05
+        weights["engine_4_volatility"] += 0.05
         weights["engine_2_momentum"] += 0.04
         weights["engine_1_trend"] -= 0.04
-        weights["engine_3_volume"] -= 0.05
+        weights["engine_3_structure"] -= 0.05
 
     # Structural evidence modifies weight only modestly; it never overrides feed/consensus gates.
-    weights["engine_4_volatility_price_action"] += 0.04 * abs(structure_score)
+    weights["engine_4_volatility"] += 0.04 * abs(structure_score)
     # Missing specialist scores get no invented vote and are removed before normalization.
     active = {k: max(0.05, v) for k, v in weights.items() if base_engines.get(k, {}).get("score") is not None}
     total = sum(active.values())
