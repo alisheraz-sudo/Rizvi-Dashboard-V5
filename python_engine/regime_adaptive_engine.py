@@ -261,8 +261,8 @@ def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]
     return {
         "engine_1_trend": {"score": trend, "inputs": ["EMA", "SMA", "MACD", "DI+/DI-", "Ichimoku", "EMA slope"]},
         "engine_2_momentum": {"score": momentum, "inputs": ["RSI", "Stochastic", "CCI", "MFI", "ROC", "Williams %R"]},
-        "engine_3_volume": {"score": volume, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy"], "order_flow": "NOT_ATTACHED", "delta": "NOT_AVAILABLE_FROM_OHLCV"},
-        "engine_4_volatility_price_action": {"score": price_action, "inputs": ["Bollinger Bands", "Candle pattern"], "atr_pct": x["ATR_PCT"], "adx": x["ADX"]},
+        "engine_3_structure": {"score": volume, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy"], "order_flow": "NOT_ATTACHED", "delta": "NOT_AVAILABLE_FROM_OHLCV"},
+        "engine_4_volatility": {"score": price_action, "inputs": ["Bollinger Bands", "ATR/ATR%", "ADX regime context", "Candle pattern"], "atr_pct": x["ATR_PCT"], "adx": x["ADX"]},
     }
 
 
@@ -283,11 +283,11 @@ def _regime(x: Dict[str, Optional[float]]) -> str:
 
 def _adaptive_weights(regime: str) -> Dict[str, float]:
     presets = {
-        "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_volume": .20, "engine_4_volatility_price_action": .22},
-        "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_volume": .22, "engine_4_volatility_price_action": .32},
-        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_volume": .23, "engine_4_volatility_price_action": .35},
-        "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_volume": .23, "engine_4_volatility_price_action": .30},
-        "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_volume": .25, "engine_4_volatility_price_action": .25},
+        "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_structure": .20, "engine_4_volatility": .22},
+        "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_structure": .22, "engine_4_volatility": .32},
+        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_structure": .23, "engine_4_volatility": .35},
+        "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_structure": .23, "engine_4_volatility": .30},
+        "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_structure": .25, "engine_4_volatility": .25},
     }
     weights = presets.get(regime, presets["UNKNOWN"]).copy()
     # Hard cap each group; normalize after capping.
