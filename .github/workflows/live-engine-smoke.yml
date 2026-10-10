@@ -1,0 +1,86 @@
+name: Live BTC engine smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/regime-adaptive-engine-v1
+
+permissions:
+  contents: read
+
+jobs:
+  live-btc-evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fetch fresh BTC candles and evaluate isolated engine
+        env:
+          MARKET_URL: https://rizvi-dashboard-production.up.railway.app/market/btc/intraday?granularity=60
+          ENGINE_URL: https://rizvi-dashboard-stability-update-production.up.railway.app/evaluate
+        run: |
+          python - <<'PY'
+          import json, os, sys, time, urllib.request, urllib.error
+
+          def get_json(url):
+              req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "RizviDashboard-LiveSmokeTest/1.0"})
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          try:
+              market = get_json(os.environ["MARKET_URL"])
+              if not market.get("ok"):
+                  raise RuntimeError("BTC market endpoint returned ok=false")
+              raw = market.get("bars")
+              if not isinstance(raw, list) or len(raw) < 60:
+                  raise RuntimeError("BTC feed returned fewer than 60 bars")
+              bars = []
+              for b in raw:
+                  bars.append({
+                      "timestamp": b.get("t"),
+                      "open": b.get("o"),
+                      "high": b.get("h"),
+                      "low": b.get("l"),
+                      "close": b.get("c"),
+                      "volume": b.get("v", 0),
+                  })
+              now = int(time.time())
+              latest_ts = int(bars[-1]["timestamp"])
+              age = now - latest_ts
+              if age < -60 or age > 180:
+                  raise RuntimeError(f"Latest BTC candle is stale or future-dated: age={age}s")
+              payload = json.dumps({"symbol": "BTCUSD", "timeframe": "1m", "bars": bars}).encode()
+              req = urllib.request.Request(
+                  os.environ["ENGINE_URL"], data=payload,
+                  headers={"Content-Type": "application/json", "Accept": "application/json"},
+                  method="POST"
+              )
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  result = json.loads(response.read().decode("utf-8"))
+              if not result.get("ok"):
+                  raise RuntimeError("Engine rejected BTC bars: " + str(result.get("reason", result.get("error", "unknown error"))))
+              if result.get("autoTrading") is not False:
+                  raise RuntimeError("Safety check failed: autoTrading must remain false")
+              indicators = result.get("indicators")
+              engines = result.get("engines")
+              if not isinstance(indicators, dict) or not isinstance(engines, dict):
+                  raise RuntimeError("Engine response missing indicator or specialist-engine diagnostics")
+              print(json.dumps({
+                  "status": "PASS",
+                  "market_source": market.get("source"),
+                  "bar_count": len(bars),
+                  "latest_candle_age_seconds": age,
+                  "engine_version": result.get("version"),
+                  "regime": result.get("regime"),
+                  "indicator_output_count": len(indicators),
+                  "specialist_engine_count": len(engines),
+                  "master_engine_present": isinstance(result.get("master_engine"), dict),
+                  "signal": result.get("signal"),
+                  "confidence_score_not_win_probability": result.get("confidence"),
+                  "order_flow_status": result.get("order_flow_status", "not returned"),
+                  "autoTrading": result.get("autoTrading"),
+              }, indent=2))
+          except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, KeyError, TypeError, RuntimeError) as exc:
+              print("LIVE BTC ENGINE SMOKE TEST FAILED: " + str(exc), file=sys.stderr)
+              sys.exit(1)
+          PY
