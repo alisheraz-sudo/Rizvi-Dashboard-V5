@@ -22,8 +22,8 @@ TIMEFRAME_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
 BASE_WEIGHTS = {
     "engine_1_trend": 0.28,
     "engine_2_momentum": 0.22,
-    "engine_3_volume": 0.22,
-    "engine_4_volatility_price_action": 0.28,
+    "engine_3_structure": 0.22,
+    "engine_4_volatility": 0.28,
 }
 MIN_SUPPORTING_ENGINES = 3
 WAIT_SCORE = 0.70
@@ -103,13 +103,13 @@ def _adaptive_weights(regime: str, structure_score: float, base_engines: Dict[st
     if regime == "TRENDING":
         weights["engine_1_trend"] += 0.10
         weights["engine_2_momentum"] += 0.03
-        weights["engine_4_volatility_price_action"] -= 0.08
-        weights["engine_3_volume"] -= 0.05
+        weights["engine_4_volatility"] -= 0.08
+        weights["engine_3_structure"] -= 0.05
     elif regime == "RANGING":
         weights["engine_2_momentum"] += 0.08
-        weights["engine_4_volatility_price_action"] += 0.06
+        weights["engine_4_volatility"] += 0.06
         weights["engine_1_trend"] -= 0.08
-        weights["engine_3_volume"] -= 0.06
+        weights["engine_3_structure"] -= 0.06
     elif regime == "HIGH_VOLATILITY":
         weights["engine_4_volatility_price_action"] += 0.10
         weights["engine_3_volume"] += 0.04
