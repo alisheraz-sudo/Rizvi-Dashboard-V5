@@ -76,7 +76,7 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("JSON body must contain a bars array")
             result = evaluate(
                 data["bars"],
-                symbol=str(data.get("symbol", "XAUUSD"))[:32],
+                symbol=str(data.get("symbol", "BTCUSD"))[:32],
                 timeframe=str(data.get("timeframe", "1m"))[:8],
                 order_flow=data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None,
             )
