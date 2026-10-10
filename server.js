@@ -74,8 +74,9 @@ if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
  }catch(e){primaryError=String(e.message||'XAUS request failed').slice(0,120);}
  try{
   // Yahoo's chart endpoint is unofficial; try the intended spot ticker first, then a clearly labeled COMEX futures proxy.
+  // Yahoo Finance does not provide a working XAUUSD=X chart symbol here (HTTP 404).
+  // Use its supported Gold futures ticker as a clearly labeled proxy; never mislabel it as spot XAU/USD.
   const candidates=[
-   {ticker:'XAUUSD=X',label:'YAHOO-FINANCE-XAUUSD-SPOT',instrument:'XAU/USD'},
    {ticker:'GC=F',label:'YAHOO-FINANCE-GOLD-FUTURES-GC=F',instrument:'COMEX Gold Futures (GC=F), NOT spot XAU/USD'}
   ];
   const yahooErrors=[];
