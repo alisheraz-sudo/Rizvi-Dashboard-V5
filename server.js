@@ -47,18 +47,27 @@ if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
   primaryError=bars.length?'XAUS candles stale':'XAUS returned no valid candles';
  }catch(e){primaryError=String(e.message||'XAUS request failed').slice(0,120);}
  try{
-  // Independent public OHLC fallback for Gold when XAUS returns stale/missing candles.
-  // Yahoo Finance returns epoch-second timestamps; only real OHLC bars are accepted.
-  const u='https://query1.finance.yahoo.com/v8/finance/chart/XAUUSD%3DX?range=1d&interval=1m&includePrePost=true&_='+Date.now();
-  const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
-  if(!r.ok)throw new Error('Yahoo Finance HTTP '+r.status);
-  const payload=await r.json(),result=payload?.chart?.result?.[0],ts=result?.timestamp||[],q=result?.indicators?.quote?.[0];
-  if(payload?.chart?.error)throw new Error('Yahoo Finance '+(payload.chart.error.description||'feed error'));
-  const rows=Array.isArray(ts)&&q?ts.map((t,i)=>({t,o:q.open?.[i],h:q.high?.[i],l:q.low?.[i],c:q.close?.[i],v:q.volume?.[i]||0})).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(v=>Number.isFinite(Number(v)))):[];
-  const bars=normalizeBars(rows);
-  if(!fresh(bars))throw new Error(bars.length?'Yahoo Finance candles stale':'Yahoo Finance returned no valid XAUUSD candles');
-  return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'YAHOO-FINANCE-XAUUSD-OHLC',interval:'1m',bars,updatedAt:Date.now()});
- }catch(e){primaryError+='; Yahoo fallback: '+String(e.message||'Yahoo Finance failed').slice(0,100);}
+  // Yahoo's chart endpoint is unofficial; try the intended spot ticker first, then a clearly labeled COMEX futures proxy.
+  const candidates=[
+   {ticker:'XAUUSD=X',label:'YAHOO-FINANCE-XAUUSD-SPOT',instrument:'XAU/USD'},
+   {ticker:'GC=F',label:'YAHOO-FINANCE-GOLD-FUTURES-GC=F',instrument:'COMEX Gold Futures (GC=F), NOT spot XAU/USD'}
+  ];
+  const yahooErrors=[];
+  for(const candidate of candidates){
+   try{
+    const u='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(candidate.ticker)+'?range=1d&interval=1m&includePrePost=true&_='+Date.now();
+    const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+    if(!r.ok)throw new Error('Yahoo Finance HTTP '+r.status);
+    const payload=await r.json(),result=payload?.chart?.result?.[0],ts=result?.timestamp||[],q=result?.indicators?.quote?.[0];
+    if(payload?.chart?.error)throw new Error('Yahoo Finance '+(payload.chart.error.description||'feed error'));
+    const rows=Array.isArray(ts)&&q?ts.map((t,i)=>({t,o:q.open?.[i],h:q.high?.[i],l:q.low?.[i],c:q.close?.[i],v:q.volume?.[i]||0})).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(v=>Number.isFinite(Number(v)))):[];
+    const bars=normalizeBars(rows);
+    if(!fresh(bars))throw new Error(bars.length?'candles stale':'no valid OHLC candles');
+    return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:candidate.label,instrument:candidate.instrument,interval:'1m',bars,updatedAt:Date.now()});
+   }catch(yahooError){yahooErrors.push(candidate.ticker+': '+String(yahooError.message||'Yahoo request failed').slice(0,90));}
+  }
+  throw new Error(yahooErrors.join(' | '));
+ }catch(e){primaryError+='; Yahoo fallback: '+String(e.message||'Yahoo Finance failed').slice(0,180);}
  try{
   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
   const data=await r.json(),bars=normalizeBars(Array.isArray(data?.bars)?data.bars:[]);
