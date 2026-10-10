@@ -9,7 +9,7 @@
     ['Market range',()=>!!window.RIZVI_MARKET_RANGE&&!window.RIZVI_MARKET_RANGE.status],
     ['Liquidity engine',()=>!!window.RIZVI_LIQUIDITY_ENGINE],
     ['Signal qualification',()=>!!window.RIZVI_SIGNAL_QUALIFICATION],
-    ['BTC order book',()=>window.RIZVI_ORDER_FLOW?.BTCUSDT?.status==='LIVE'],
+    ['Optional order flow (not required)',()=>window.RIZVI_ORDER_FLOW?.BTCUSDT?.status==='LIVE'||window.RIZVI_MASTER_CONFIRMATION?.engines?.orderFlow?.signal==='DISABLED'],
     ['Learning journal',()=>!!window.RIZVI_SIGNAL_JOURNAL],
     ['Auto Trading OFF',()=>window.RIZVI_AUTO_TRADING===false]
   ];
