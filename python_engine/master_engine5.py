@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 from math import isfinite
 from typing import Any, Dict, List, Optional, Sequence
 
-from regime_adaptive_engine import evaluate as evaluate_base
+try:
+    from .regime_adaptive_engine import evaluate as evaluate_base
+except ImportError:  # direct execution from python_engine directory
+    from regime_adaptive_engine import evaluate as evaluate_base
 
 ENGINE_VERSION = "rizvi-master-engine-5.0.0"
 TIMEFRAME_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
