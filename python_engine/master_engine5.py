@@ -129,7 +129,7 @@ def _adaptive_weights(regime: str, structure_score: float, base_engines: Dict[st
     return {k: round(v / total, 6) for k, v in active.items()} if total else {}
 
 
-def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "XAUUSD", timeframe: str = "1m",
+def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timeframe: str = "1m",
              order_flow: Optional[Dict[str, Any]] = None, now_seconds: Optional[float] = None) -> Dict[str, Any]:
     """Return final signal and complete engine/structure/weight diagnostics."""
     base = evaluate_base(raw_bars, symbol=symbol, timeframe=timeframe, order_flow=order_flow)
