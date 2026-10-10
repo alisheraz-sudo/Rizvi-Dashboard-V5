@@ -110,8 +110,27 @@ def _normalise_bars(raw: Sequence[Dict[str, Any]]) -> List[Bar]:
         bars.append(Bar(item.get("timestamp"), o, h, l, c, vol))
     if len(bars) < MIN_BARS:
         raise ValueError("at least %d OHLCV bars are required" % MIN_BARS)
-    if any(bars[i].timestamp == bars[i - 1].timestamp for i in range(1, len(bars))):
-        raise ValueError("duplicate adjacent candle timestamps")
+
+    timestamps = [bar.timestamp for bar in bars]
+    if any(ts is None for ts in timestamps):
+        raise ValueError("every candle must include a timestamp")
+    if all(_num(ts) for ts in timestamps):
+        if any(float(timestamps[i]) <= float(timestamps[i - 1]) for i in range(1, len(timestamps))):
+            raise ValueError("candle timestamps must be strictly increasing")
+    elif all(isinstance(ts, str) for ts in timestamps):
+        parsed = []
+        for ts in timestamps:
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                parsed.append(dt.timestamp())
+            except ValueError as exc:
+                raise ValueError("timestamps must be numeric or ISO-8601 strings") from exc
+        if any(parsed[i] <= parsed[i - 1] for i in range(1, len(parsed))):
+            raise ValueError("candle timestamps must be strictly increasing")
+    else:
+        raise ValueError("timestamps must use one consistent numeric or ISO-8601 format")
     return bars
 
 
@@ -280,6 +299,10 @@ def _adaptive_weights(regime: str) -> Dict[str, float]:
 def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timeframe: str = "1m",
              order_flow: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Evaluate OHLCV bars and return JSON-serializable engine diagnostics and a signal."""
+    supported_timeframes = {"1m", "5m", "15m", "30m", "1h"}
+    if timeframe not in supported_timeframes:
+        return {"ok": False, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
+                "signal": "WAIT", "reason": "Unsupported timeframe", "autoTrading": False}
     try:
         bars = _normalise_bars(raw_bars)
     except (ValueError, TypeError) as exc:
