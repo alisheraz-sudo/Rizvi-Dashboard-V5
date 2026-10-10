@@ -1,0 +1,24 @@
+name: Python engine tests
+
+on:
+  push:
+    branches:
+      - fix/master-engine5-ci-and-base-sync
+  pull_request:
+    paths:
+      - "python_engine/**"
+      - "test_*.py"
+      - ".github/workflows/python-engine-tests.yml"
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run unit tests
+        run: python -m unittest discover -v
