@@ -6,10 +6,10 @@ Standard-library only so it can be tested before any deployment integration.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from math import isfinite
 from statistics import mean, pstdev
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 from datetime import datetime, timezone
 
 
@@ -125,8 +125,12 @@ def _indicator_values(bars: Sequence[Bar]) -> Dict[str, Optional[float]]:
     macd_signal = _ema_series([a - b for a, b in zip(e12, e26)], 9)[-1]
     rsi = _rsi(c)
     hh14, ll14 = max(h[-14:]), min(l[-14:])
-    stoch_k = 100.0 * _safe_div(c[-1] - ll14, hh14 - ll14, 0.5) if hh14 != ll14 else 50.0
-    stoch_d = stoch_k
+    stoch_k_series = []
+    for end in range(14, len(bars) + 1):
+        win_h, win_l = max(h[end-14:end]), min(l[end-14:end])
+        stoch_k_series.append(100.0 * _safe_div(c[end-1] - win_l, win_h - win_l, 0.5) if win_h != win_l else 50.0)
+    stoch_k = stoch_k_series[-1]
+    stoch_d = mean(stoch_k_series[-3:])
     sma20 = _sma(c, 20)
     sd20 = pstdev(c[-20:]) if len(c) >= 20 else None
     atr = _atr(bars)
@@ -209,12 +213,12 @@ def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]
         return _direction(val, deadband)
     # Each indicator contributes at most once to its own specialist engine.
     trend = _vote([
-        d("EMA") if x["EMA"] is not None and close is not None and x["EMA"] != close else (0.0 if x["EMA"] is not None else None),
-        d("SMA") if x["SMA"] is not None and close is not None and x["SMA"] != close else (0.0 if x["SMA"] is not None else None),
-        d("MACD") if x["MACD"] is not None and abs(x["MACD"]) > 0 else (0.0 if x["MACD"] is not None else None),
+        (1.0 if close > x["EMA"] else -1.0 if close < x["EMA"] else 0.0) if x["EMA"] is not None and close is not None else None,
+        (1.0 if close > x["SMA"] else -1.0 if close < x["SMA"] else 0.0) if x["SMA"] is not None and close is not None else None,
+        (1.0 if x["MACD"] > x["MACD_SIGNAL"] else -1.0 if x["MACD"] < x["MACD_SIGNAL"] else 0.0) if x["MACD"] is not None and x["MACD_SIGNAL"] is not None else None,
         d("EMA_SLOPE", 0.00002),
         (1.0 if x["DI_PLUS"] > x["DI_MINUS"] else -1.0 if x["DI_PLUS"] < x["DI_MINUS"] else 0.0) if x["DI_PLUS"] is not None and x["DI_MINUS"] is not None else None,
-        d("ICHIMOKU_TENKAN") if x["ICHIMOKU_TENKAN"] is not None and x["ICHIMOKU_KIJUN"] is not None else None,
+        (1.0 if x["ICHIMOKU_TENKAN"] > x["ICHIMOKU_KIJUN"] else -1.0 if x["ICHIMOKU_TENKAN"] < x["ICHIMOKU_KIJUN"] else 0.0) if x["ICHIMOKU_TENKAN"] is not None and x["ICHIMOKU_KIJUN"] is not None else None,
     ])
     momentum = _vote([
         (1.0 if x["RSI"] > 55 else -1.0 if x["RSI"] < 45 else 0.0) if x["RSI"] is not None else None,
