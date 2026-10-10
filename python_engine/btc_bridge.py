@@ -7,12 +7,18 @@ network requests, does not touch the UI, and never places orders.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
+from urllib.request import Request, urlopen
+import json
+import time
 
 try:
     from .master_engine5 import evaluate as evaluate_master
 except ImportError:  # direct execution from python_engine directory
     from master_engine5 import evaluate as evaluate_master
+
+
+BINANCE_INTERVALS = {"1m", "5m", "15m", "30m", "1h"}
 
 
 ALIASES = {
@@ -103,6 +109,45 @@ def normalize_btc_candles(payload: Any) -> List[Dict[str, Any]]:
         raise ValueError("BTC candle timestamps must be unique and increasing")
     return bars
 
+
+def fetch_binance_btc_candles(timeframe="1m", limit=100, now_seconds=None, timeout_seconds=5.0):
+    """Fetch closed BTCUSDT candles from Binance public market-data REST endpoint."""
+    if timeframe not in BINANCE_INTERVALS:
+        raise ValueError("Unsupported Binance timeframe")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 60 <= limit <= 1000:
+        raise ValueError("limit must be an integer from 60 to 1000")
+    if not isinstance(timeout_seconds, (int, float)) or timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
+    url = ("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval="
+           + timeframe + "&limit=" + str(limit))
+    request = Request(url, headers={"User-Agent": "RizviDashboardV5/1.0"})
+    with urlopen(request, timeout=float(timeout_seconds)) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError("Binance response was not a candle list")
+    now_ms = (float(now_seconds) if now_seconds is not None else time.time()) * 1000.0
+    # Binance kline field 6 is close-time in milliseconds; skip the forming candle.
+    closed = [row for row in payload if isinstance(row, (list, tuple)) and len(row) > 6
+              and isinstance(row[6], (int, float)) and row[6] < now_ms]
+    return normalize_btc_candles(closed)
+
+
+def evaluate_live_btc(timeframe="1m", limit=100, now_seconds=None, timeout_seconds=5.0):
+    """One-shot public BTC feed check through the isolated Master Engine 5."""
+    now = float(now_seconds) if now_seconds is not None else time.time()
+    try:
+        bars = fetch_binance_btc_candles(timeframe, limit, now, timeout_seconds)
+        result = evaluate_btc(bars, timeframe=timeframe, now_seconds=now)
+        result["bridge"]["source"] = "Binance public BTCUSDT klines"
+        result["bridge"]["live_feed_verified"] = bool(result.get("ok"))
+        return result
+    except Exception as exc:
+        return {"ok": False, "symbol": "BTCUSD", "timeframe": timeframe,
+                "signal": "WAIT", "reason": "BTC live-feed check failed: " + str(exc),
+                "autoTrading": False,
+                "bridge": {"name": "python-btc-bridge", "version": "1.0.0",
+                           "normalized_bars": 0, "source": "Binance public BTCUSDT klines",
+                           "source_connected_by_caller": False, "live_feed_verified": False}}
 
 def evaluate_btc(payload: Any, timeframe: str = "1m",
                  now_seconds: Optional[float] = None,
