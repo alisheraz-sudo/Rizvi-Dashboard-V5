@@ -49,7 +49,7 @@ class BTCBridgeTests(unittest.TestCase):
         self.assertEqual(result["symbol"], "BTCUSD")
         self.assertEqual(result["bridge"]["normalized_bars"], 80)
         self.assertFalse(result["autoTrading"])
-        self.assertIn(result["signal"], {"BUY", "SELL", "WAIT"})
+        self.assertIn(result["signal"], {"BUY", "SELL", "WEAK_BUY", "WEAK_SELL", "WAIT"})
 
     def test_rejects_duplicate_timestamps(self):
         rows = btc_bars(2)
