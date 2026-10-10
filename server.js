@@ -36,7 +36,32 @@ if(req.method==='OPTIONS')return ofReply(res,204,{ok:true});
 if(url.pathname==='/tv/footprint'&&req.method==='POST'){if(RIZVI_TV_SECRET&&url.searchParams.get('secret')!==RIZVI_TV_SECRET)return ofReply(res,401,{ok:false,error:'unauthorized'});try{const payload=await readJson(req),key=ofKey(payload),row={...payload,symbol:key,source:'TradingView Footprint',receivedAt:Date.now()};RIZVI_OF_LATEST.set(key,row);const h=RIZVI_OF_HISTORY.get(key)||[];h.push(row);while(h.length>100)h.shift();RIZVI_OF_HISTORY.set(key,h);return ofReply(res,200,{ok:true,symbol:key,receivedAt:row.receivedAt});}catch(e){return ofReply(res,400,{ok:false,error:'invalid JSON'});}}
 if(url.pathname==='/orderflow'&&req.method==='GET'){const key=String(url.searchParams.get('symbol')||'BTCUSDT').toUpperCase().replace(/[^A-Z0-9]/g,'');return ofReply(res,200,{ok:true,symbol:key,data:RIZVI_OF_LATEST.get(key)||null,history:(RIZVI_OF_HISTORY.get(key)||[]).slice(-30)});}
 if(url.pathname==='/market/ctrader'&&req.method==='GET'){const key=normalizedSymbol(url.searchParams.get('symbol')||'XAUUSD'),st=ctrader.status(),id=Object.keys(st.symbols||{}).find(k=>normalizedSymbol(st.symbols[k])===key),q=id?(st.quotes||{})[id]:null,bars=id?(st.bars||{})[id]:[];return ofReply(res,200,{ok:true,symbol:key,source:'cTrader',connected:!!st.connected,authorized:!!st.authorized,price:q?.price??null,bid:q?.bid??null,ask:q?.ask??null,updatedAt:q?.timestamp??null,bars:Array.isArray(bars)?bars:[],error:st.lastError||null});}
-if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){try{const requestedGran=Math.min(86400,Math.max(60,Number(url.searchParams.get('granularity')||60))),gran=requestedGran===1800?900:requestedGran,r=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity='+gran,{headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)throw new Error('Coinbase HTTP '+r.status);const data=await r.json(),bars=Array.isArray(data)?data.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4],v:+x[5]||0})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)):[];if(!bars.length)throw new Error('No BTC bars returned');return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Coinbase',bars,updatedAt:Date.now()});}catch(e){return ofReply(res,502,{ok:false,symbol:'BTCUSD',source:'Coinbase',error:e.message});}}
+if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){
+ const requestedGran=Math.min(86400,Math.max(60,Number(url.searchParams.get('granularity')||60)));
+ const interval=requestedGran>=3600?'60m':requestedGran>=1800?'30m':requestedGran>=900?'15m':requestedGran>=300?'5m':'1m';
+ const freshnessSeconds=Math.max(180,requestedGran*3);
+ let yahooError='Yahoo Finance unavailable';
+ try{
+  const u='https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=1d&interval='+interval+'&includePrePost=true&_='+Date.now();
+  const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+  if(!r.ok)throw new Error('Yahoo Finance HTTP '+r.status);
+  const payload=await r.json(),result=payload?.chart?.result?.[0],ts=result?.timestamp||[],q=result?.indicators?.quote?.[0];
+  if(payload?.chart?.error)throw new Error(payload.chart.error.description||'Yahoo chart error');
+  const bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),o:Number(q.open?.[i]),h:Number(q.high?.[i]),l:Number(q.low?.[i]),c:Number(q.close?.[i]),v:Number(q.volume?.[i]||0)})).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t):[];
+  const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;
+  if(!bars.length)throw new Error('Yahoo returned no valid OHLC bars');
+  if(age>freshnessSeconds)throw new Error('Yahoo candles stale by '+age+'s');
+  return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Yahoo Finance',ticker:'BTC-USD',interval,bars,latestAgeSeconds:age,fallbackUsed:false,updatedAt:Date.now()});
+ }catch(e){yahooError=String(e.message||'Yahoo Finance failed').slice(0,180);}
+ try{
+  const coinbaseGran=requestedGran===1800?900:Math.min(86400,Math.max(60,requestedGran));
+  const r=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity='+coinbaseGran,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+  if(!r.ok)throw new Error('Coinbase HTTP '+r.status);
+  const data=await r.json(),bars=Array.isArray(data)?data.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4],v:+x[5]||0})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)):[];
+  if(!bars.length)throw new Error('No BTC bars returned');
+  return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Coinbase fallback',bars,fallbackUsed:true,yahooError,updatedAt:Date.now()});
+ }catch(e){return ofReply(res,502,{ok:false,symbol:'BTCUSD',source:'Yahoo Finance + Coinbase fallback',error:'Yahoo: '+yahooError+'; Coinbase: '+String(e.message||'feed failed').slice(0,120)});}
+}
 if(url.pathname==='/market/xau/spot'&&req.method==='GET'){try{const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data});}catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}}
 if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
  const normalizeBars=rows=>rows.map(x=>{const raw=x.openTime??x.t??x.timestamp??x.time;const parsed=typeof raw==='string'&&!/^\d+(\.\d+)?$/.test(raw)?Date.parse(raw):Number(raw);return {t:Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN,o:Number(x.open??x.o),h:Number(x.high??x.h),l:Number(x.low??x.l),c:Number(x.close??x.c),v:Number(x.tickVolume??x.volume??x.v??0)};}).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
