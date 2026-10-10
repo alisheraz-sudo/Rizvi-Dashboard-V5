@@ -226,16 +226,17 @@ def _indicator_values(bars: Sequence[Bar]) -> Dict[str, Optional[float]]:
 
 
 def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]:
+    """Four agreed specialist engines; 18 primary indicators are assigned once."""
     close = x["LAST_CLOSE"]
+
     def d(name: str, deadband: float = 0.0) -> Optional[float]:
         val = x.get(name)
         return _direction(val, deadband)
-    # Each indicator contributes at most once to its own specialist engine.
+
     trend = _vote([
         (1.0 if close > x["EMA"] else -1.0 if close < x["EMA"] else 0.0) if x["EMA"] is not None and close is not None else None,
         (1.0 if close > x["SMA"] else -1.0 if close < x["SMA"] else 0.0) if x["SMA"] is not None and close is not None else None,
         (1.0 if x["MACD"] > x["MACD_SIGNAL"] else -1.0 if x["MACD"] < x["MACD_SIGNAL"] else 0.0) if x["MACD"] is not None and x["MACD_SIGNAL"] is not None else None,
-        d("EMA_SLOPE", 0.00002),
         (1.0 if x["DI_PLUS"] > x["DI_MINUS"] else -1.0 if x["DI_PLUS"] < x["DI_MINUS"] else 0.0) if x["DI_PLUS"] is not None and x["DI_MINUS"] is not None else None,
         (1.0 if x["ICHIMOKU_TENKAN"] > x["ICHIMOKU_KIJUN"] else -1.0 if x["ICHIMOKU_TENKAN"] < x["ICHIMOKU_KIJUN"] else 0.0) if x["ICHIMOKU_TENKAN"] is not None and x["ICHIMOKU_KIJUN"] is not None else None,
     ])
@@ -247,24 +248,30 @@ def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]
         d("ROC", 0.01),
         (1.0 if x["WILLIAMS_R"] > -40 else -1.0 if x["WILLIAMS_R"] < -60 else 0.0) if x["WILLIAMS_R"] is not None else None,
     ])
-    volume = _vote([
+    structure = _vote([
         (1.0 if close > x["VWAP"] else -1.0 if close < x["VWAP"] else 0.0) if x["VWAP"] is not None else None,
         d("OBV_CHANGE", 1e-9),
         (1.0 if x["CMF"] > 0.05 else -1.0 if x["CMF"] < -0.05 else 0.0) if x["CMF"] is not None else None,
         d("VOLUME_PROFILE_BIAS", 0.05),
-    ])
-    price_action = _vote([
         x["CANDLE_PATTERN"],
-        (1.0 if close > x["BOLLINGER_UPPER"] else -1.0 if close < x["BOLLINGER_LOWER"] else 0.0) if x["BOLLINGER_UPPER"] is not None and x["BOLLINGER_LOWER"] is not None else None,
     ])
-    # Explicitly not available from OHLCV: real order-book depth and aggressor-side delta.
+    volatility = _vote([
+        (1.0 if close > x["BOLLINGER_UPPER"] else -1.0 if close < x["BOLLINGER_LOWER"] else 0.0) if x["BOLLINGER_UPPER"] is not None and x["BOLLINGER_LOWER"] is not None else None,
+        # ATR is a magnitude, not a direction; directional vote is intentionally omitted.
+        # It remains a volatility/risk feature in diagnostics and regime classification.
+    ])
+    # The 18 primary indicator families are assigned to one group each:
+    # Trend (EMA, SMA, MACD, DI+/DI-, Ichimoku);
+    # Momentum (RSI, Stochastic, CCI, MFI, ROC, Williams %R);
+    # Structure (VWAP, OBV, CMF, Volume Profile proxy, Candle Pattern);
+    # Volatility (Bollinger Bands, ATR). ADX/ATR% are regime/risk context,
+    # EMA slope and OBV change are derived features, not additional primary indicators.
     return {
-        "engine_1_trend": {"score": trend, "inputs": ["EMA", "SMA", "MACD", "DI+/DI-", "Ichimoku", "EMA slope"]},
+        "engine_1_trend": {"score": trend, "inputs": ["EMA", "SMA", "MACD", "DI+/DI-", "Ichimoku"], "derived_context": ["EMA slope"]},
         "engine_2_momentum": {"score": momentum, "inputs": ["RSI", "Stochastic", "CCI", "MFI", "ROC", "Williams %R"]},
-        "engine_3_volume": {"score": volume, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy"], "order_flow": "NOT_ATTACHED", "delta": "NOT_AVAILABLE_FROM_OHLCV"},
-        "engine_4_volatility_price_action": {"score": price_action, "inputs": ["Bollinger Bands", "Candle pattern"], "atr_pct": x["ATR_PCT"], "adx": x["ADX"]},
+        "engine_3_structure": {"score": structure, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy", "Candle pattern"], "derived_context": ["OBV change"]},
+        "engine_4_volatility": {"score": volatility, "inputs": ["Bollinger Bands", "ATR"], "regime_context": ["ATR%", "ADX"]},
     }
-
 
 def _regime(x: Dict[str, Optional[float]]) -> str:
     atr_pct = x.get("ATR_PCT")
@@ -283,11 +290,11 @@ def _regime(x: Dict[str, Optional[float]]) -> str:
 
 def _adaptive_weights(regime: str) -> Dict[str, float]:
     presets = {
-        "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_volume": .20, "engine_4_volatility_price_action": .22},
-        "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_volume": .22, "engine_4_volatility_price_action": .32},
-        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_volume": .23, "engine_4_volatility_price_action": .35},
-        "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_volume": .23, "engine_4_volatility_price_action": .30},
-        "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_volume": .25, "engine_4_volatility_price_action": .25},
+        "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_structure": .20, "engine_4_volatility": .22},
+        "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_structure": .22, "engine_4_volatility": .32},
+        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_structure": .23, "engine_4_volatility": .35},
+        "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_structure": .23, "engine_4_volatility": .30},
+        "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_structure": .25, "engine_4_volatility": .25},
     }
     weights = presets.get(regime, presets["UNKNOWN"]).copy()
     # Hard cap each group; normalize after capping.
