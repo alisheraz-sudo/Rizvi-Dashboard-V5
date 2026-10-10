@@ -373,7 +373,7 @@
 </script></script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>
 (function(){
  const symbols={
-  BTCUSD:{decimals:2,source:'coinbase'},
+  BTCUSD:{decimals:2,source:'yahoo-finance'},
   'XAU/USD':{decimals:2,source:'xau'},
   USOIL:{decimals:2,source:'ctrader'}
  };
@@ -413,7 +413,7 @@
 (function(){
 'use strict';
 /* V3: one chart-data owner, generation guarded, no destructive clear before a valid fetch. */
-const direct={BTCUSD:'coinbase','XAU/USD':'xaus',USOIL:'ctrader'};
+const direct={BTCUSD:'yahoo-finance','XAU/USD':'xaus',USOIL:'ctrader'};
 window.RIZVI_DIRECT_CHART_SOURCE=direct;
 window.RIZVI_CHART_DATA=window.RIZVI_CHART_DATA||{};
 const cache=window.__RIZVI_CHART_CACHE=window.__RIZVI_CHART_CACHE||{};
@@ -912,12 +912,13 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
   }
   async function btcCheck(){
     try{
-      const d=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot',{cache:'no-store'}).then(r=>r.json());
-      const p=Number(d?.data?.amount);
-      if(!Number.isFinite(p))throw new Error('BTC price unavailable');
+      const d=await fetch('/market/btc/intraday?granularity=60',{cache:'no-store'}).then(r=>r.json());
+      const bars=Array.isArray(d?.bars)?d.bars:[];
+      const last=bars[bars.length-1],p=Number(last?.c);
+      if(!d?.ok||!Number.isFinite(p))throw new Error(d?.error||'BTC OHLC price unavailable');
       window.RIZVI_LIVE_PRICES=window.RIZVI_LIVE_PRICES||{};
       window.RIZVI_LIVE_PRICES.BTCUSD=p;
-      set('BTCUSD','LIVE',{price:p,source:'Coinbase spot'});
+      set('BTCUSD','LIVE',{price:p,source:d.source||'Yahoo Finance',timestamp:last.t,fallbackUsed:!!d.fallbackUsed});
     }catch(e){set('BTCUSD','DATA_ERROR',{error:String(e)});}
   }
   async function goldCheck(){
