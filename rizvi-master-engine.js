@@ -226,11 +226,12 @@
       }
     }
 
-    const direction=state.stableDirection;
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
+    // Respect the requested thresholds: below 70 = WAIT, 70–79 = weak, 80+ = strong only with confirmation.
+    const direction=confidence<70?'WAIT':state.stableDirection;
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
-    const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=95&&compatibility95;
-    // V129: directional BUY/SELL visibility is independent of the stricter High Quality Setup gate.
+    // Keep the 95-point compatibility metric as a stricter research flag, not a blocker for every 80+ confirmed setup.
+    const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=80&&weightedScore>=80&&directionalMargin>=50&&activeIndicators>=8&&alignedIndicators>=6;
     const visibleSignal=direction!=='WAIT'?direction:'WAIT';
 
     const engines={
@@ -255,7 +256,7 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:95,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
+      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:80,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
       contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
       algoRunReport
