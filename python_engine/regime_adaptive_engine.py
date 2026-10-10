@@ -269,7 +269,7 @@ def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]
     return {
         "engine_1_trend": {"score": trend, "inputs": ["EMA", "SMA", "MACD", "DI+/DI-", "Ichimoku"], "derived_context": ["EMA slope"]},
         "engine_2_momentum": {"score": momentum, "inputs": ["RSI", "Stochastic", "CCI", "MFI", "ROC", "Williams %R"]},
-        "engine_3_structure": {"score": structure, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy", "Candle pattern"], "derived_context": ["OBV change"]},
+        "engine_3_structure": {"score": structure, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy", "Candle pattern"], "derived_context": ["OBV change"], "order_flow": "NOT_ATTACHED", "delta": "NOT_AVAILABLE_FROM_OHLCV"},
         "engine_4_volatility": {"score": volatility, "inputs": ["Bollinger Bands", "ATR"], "regime_context": ["ATR%", "ADX"]},
     }
 

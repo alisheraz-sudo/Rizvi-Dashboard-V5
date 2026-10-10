@@ -53,7 +53,7 @@ class RegimeAdaptiveEngineTests(unittest.TestCase):
     def test_orderflow_is_not_fabricated_from_ohlcv(self):
         result = evaluate(make_bars(100), order_flow=None)
         self.assertEqual(result["order_flow_status"], "NOT_ATTACHED")
-        self.assertEqual(result["engines"]["engine_3_volume"]["delta"], "NOT_AVAILABLE_FROM_OHLCV")
+        self.assertEqual(result["engines"]["engine_3_structure"]["delta"], "NOT_AVAILABLE_FROM_OHLCV")
 
 
 if __name__ == "__main__":

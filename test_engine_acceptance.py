@@ -10,8 +10,8 @@ from python_engine.regime_adaptive_engine import (
 ENGINE_NAMES = (
     "engine_1_trend",
     "engine_2_momentum",
-    "engine_3_volume",
-    "engine_4_volatility_price_action",
+    "engine_3_structure",
+    "engine_4_volatility",
 )
 
 
@@ -107,7 +107,7 @@ class EngineAcceptanceTests(unittest.TestCase):
         result = evaluate(bars)
         self.assertTrue(result["ok"])
         self.assertEqual(result["order_flow_status"], "NOT_ATTACHED")
-        self.assertEqual(result["engines"]["engine_3_volume"]["delta"], "NOT_AVAILABLE_FROM_OHLCV")
+        self.assertEqual(result["engines"]["engine_3_structure"]["delta"], "NOT_AVAILABLE_FROM_OHLCV")
         self.assertFalse(result["autoTrading"])
 
     def test_exact_70_percent_is_weak_and_exact_80_percent_is_strong(self):
