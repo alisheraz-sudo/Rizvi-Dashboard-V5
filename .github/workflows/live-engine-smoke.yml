@@ -18,6 +18,7 @@ jobs:
       - name: Fetch fresh BTC candles and evaluate isolated Master Engine 5
         env:
           MARKET_URL: https://rizvi-dashboard-production.up.railway.app/market/btc/intraday?granularity=60
+          HEALTH_URL: https://rizvi-dashboard-stability-update-production.up.railway.app/health
           ENGINE_URL: https://rizvi-dashboard-stability-update-production.up.railway.app/evaluate
         run: |
           python - <<'PY'
@@ -28,7 +29,13 @@ jobs:
               with urllib.request.urlopen(req, timeout=20) as response:
                   return json.loads(response.read().decode("utf-8"))
 
+          stage = "Python engine health preflight"
           try:
+              health = get_json(os.environ["HEALTH_URL"])
+              print("PYTHON_ENGINE_HEALTH=" + json.dumps(health))
+              if health.get("ok") is False:
+                  raise RuntimeError("Python engine health endpoint returned ok=false")
+              stage = "BTC market feed validation"
               market = get_json(os.environ["MARKET_URL"])
               if not market.get("ok"):
                   raise RuntimeError("BTC market endpoint returned ok=false")
@@ -41,6 +48,7 @@ jobs:
               age = now - latest_ts
               if age < -60 or age > 180:
                   raise RuntimeError(f"Latest BTC candle is stale or future-dated: age={age}s")
+              stage = "Master Engine 5 evaluation POST"
               payload = json.dumps({"symbol": "BTCUSD", "timeframe": "1m", "bars": bars}).encode()
               req = urllib.request.Request(os.environ["ENGINE_URL"], data=payload, headers={"Content-Type": "application/json", "Accept": "application/json"}, method="POST")
               with urllib.request.urlopen(req, timeout=20) as response:
@@ -59,6 +67,6 @@ jobs:
                   raise RuntimeError("Master Engine 5 output is missing; refusing base-engine-only PASS")
               print(json.dumps({"status":"PASS","market_source":market.get("source"),"bar_count":len(bars),"latest_candle_age_seconds":age,"engine_version":result.get("engine_version"),"regime":result.get("regime"),"indicator_output_count":len(indicators),"specialist_engine_count":len(engines),"master_engine_present":True,"signal":result.get("signal"),"confidence_score_not_win_probability":result.get("confidence"),"order_flow_status":result.get("order_flow_status","not returned"),"autoTrading":result.get("autoTrading")}, indent=2))
           except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, KeyError, TypeError, RuntimeError) as exc:
-              print("LIVE BTC MASTER ENGINE 5 SMOKE TEST FAILED: " + str(exc), file=sys.stderr)
+              print("LIVE BTC MASTER ENGINE 5 SMOKE TEST FAILED at [" + stage + "]: " + str(exc), file=sys.stderr)
               sys.exit(1)
           PY
