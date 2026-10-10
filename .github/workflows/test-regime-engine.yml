@@ -17,6 +17,6 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile Python files
-        run: python -m py_compile python_engine/regime_adaptive_engine.py test_regime_adaptive_engine.py
+        run: python -m py_compile python_engine/regime_adaptive_engine.py test_regime_adaptive_engine.py test_engine_acceptance.py
       - name: Run unit tests
-        run: python -m unittest -v test_regime_adaptive_engine.py
+        run: python -m unittest discover -v -p 'test_*.py'
