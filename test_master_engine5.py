@@ -27,6 +27,9 @@ class MasterEngine5Tests(unittest.TestCase):
         self.assertIn("structure", result)
         self.assertIn("weights", result)
         self.assertIn("engines", result)
+        expected_engines = {"engine_1_trend", "engine_2_momentum", "engine_3_structure", "engine_4_volatility"}
+        self.assertTrue(expected_engines.issubset(set(result["engines"].keys())))
+        self.assertTrue(expected_engines.issubset(set(result.get("weights", {}).keys())))
         self.assertFalse(result["autoTrading"])
         if result.get("weights"):
             self.assertAlmostEqual(sum(result["weights"].values()), 1.0, places=4)
