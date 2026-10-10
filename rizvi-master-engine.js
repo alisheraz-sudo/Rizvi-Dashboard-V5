@@ -165,6 +165,8 @@
     add('delta',deltaSignal,WEIGHTS.delta,delta!==null);
     add('candlePattern',candlePattern,WEIGHTS.candlePattern,true);
     add('candleBias',candleBias,WEIGHTS.candleBias,true);
+    // FVG has a reserved 5-point weight; include its live signal in the actual vote total.
+    add('fvg',fvgSignal,WEIGHTS.fvg,true);
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
