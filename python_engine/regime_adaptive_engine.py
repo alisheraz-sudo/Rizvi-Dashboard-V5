@@ -285,7 +285,7 @@ def _adaptive_weights(regime: str) -> Dict[str, float]:
     presets = {
         "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_volume": .20, "engine_4_volatility_price_action": .22},
         "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_volume": .22, "engine_4_volatility_price_action": .32},
-        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_volume": .22, "engine_4_volatility_price_action": .36},
+        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_volume": .23, "engine_4_volatility_price_action": .35},
         "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_volume": .23, "engine_4_volatility_price_action": .30},
         "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_volume": .25, "engine_4_volatility_price_action": .25},
     }
