@@ -30,6 +30,7 @@ function ofKey(x){return normalizedSymbol(x.symbol||x.ticker||'BTCUSDT');}
 async function fetchXauJson(endpoint){const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),10000);try{const r=await fetch('https://xaus.com'+endpoint,{headers:{Accept:'application/json'},signal:ctrl.signal});if(!r.ok)throw new Error('XAUS HTTP '+r.status);return await r.json();}finally{clearTimeout(timer);}}
 function ofReply(res,status,obj){return send(res,status,'application/json; charset=utf-8',JSON.stringify(obj),{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Cache-Control':'no-store'});}
 
+// V5 reliability checkpoint: syntax-safe HTML injection and 30m BTC aggregation support.
 const server=http.createServer(async(req,res)=>{const url=new URL(req.url,'http://localhost');
 if(req.method==='OPTIONS')return ofReply(res,204,{ok:true});
 if(url.pathname==='/tv/footprint'&&req.method==='POST'){if(RIZVI_TV_SECRET&&url.searchParams.get('secret')!==RIZVI_TV_SECRET)return ofReply(res,401,{ok:false,error:'unauthorized'});try{const payload=await readJson(req),key=ofKey(payload),row={...payload,symbol:key,source:'TradingView Footprint',receivedAt:Date.now()};RIZVI_OF_LATEST.set(key,row);const h=RIZVI_OF_HISTORY.get(key)||[];h.push(row);while(h.length>100)h.shift();RIZVI_OF_HISTORY.set(key,h);return ofReply(res,200,{ok:true,symbol:key,receivedAt:row.receivedAt});}catch(e){return ofReply(res,400,{ok:false,error:'invalid JSON'});}}
