@@ -21,6 +21,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, sys, time, urllib.request, urllib.error
+          from math import isfinite
           from datetime import datetime, timezone
 
           def get_json(url):
@@ -65,6 +66,9 @@ jobs:
                       "close": b.get("c"),
                       "volume": b.get("v", 0),
                   })
+              bars = [b for b in bars if all(isinstance(b.get(k), (int, float)) and isfinite(float(b[k])) for k in ("open", "high", "low", "close", "volume")) and min(b["open"], b["high"], b["low"], b["close"]) > 0 and b["volume"] >= 0 and b["high"] >= max(b["open"], b["close"], b["low"]) and b["low"] <= min(b["open"], b["close"], b["high"])]
+              if len(bars) < 60:
+                  raise RuntimeError("Fewer than 60 valid OHLCV candles remain after filtering")
               now = time.time()
               latest_ts = timestamp_seconds(bars[-1]["timestamp"])
               age = now - latest_ts
