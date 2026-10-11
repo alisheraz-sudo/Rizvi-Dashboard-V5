@@ -265,7 +265,7 @@
   <div class="engine-data" id="engine3Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="4">
-  <div class="title">ENGINE 4 — <b>SETUP / RISK CHECKS</b></div>
+  <div class="title">ENGINE 4 — <b>DIVERGENCE / ATR / SETUP CHECKS</b></div>
   <div class="engine-status" id="engine4Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine4Data">No live indicator values reported yet.</div>
 </section>
@@ -1470,14 +1470,24 @@ function render(){
  const components=conf.components||master.indicatorStatus||eng.indicators||{};
  const entries=Object.entries(components).filter(([k,v])=>v&&typeof v==='object');
  const buckets=[[],[],[],[]];
+ const assigned={
+  EMA:0,RSI:0,VWAP:0,
+  TREND:1,CANDLE:1,LIQUIDITY:1,
+  VOLUME_PROFILE:2,DELTA:2,ORDER_FLOW:2,
+  DIVERGENCE:3
+ };
  const classify=k=>{
-  const s=k.toLowerCase().replace(/[^a-z0-9]/g,'');
-  if(/rsi|ema|vwap|volumeprofile|macd|momentum|atr|movingaverage/.test(s))return 0;
+  const key=k.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(Object.prototype.hasOwnProperty.call(assigned,key))return assigned[key];
+  const s=key.toLowerCase();
+  if(/rsi|ema|vwap|macd|momentum|movingaverage/.test(s))return 0;
   if(/trend|structure|support|resistance|candle|pattern|fvg|session|liquidity|rangelevel/.test(s))return 1;
-  if(/delta|divergence|orderflow|footprint|volume|buying|selling|imbalance/.test(s))return 2;
+  if(/delta|orderflow|footprint|volume|buying|selling|imbalance/.test(s))return 2;
   return 3;
  };
  entries.forEach(([k,v])=>buckets[classify(k)].push([k,v]));
+ const raw=conf.raw||conf.master?.raw||master.raw||{};
+ if(Number.isFinite(Number(raw.atr))&&Number(raw.atr)>0)buckets[3].push(['ATR',{value:Number(raw.atr),status:'CALCULATED'}]);
  const labels=['Indicator readings','Structure / trend readings','Confirmation readings','Remaining indicator and risk readings'];
  buckets.forEach((items,i)=>{
   const host=$('engine'+(i+1)+'Data'),status=$('engine'+(i+1)+'Status');
