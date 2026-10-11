@@ -18,6 +18,7 @@ on:
       - "indicator-proxy.js"
       - "indicator-proxy.test.js"
       - "indicator-diagnostics-bridge.js"
+      - "indicator-diagnostics-bridge.test.js"
       - "server.js"
       - ".github/workflows/indicator-stage1.yml"
 
