@@ -280,6 +280,51 @@ def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]
         "engine_4_volatility": {"score": volatility, "inputs": ["Bollinger Bands", "ATR"], "regime_context": ["ATR%", "ADX"]},
     }
 
+
+def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Route the canonical 20-item registry into the four locked specialist engines.
+
+    This is an alignment/diagnostics contract, not a scoring layer. Every engine
+    reports its assigned indicator IDs and observed statuses; no unavailable or
+    unvalidated value is promoted to a valid vote.
+    """
+    roster = roster_snapshot()
+    observed = diagnostics.get("indicators", {}) if isinstance(diagnostics, dict) else {}
+    reports: Dict[str, Dict[str, Any]] = {}
+    for group in roster.get("engines", []):
+        engine_id = int(group["id"])
+        assigned = []
+        for item in group.get("indicators", []):
+            reading = observed.get(item["id"], {})
+            if not isinstance(reading, dict):
+                reading = {}
+            assigned.append({
+                "id": item["id"],
+                "name": item["name"],
+                "status": reading.get("status", "MISSING_OUTPUT"),
+                "value": reading.get("value"),
+                "note": reading.get("note", ""),
+            })
+        statuses = [str(item["status"]) for item in assigned]
+        unavailable = sum(1 for status in statuses if "UNAVAILABLE" in status or status.startswith("MISSING"))
+        validated = sum(1 for status in statuses if status == "CALCULATED")
+        reports["engine_%d" % engine_id] = {
+            "id": engine_id,
+            "name": group["name"],
+            "expected_indicators": int(group["indicator_count"]),
+            "returned_indicators": len(assigned),
+            "validated_calculations": validated,
+            "unavailable_indicators": unavailable,
+            "indicators": assigned,
+            "aligned": len(assigned) == int(group["indicator_count"]),
+            "ready_for_signal": False,
+            "signal": "WAIT",
+            "score": None,
+            "reason": "Roster mapping is present; scoring remains blocked until each indicator and required feed is validated.",
+        }
+    return reports
+
+
 def _regime(x: Dict[str, Optional[float]]) -> str:
     atr_pct = x.get("ATR_PCT")
     adx = x.get("ADX")
@@ -323,14 +368,14 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         return {"ok": False, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
                 "signal": "WAIT", "reason": str(exc), "autoTrading": False}
     x = _indicator_values(bars)
-    engines = _compute_engines(x)
     regime = _regime(x)
     weights = _adaptive_weights(regime)
 
-    # Stage 1 safety gate: the old scorer is not equivalent to the locked 20-indicator
-    # roster. Return diagnostics for audit, but do not publish its legacy signal as valid.
+    # Route the canonical 20 indicators to the approved 6/5/4/5 specialist-engine
+    # groups. Legacy 18-family directional grouping is deliberately not used here.
     roster = roster_snapshot()
     diagnostics = calculate_roster(raw_bars, symbol=symbol, timeframe=timeframe)
+    engines = _locked_engine_reports(diagnostics)
     return {
         "ok": True,
         "version": ENGINE_VERSION,
