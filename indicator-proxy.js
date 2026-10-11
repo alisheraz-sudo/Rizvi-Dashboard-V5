@@ -71,6 +71,10 @@ async function evaluateDiagnostics(payload, options = {}) {
     ...(payload.order_flow && typeof payload.order_flow === 'object' && !Array.isArray(payload.order_flow)
       ? { order_flow: payload.order_flow } : {})
   };
+  if (requestBody.bars.length < 60) {
+    return { status: 422, body: { ok: false, signal: 'WAIT', confidence: null,
+      reason: 'Fewer than 60 valid OHLCV bars remain after candle validation', autoTrading: false } };
+  }
 
   try {
     const fetchImpl = options.fetchImpl || globalThis.fetch;
