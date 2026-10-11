@@ -72,6 +72,18 @@ class IndicatorRosterStage1Tests(unittest.TestCase):
         ]
         self.assertEqual(engine_ids, roster_ids)
 
+    def test_engine_5_evaluates_all_four_engines_and_gates_signal(self):
+        result = evaluate(sample_bars(), symbol="BTCUSD", timeframe="1m")
+        master = result["engine_5"]
+        self.assertEqual(master["input_engines"], 4)
+        self.assertEqual(master["expected_indicators"], 20)
+        self.assertEqual(master["received_indicators"], 20)
+        self.assertTrue(master["engine_mapping_aligned"])
+        self.assertFalse(master["ready_for_signal"])
+        self.assertEqual(master["signal"], "WAIT")
+        self.assertIsNone(master["confidence"])
+        self.assertFalse(result["autoTrading"])
+
     def test_stage1_fails_closed_instead_of_publishing_legacy_signal(self):
         result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
         self.assertTrue(result["ok"])
