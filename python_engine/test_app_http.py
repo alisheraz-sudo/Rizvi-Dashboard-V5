@@ -3,6 +3,7 @@ import json
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -75,7 +76,9 @@ class IndicatorAppHttpTests(unittest.TestCase):
 
 
     def test_valid_btc_request_returns_diagnostics_but_not_a_trade_signal(self):
-        status, body = self.post({"symbol": "BTCUSD", "timeframe": "1m", "bars": self.bars()})
+        # Unit tests must be deterministic and must not depend on an external exchange API.
+        with patch.object(app, "fetch_delta_trade_flow", return_value=None):
+            status, body = self.post({"symbol": "BTCUSD", "timeframe": "1m", "bars": self.bars()})
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
         self.assertEqual(body["indicator_roster"]["actual_count"], 20)
@@ -84,6 +87,9 @@ class IndicatorAppHttpTests(unittest.TestCase):
         self.assertIsNone(body["confidence"])
         self.assertFalse(body["autoTrading"])
         self.assertFalse(body["indicator_diagnostics"]["ready_for_signal"])
+        self.assertEqual(body["engine_5"]["expected_indicators"], 20)
+        self.assertEqual(body["engine_5"]["received_indicators"], 20)
+        self.assertEqual(body["master_engine"]["signal"], "WAIT")
 
     def test_stale_candles_fail_closed(self):
         status, body = self.post({"symbol": "BTCUSD", "timeframe": "1m", "bars": self.bars(last_age=600)})
