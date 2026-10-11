@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
- _FLOW_CACHE = {}
+_FLOW_CACHE = {}
 _FLOW_CACHE_AT = {}
 
 
