@@ -1300,7 +1300,7 @@ function build(){
   'Liquidity Pools / Sweeps':pools&&sweep?mk('Pools: '+(pools.equalHigh===null?'—':px(pools.equalHigh))+'/'+(pools.equalLow===null?'—':px(pools.equalLow))+'; '+sweep.name,Math.round((pools.equalHigh!==null||pools.equalLow!==null?60:45)),sweep.bias,'CALCULATED','Combines existing OHLC liquidity-pool and sweep calculations'):missing('INSUFFICIENT_BARS','Need recent swing bars'),
   'Delta Buy/Sell':missing('NO_TRADE_SIDE_VOLUME','No verified aggressor-side buy/sell volume; candle direction is not delta'),
   'Trading Sessions':missing('NO_SESSION_CLASSIFIER','Timezone-aware session classifier is not connected'),
-  'Day High / Day Low':(()=>{const today=new Date().toISOString().slice(0,10),day=bs.filter(b=>Number.isFinite(b.time)&&new Date(b.time).toISOString().slice(0,10)===today);return day.length?mk('H '+px(Math.max(...day.map(b=>b.high)))+' / L '+px(Math.min(...day.map(b=>b.low))),55,0,'CALCULATED','UTC calendar day from available candle timestamps'):missing('NO_CURRENT_DAY_BARS','No bars for current UTC day')})(),
+  'Day High / Day Low':(()=>{const today=new Date().toISOString().slice(0,10),day=bs.filter(b=>{const t=Number(b.time);const ms=t>0&&t<1e12?t*1000:t;return Number.isFinite(ms)&&new Date(ms).toISOString().slice(0,10)===today;});return day.length?mk('H '+px(Math.max(...day.map(b=>b.high)))+' / L '+px(Math.min(...day.map(b=>b.low))),55,0,'CALCULATED','UTC calendar day from available candle timestamps'):missing('NO_CURRENT_DAY_BARS','No bars for current UTC day')})(),
   'DXY Inverse-Correlation Filter':missing('NO_DXY_FEED','No verified synchronized DXY series is connected'),
   'High-Impact US News Filter':missing('NO_NEWS_FEED','No verified economic calendar feed is connected')
  };
