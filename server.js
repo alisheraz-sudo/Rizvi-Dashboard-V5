@@ -48,7 +48,7 @@ if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){
   if(!r.ok)throw new Error('Yahoo Finance HTTP '+r.status);
   const payload=await r.json(),result=payload?.chart?.result?.[0],ts=result?.timestamp||[],q=result?.indicators?.quote?.[0];
   if(payload?.chart?.error)throw new Error(payload.chart.error.description||'Yahoo chart error');
-  const bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),o:Number(q.open?.[i]),h:Number(q.high?.[i]),l:Number(q.low?.[i]),c:Number(q.close?.[i]),v:Number(q.volume?.[i]||0)})).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t):[];
+  const bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),o:Number(q.open?.[i]),h:Number(q.high?.[i]),l:Number(q.low?.[i]),c:Number(q.close?.[i]),v:Number(q.volume?.[i]||0)})).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)&&Math.min(x.o,x.h,x.l,x.c)>0&&x.v>=0&&x.h>=Math.max(x.o,x.c,x.l)&&x.l<=Math.min(x.o,x.c,x.h)).sort((a,b)=>a.t-b.t):[];
   const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;
   if(!bars.length)throw new Error('Yahoo returned no valid OHLC bars');
   if(age>freshnessSeconds)throw new Error('Yahoo candles stale by '+age+'s');
@@ -58,7 +58,7 @@ if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){
   const coinbaseGran=requestedGran===1800?900:Math.min(86400,Math.max(60,requestedGran));
   const r=await fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity='+coinbaseGran,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000),cache:'no-store'});
   if(!r.ok)throw new Error('Coinbase HTTP '+r.status);
-  const data=await r.json(),bars=Array.isArray(data)?data.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4],v:+x[5]||0})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)):[];
+  const data=await r.json(),bars=Array.isArray(data)?data.reverse().map(x=>({t:+x[0],l:+x[1],h:+x[2],o:+x[3],c:+x[4],v:+x[5]||0})).filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite)&&Math.min(x.o,x.h,x.l,x.c)>0&&x.v>=0&&x.h>=Math.max(x.o,x.c,x.l)&&x.l<=Math.min(x.o,x.c,x.h)):[];
   if(!bars.length)throw new Error('No BTC bars returned');
   return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Coinbase fallback',bars,fallbackUsed:true,yahooError,updatedAt:Date.now()});
  }catch(e){return ofReply(res,502,{ok:false,symbol:'BTCUSD',source:'Yahoo Finance + Coinbase fallback',error:'Yahoo: '+yahooError+'; Coinbase: '+String(e.message||'feed failed').slice(0,120)});}
