@@ -15,7 +15,7 @@ function normalizeSymbol(value) {
 
 function normalizeBars(bars) {
   return bars.map((bar) => {
-    if (!bar || typeof bar !== 'object' || Array.isArray(bar)) return bar;
+    if (!bar || typeof bar !== 'object' || Array.isArray(bar)) return null;
     return {
       timestamp: bar.timestamp ?? bar.t ?? bar.time,
       open: bar.open ?? bar.o,
@@ -24,6 +24,11 @@ function normalizeBars(bars) {
       close: bar.close ?? bar.c,
       volume: bar.volume ?? bar.v ?? 0
     };
+  }).filter((bar) => {
+    if (!bar) return false;
+    const { open, high, low, close, volume } = bar;
+    const o = Number(open), h = Number(high), l = Number(low), cl = Number(close), v = Number(volume);
+    return [o, h, l, cl, v].every(Number.isFinite) && Math.min(o, h, l, cl) > 0 && v >= 0 && h >= Math.max(o, cl, l) && l <= Math.min(o, cl, h);
   });
 }
 
