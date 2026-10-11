@@ -28,7 +28,7 @@ function aggregate(rows,seconds){
 }
 function fail(sym,reason){
  try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:timeframe(),reason:String(reason||'').slice(0,220)})}).catch(()=>{});}catch(_){}
- window.RIZVI_FEED_STATUS={ok:false,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason};
+ window.RIZVI_FEED_STATUS={ok:false,symbol:sym,source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason};
  window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,indicatorStatus:{ema:false,fvg:false,rsi:false,vwap:false,volumeProfile:false,delta:false,divergence:false,candlePattern:false,orderFlow:false,liquidity:false,rangeLevels:false},feedStatus:window.RIZVI_FEED_STATUS};
  window.RIZVI_SIGNAL_DIRECTION='WAIT';
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
@@ -37,7 +37,7 @@ async function poll(){
  if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  const goldLocked=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
- if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
+ if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
  function validateRows(rows,label,allowStale=false){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
   if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
