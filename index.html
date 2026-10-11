@@ -1657,8 +1657,10 @@ const clean=v=>String(v??'—').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim()
 const fmt=v=>typeof v==='number'&&Number.isFinite(v)?(Math.round(v*100)/100).toString():clean(v);
 function render(){
  const W=window, master=W.RIZVI_MASTER_CONFIRMATION||{}, conf=W.RIZVI_INDICATOR_CONFLUENCE||W.RIZVI_INDICATOR_TEST_REPORT||{}, report=W.RIZVI_MULTI_ALGORITHM_REPORT||{}, eng=W.RIZVI_INDICATOR_ENGINE_STATUS||W.RIZVI_GOLD_ENGINE_STATUS||{};
- const components=conf.components||conf.master?.components||master.indicatorStatus||eng.indicators||{};
- const raw=conf.raw||conf.master?.raw||master.raw||{};
+ const componentSources=[W.RIZVI_INDICATOR_CONFLUENCE?.components,W.RIZVI_INDICATOR_CONFLUENCE?.master?.components,W.RIZVI_INDICATOR_TEST_REPORT?.master?.components,W.RIZVI_INDICATOR_TEST_REPORT?.components,W.RIZVI_MASTER_CONFIRMATION?.indicatorStatus,W.RIZVI_INDICATOR_ENGINE_STATUS?.indicators,W.RIZVI_GOLD_ENGINE_STATUS?.indicators].filter(x=>x&&typeof x==='object');
+ const components=Object.assign({},...componentSources.slice().reverse());
+ const rawSources=[W.RIZVI_INDICATOR_CONFLUENCE?.raw,W.RIZVI_INDICATOR_CONFLUENCE?.master?.raw,W.RIZVI_INDICATOR_TEST_REPORT?.master?.raw,W.RIZVI_INDICATOR_TEST_REPORT?.raw,W.RIZVI_MASTER_CONFIRMATION?.raw].filter(x=>x&&typeof x==='object');
+ const raw=Object.assign({},...rawSources.slice().reverse());
  const normalize=k=>String(k).toUpperCase().replace(/[^A-Z0-9]/g,'');
  const compMap=new Map(Object.entries(components).map(([k,v])=>[normalize(k),v]));
  const rawMap=new Map(Object.entries(raw).map(([k,v])=>[normalize(k),v]));
@@ -1711,7 +1713,7 @@ function render(){
  if($('e5Decision'))$('e5Decision').textContent=clean(decision).toUpperCase();
  const reason=master.reason||master.engine5?.reason||master.alignment?.status||'Awaiting fresh aligned reports; score is not a win probability.';
  if($('e5Reason'))$('e5Reason').textContent=clean(reason);
- if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · '+entries.length+' indicator outputs reported · UI-only display';
+ if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · '+Object.keys(components).length+' indicator outputs reported · UI-only display';
 }
 render();setInterval(render,2000);
 window.addEventListener('rizvi:master-confirmation-update',render);
