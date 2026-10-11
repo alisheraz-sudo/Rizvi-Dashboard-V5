@@ -8,6 +8,7 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from api_contract import validate_evaluation_request
 from regime_adaptive_engine import evaluate, health
 
 HOST = "0.0.0.0"
@@ -71,6 +72,11 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(raw.decode("utf-8"))
             if not isinstance(data, dict) or not isinstance(data.get("bars"), list):
                 raise ValueError("JSON body must contain a bars array")
+            contract_error = validate_evaluation_request(data)
+            if contract_error:
+                self._send(422, {"ok": False, "signal": "WAIT", "confidence": None,
+                                 "reason": contract_error, "autoTrading": False})
+                return
             result = evaluate(
                 data["bars"],
                 symbol=str(data.get("symbol", "BTCUSD"))[:32],
