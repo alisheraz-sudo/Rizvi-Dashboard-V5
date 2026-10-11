@@ -58,14 +58,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         content_type = self.headers.get("Content-Type", "").split(";")[0].strip().lower()
         if content_type != "application/json":
-            self._send(415, {"ok": False, "signal": "WAIT", "error": "Content-Type must be application/json"})
+            self._send(415, {"ok": False, "signal": "WAIT", "confidence": None, "error": "Content-Type must be application/json", "autoTrading": False})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
         if length <= 0 or length > MAX_BODY_BYTES:
-            self._send(413, {"ok": False, "signal": "WAIT", "error": "Request body is empty or too large"})
+            self._send(413, {"ok": False, "signal": "WAIT", "confidence": None, "error": "Request body is empty or too large", "autoTrading": False})
             return
         try:
             raw = self.rfile.read(length)
