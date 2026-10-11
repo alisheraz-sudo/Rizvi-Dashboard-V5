@@ -2,7 +2,7 @@
 
 No network calls, no order execution, no UI dependencies. Feed normalized OHLCV bars
 (newest last) from the existing dashboard/backend. Missing required data returns WAIT.
-Standard-library only so it can be tested before any deployment integration.
+Standard-library only so it can be tested before any deployment integration. Supports both package imports and direct execution.
 """
 from __future__ import annotations
 
