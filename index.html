@@ -250,22 +250,22 @@
   <div class="engine5-foot" id="e5Meta">Auto Trading: OFF · Display-only panel; algorithm logic unchanged.</div>
 </section>
 <section class="card engine-card" data-engine="1">
-  <div class="title">ENGINE 1 — <b>INDICATOR READINGS</b></div>
+  <div class="title">ENGINE 1 — <b>TREND & DIRECTION</b></div>
   <div class="engine-status" id="engine1Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine1Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="2">
-  <div class="title">ENGINE 2 — <b>STRUCTURE / TREND</b></div>
+  <div class="title">ENGINE 2 — <b>MOMENTUM & VOLATILITY</b></div>
   <div class="engine-status" id="engine2Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine2Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="3">
-  <div class="title">ENGINE 3 — <b>CONFIRMATION</b></div>
+  <div class="title">ENGINE 3 — <b>STRUCTURE & LIQUIDITY</b></div>
   <div class="engine-status" id="engine3Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine3Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="4">
-  <div class="title">ENGINE 4 — <b>DIVERGENCE / ATR / SETUP CHECKS</b></div>
+  <div class="title">ENGINE 4 — <b>VOLUME & PRICE CONFIRMATION</b></div>
   <div class="engine-status" id="engine4Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine4Data">No live indicator values reported yet.</div>
 </section>
@@ -1185,8 +1185,135 @@ function divergence(bs){if(bs.length<30)return{score:0,bias:0,name:'INSUFFICIENT
 function trend(bs){if(bs.length<50)return{score:0,bias:0,name:'INSUFFICIENT'};let c=bs.map(x=>x.close),e20=ema(c,20),e50=ema(c,50),last=c.at(-1),bias=last>e20&&e20>e50?1:last<e20&&e20<e50?-1:0;return{score:bias?80:50,bias,name:bias>0?'UPTREND':bias<0?'DOWNTREND':'MIXED',ema20:e20,ema50:e50}}
 function of(){let d=W.RIZVI_ORDER_FLOW||W.RIZVI_CTRADER_ORDER_FLOW||{},x=W.RIZVI_ORDER_FLOW_DEPTH;if(!Array.isArray(x)||!x.length)return{score:0,bias:0,status:'NOT_ATTACHED'};let bid=0,ask=0;x.forEach(v=>{bid+=N(v.bid)||0;ask+=N(v.ask)||0});let t=bid+ask,im=t?(bid-ask)/t:0;return{score:clamp(50+Math.abs(im)*50),bias:im>.08?1:im<-.08?-1:0,status:'ATTACHED',imbalance:im,raw:d}}
 function liq(){let x=W.RIZVI_LIQUIDITY_ENGINE;if(!x)return{score:0,bias:0,status:'NOT_ATTACHED'};let s=N(x.liquidityScore);return{score:Number.isFinite(s)?clamp(s):0,bias:x.direction==='bullish'?1:x.direction==='bearish'?-1:0,status:'ATTACHED',raw:x}}
-function build(){let bs=getBars(),c=bs.map(x=>x.close),last=c.at(-1),e20=ema(c,20),e50=ema(c,50),rv=rsi(c),vw=vwap(bs),a=atr(bs),tr=trend(bs),pat=candle(bs),v=vp(bs),de=delta(bs),dv=divergence(bs),order=of(),liqData=liq(),eb=Number.isFinite(last)&&Number.isFinite(e20)&&Number.isFinite(e50)?(last>e20&&e20>e50?1:last<e20&&e20<e50?-1:0):0,rb=Number.isFinite(rv)?rv>=55?1:rv<=45?-1:0:0,vwb=Number.isFinite(vw)&&Number.isFinite(last)?last>vw?1:last<vw?-1:0:0,vws=Number.isFinite(vw)?clamp(50+Math.abs(last-vw)/Math.max(a||1e-9,1e-9)*10):0,parts=[['EMA',Number.isFinite(last)&&Number.isFinite(e20)&&Number.isFinite(e50)?clamp(50+Math.abs(eb)*35):0,eb],['RSI',Number.isFinite(rv)?clamp(100-Math.abs(rv-50)):0,rb],['VWAP',vws,vwb],['CANDLE',pat.score,pat.bias],['VOLUME_PROFILE',v.score,v.bias],['DELTA',de.score,de.bias],['DIVERGENCE',dv.score,dv.bias],['TREND',tr.score,tr.bias],['ORDER_FLOW',order.score,order.bias],['LIQUIDITY',liqData.score,liqData.bias]],u=parts.filter(x=>x[1]>0),score=u.length?u.reduce((s,x)=>s+x[1],0)/u.length:0,signed=u.reduce((s,x)=>s+x[1]/100*x[2],0),agree=u.length?u.filter(x=>x[2]&&x[2]===Math.sign(signed)).length/u.length:0,action=score>=70&&agree>=.55?(signed>0?'BUY':signed<0?'SELL':'WAIT'):'WAIT';return{symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:Date.now(),bars:bs.length,last,score:Math.round(score),agreement:+(agree*100).toFixed(1),action,components:Object.fromEntries(parts.map(x=>[x[0],{score:Math.round(x[1]),bias:x[2]}])),raw:{ema20:e20,ema50:e50,rsi:rv,vwap:vw,atr:a,pattern:pat,volumeProfile:v,delta:de,divergence:dv,trend:tr,orderFlow:order,liquidity:liqData}}}
-function tests(){let full=build(), names=Object.keys(full.components),out={version:'v1',symbol:full.symbol,timeframe:full.timeframe,timestamp:new Date().toISOString(),bars:full.bars,tests:{},combinations:{}};names.forEach(n=>{let p=full.components[n];out.tests[n]={attached:p.score>0,score:p.score,bias:p.bias,status:p.status||(p.score>0?'CALCULATED':'WAITING_FOR_DATA'),pass:p.score>0}});let sets=[['TREND','EMA','RSI'],['TREND','EMA','VWAP','CANDLE'],['TREND','EMA','VWAP','DELTA','VOLUME_PROFILE'],['TREND','EMA','VWAP','RSI','CANDLE','DIVERGENCE'],['TREND','EMA','VWAP','DELTA','ORDER_FLOW'],names];sets.forEach((set,i)=>{let u=set.map(n=>full.components[n]).filter(x=>x&&x.score>0),sc=u.length?u.reduce((s,x)=>s+x.score,0)/u.length:0,sg=u.reduce((s,x)=>s+x.bias,0),nz=u.filter(x=>x.bias),ag=nz.length?nz.filter(x=>x.bias===Math.sign(sg)).length/nz.length:0;out.combinations['C'+(i+1)]={indicators:set,score:Math.round(sc),agreement:Math.round(ag*100),action:sc>=70&&ag>=.55?(sg>0?'BUY':sg<0?'SELL':'WAIT'):'WAIT',pass:u.length>=Math.max(2,Math.ceil(set.length*.5))}});out.master=full;W.RIZVI_INDICATOR_TEST_REPORT=out;W.RIZVI_INDICATOR_CONFLUENCE=full;W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.indicatorConfluence={status:'TESTED',score:full.score,action:full.action,agreement:full.agreement,components:full.components};W.dispatchEvent(new CustomEvent('rizvi:indicator-confluence-update',{detail:out}));return out}
+function build(){
+ const bs=getBars(),c=bs.map(x=>x.close),last=bs.at(-1),close=c.at(-1),e9=ema(c,9),e21=ema(c,21),s200=sma(c,200),rv=rsi(c),vw=vwap(bs),a=atr(bs),pat=candle(bs),volProfile=vp(bs),dv=divergence(bs),order=of();
+ const px=x=>Number.isFinite(Number(x))?Number(x).toFixed(2):'—';
+ const mk=(value,score,bias,status,note='')=>({value:value??null,score:Number.isFinite(Number(score))?Math.round(clamp(score)):0,bias:Number.isFinite(Number(bias))?Number(bias):0,status:status||'CALCULATED',note});
+ const missing=(status,note)=>mk(null,0,0,status,note);
+ const macdCalc=()=>{
+  if(c.length<35)return null;
+  const lineSeries=[];
+  for(let i=0;i<c.length;i++){const sub=c.slice(0,i+1);if(sub.length>=26)lineSeries.push(ema(sub,12)-ema(sub,26));}
+  const line=lineSeries.at(-1),signal=ema(lineSeries,9),hist=line-signal;
+  return [line,signal,hist].every(Number.isFinite)?{line,signal,hist}:null;
+ };
+ const dmiCalc=()=>{
+  if(bs.length<28)return null;
+  const at=end=>{
+   let tr=0,p=0,m=0;
+   for(let i=end-13;i<=end;i++){
+    if(i<1)continue;
+    const cur=bs[i],prev=bs[i-1],up=cur.high-prev.high,down=prev.low-cur.low;
+    tr+=Math.max(cur.high-cur.low,Math.abs(cur.high-prev.close),Math.abs(cur.low-prev.close));
+    p+=up>down&&up>0?up:0;m+=down>up&&down>0?down:0;
+   }
+   if(!tr)return null;
+   const plus=100*p/tr,minus=100*m/tr,dx=(plus+minus)?100*Math.abs(plus-minus)/(plus+minus):0;
+   return{plus,minus,dx};
+  };
+  const cur=at(bs.length-1);if(!cur)return null;
+  const dxs=[];for(let end=Math.max(14,bs.length-14);end<bs.length;end++){const q=at(end);if(q)dxs.push(q.dx);}
+  return{...cur,adx:dxs.length?dxs.reduce((s,x)=>s+x,0)/dxs.length:cur.dx};
+ };
+ const stochCalc=()=>{
+  if(bs.length<16)return null;
+  const ks=[];
+  for(let end=Math.max(13,bs.length-5);end<bs.length;end++){
+   const w=bs.slice(end-13,end+1),hi=Math.max(...w.map(x=>x.high)),lo=Math.min(...w.map(x=>x.low));
+   ks.push(hi===lo?50:100*(bs[end].close-lo)/(hi-lo));
+  }
+  const k=ks.at(-1),d=ks.slice(-3).reduce((s,x)=>s+x,0)/Math.min(3,ks.length);
+  return{k,d};
+ };
+ const bbCalc=()=>{
+  if(c.length<20)return null;
+  const mid=sma(c,20),sample=c.slice(-20),sd=Math.sqrt(sample.reduce((s,x)=>s+(x-mid)**2,0)/20);
+  return{lower:mid-2*sd,mid,upper:mid+2*sd,sd};
+ };
+ const structureCalc=()=>{
+  if(bs.length<12)return null;
+  const prior=bs.slice(-11,-1),recent=bs.slice(-6,-1),older=bs.slice(-11,-6),hi=Math.max(...prior.map(x=>x.high)),lo=Math.min(...prior.map(x=>x.low));
+  if(last.close>hi)return{name:'BOS UP',bias:1,score:78};
+  if(last.close<lo)return{name:'BOS DOWN',bias:-1,score:78};
+  const rh=Math.max(...recent.map(x=>x.high)),rl=Math.min(...recent.map(x=>x.low)),oh=Math.max(...older.map(x=>x.high)),ol=Math.min(...older.map(x=>x.low));
+  if(rh>oh&&rl>ol)return{name:'HIGHER HIGH / HIGHER LOW',bias:1,score:62};
+  if(rh<oh&&rl<ol)return{name:'LOWER HIGH / LOWER LOW',bias:-1,score:62};
+  return{name:'RANGE / NO BREAK',bias:0,score:50};
+ };
+ const srCalc=()=>{
+  if(bs.length<10)return null;
+  const w=bs.slice(-50),support=Math.min(...w.map(x=>x.low)),resistance=Math.max(...w.map(x=>x.high)),tol=Math.max((Number.isFinite(a)?a:0)*.25,Math.abs(close)*.0002),nearS=close-support<=tol,nearR=resistance-close<=tol,bias=nearS&&!nearR?1:nearR&&!nearS?-1:0;
+  return{support,resistance,bias,score:bias?68:50};
+ };
+ const poolsCalc=()=>{
+  if(bs.length<20)return null;
+  const w=bs.slice(-30),tol=Math.max((Number.isFinite(a)?a:0)*.12,Math.abs(close)*.00015);
+  const find=key=>{const vals=w.map(x=>x[key]);for(let i=vals.length-1;i>=0;i--)for(let j=i-1;j>=0;j--)if(Math.abs(vals[i]-vals[j])<=tol)return(vals[i]+vals[j])/2;return null;};
+  return{equalHigh:find('high'),equalLow:find('low')};
+ };
+ const sweepCalc=()=>{
+  if(bs.length<22)return null;
+  const prior=bs.slice(-21,-1),hi=Math.max(...prior.map(x=>x.high)),lo=Math.min(...prior.map(x=>x.low));
+  if(last.high>hi&&last.close<hi)return{name:'BEARISH HIGH SWEEP',bias:-1,score:76};
+  if(last.low<lo&&last.close>lo)return{name:'BULLISH LOW SWEEP',bias:1,score:76};
+  return{name:'NO SWEEP ON LATEST CANDLE',bias:0,score:45};
+ };
+ const fvgCalc=()=>{
+  if(bs.length<3)return null;
+  for(let i=bs.length-1;i>=Math.max(2,bs.length-30);i--){
+   const old=bs[i-2],cur=bs[i];
+   if(cur.low>old.high)return{name:'BULLISH FVG '+px(old.high)+'–'+px(cur.low),bias:1,score:70,low:old.high,high:cur.low};
+   if(cur.high<old.low)return{name:'BEARISH FVG '+px(cur.high)+'–'+px(old.low),bias:-1,score:70,low:cur.high,high:old.low};
+  }
+  return{name:'NO RECENT 3-CANDLE FVG',bias:0,score:45};
+ };
+ const macd=macdCalc(),dmi=dmiCalc(),stoch=stochCalc(),bb=bbCalc(),structure=structureCalc(),sr=srCalc(),pools=poolsCalc(),sweep=sweepCalc(),fvg=fvgCalc();
+ const emaBias=Number.isFinite(e9)&&Number.isFinite(e21)?e9>e21?1:e9<e21?-1:0:0;
+ const smaBias=Number.isFinite(s200)?close>s200?1:close<s200?-1:0:0;
+ const vwapBias=Number.isFinite(vw)?close>vw?1:close<vw?-1:0:0;
+ const rsiBias=Number.isFinite(rv)?rv>=55?1:rv<=45?-1:0:0;
+ const stochBias=stoch?(stoch.k>stoch.d?1:stoch.k<stoch.d?-1:0):0;
+ const bbBias=bb?(close>bb.mid?1:close<bb.mid?-1:0):0;
+ const vwapScore=Number.isFinite(vw)?clamp(50+Math.abs(close-vw)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*10):0;
+ const comp={
+  'EMA 9/21':Number.isFinite(e9)&&Number.isFinite(e21)?mk(px(e9)+' / '+px(e21),clamp(50+Math.abs(e9-e21)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*10),emaBias,'CALCULATED','EMA 9 and EMA 21'):missing('INSUFFICIENT_BARS','Need enough OHLC bars'),
+  'SMA 200':Number.isFinite(s200)?mk(px(s200),clamp(55+Math.min(25,Math.abs(close-s200)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*5)),smaBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need 200 bars'),
+  'MACD':macd?mk('MACD '+px(macd.line)+' / Signal '+px(macd.signal)+' / Hist '+px(macd.hist),clamp(50+Math.min(35,Math.abs(macd.hist)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*20),50,90),macd.hist>0?1:macd.hist<0?-1:0,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 35 bars'),
+  'ADX / DMI':dmi?mk('ADX '+px(dmi.adx)+' · +DI '+px(dmi.plus)+' / −DI '+px(dmi.minus),clamp(50+dmi.adx/2,50,90),dmi.adx>=18?(dmi.plus>dmi.minus?1:dmi.minus>dmi.plus?-1:0):0,'CALCULATED'):missing('INSUFFICIENT_BARS','Need enough bars for DMI/ADX'),
+  'VWAP Filter':Number.isFinite(vw)?mk(px(vw),vwapScore,vwapBias,'CALCULATED'):missing('NO_REAL_VOLUME','VWAP requires real positive volume'),
+  'RSI-14':Number.isFinite(rv)?mk(px(rv),clamp(50+Math.abs(rv-50)),rsiBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 15 bars'),
+  'Stochastic':stoch?mk('%K '+px(stoch.k)+' / %D '+px(stoch.d),clamp(50+Math.abs(stoch.k-stoch.d)),stochBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 16 bars'),
+  'ATR':Number.isFinite(a)?mk(px(a),50,0,'CALCULATED','Volatility measurement; non-directional'):missing('INSUFFICIENT_BARS','Need enough bars for ATR'),
+  'Bollinger Bands':bb?mk('Lower '+px(bb.lower)+' / Mid '+px(bb.mid)+' / Upper '+px(bb.upper),clamp(50+Math.min(30,Math.abs(close-bb.mid)/Math.max(bb.sd,1e-9)*10),50,90),bbBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 20 bars'),
+  'Market Structure':structure?mk(structure.name,structure.score,structure.bias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need recent swing bars'),
+  'Support / Resistance':sr?mk('S '+px(sr.support)+' / R '+px(sr.resistance),sr.score,sr.bias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 10 bars'),
+  'Liquidity Pools':pools?mk('Equal highs '+(pools.equalHigh===null?'—':px(pools.equalHigh))+' / equal lows '+(pools.equalLow===null?'—':px(pools.equalLow)),pools.equalHigh!==null||pools.equalLow!==null?60:45,0,'CALCULATED','OHLC-based equal-high/low proxy; not order-book liquidity'):missing('INSUFFICIENT_BARS','Need recent swing bars'),
+  'Liquidity Sweep':sweep?mk(sweep.name,sweep.score,sweep.bias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need recent swing bars'),
+  'Fair Value Gap (FVG)':fvg?mk(fvg.name,fvg.score,fvg.bias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need three-candle history'),
+  'Volume Profile':volProfile.status==='NO_REAL_VOLUME'?missing('NO_REAL_VOLUME','Real volume not available from the selected feed'):mk('POC '+px(volProfile.price),volProfile.score,volProfile.bias,'CALCULATED'),
+  'Candle Pattern / Price Action':pat.name==='INSUFFICIENT'?missing('INSUFFICIENT_BARS','Need candle history'):mk(pat.name,pat.score,pat.bias,'CALCULATED'),
+  'Order Flow / Delta':order.status==='ATTACHED'&&Number.isFinite(order.imbalance)?mk('Real depth imbalance '+px(order.imbalance*100)+'%',order.score,order.bias,'LIVE','Requires actual bid/ask depth; no OHLC-derived substitute'):missing('NO_REAL_ORDER_FLOW','No verified live bid/ask aggressor or depth data'),
+  'Divergence':dv.name==='INSUFFICIENT'?missing('INSUFFICIENT_BARS','Need at least 30 bars'):mk(dv.name,dv.score,dv.bias,'CALCULATED')
+ };
+ const groups=[
+  ['EMA 9/21','SMA 200','MACD','ADX / DMI','VWAP Filter'],
+  ['RSI-14','Stochastic','ATR','Bollinger Bands'],
+  ['Market Structure','Support / Resistance','Liquidity Pools','Liquidity Sweep','Fair Value Gap (FVG)'],
+  ['Volume Profile','Candle Pattern / Price Action','Order Flow / Delta','Divergence']
+ ];
+ const groupRows=groups.map(keys=>{
+  const rows=keys.map(k=>comp[k]).filter(x=>x&&x.status==='CALCULATED'&&x.score>0&&x.bias!==0);
+  if(!rows.length)return null;
+  const sum=rows.reduce((s,x)=>s+x.bias,0),bias=sum>0?1:sum<0?-1:0;
+  return bias?{bias,score:rows.reduce((s,x)=>s+x.score,0)/rows.length,rows:rows.length}:null;
+ }).filter(Boolean);
+ const directional=groupRows.map(x=>x.bias),up=directional.filter(x=>x>0).length,down=directional.filter(x=>x<0).length,majority=up>down?1:down>up?-1:0;
+ const agreement=directional.length?Math.round(Math.max(up,down)/directional.length*100):0;
+ const score=groupRows.length?Math.round(groupRows.reduce((s,x)=>s+x.score,0)/groupRows.length):0;
+ const action=groupRows.length>=2&&majority!==0&&agreement>=70&&score>=70?(majority>0?'BUY':'SELL'):'WAIT';
+ return{symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:Date.now(),bars:bs.length,last:close,score,agreement,action,components:comp,raw:{ema9:e9,ema21:e21,sma200:s200,macd,dmi,rsi:rv,vwap:vw,atr:a,stochastic:stoch,bollinger:bb,structure,supportResistance:sr,liquidityPools:pools,liquiditySweep:sweep,fvg,volumeProfile:volProfile,candle:pat,orderFlow:order,divergence:dv},groups:groupRows};
+}
+function tests(){let full=build(), names=Object.keys(full.components),out={version:'v2-18-components',symbol:full.symbol,timeframe:full.timeframe,timestamp:new Date().toISOString(),bars:full.bars,tests:{},combinations:{}};names.forEach(n=>{let p=full.components[n];out.tests[n]={attached:p.score>0,score:p.score,bias:p.bias,status:p.status||(p.score>0?'CALCULATED':'WAITING_FOR_DATA'),pass:p.score>0}});let sets=[['EMA 9/21','SMA 200','MACD'],['EMA 9/21','VWAP Filter','Market Structure','Candle Pattern / Price Action'],['Market Structure','Support / Resistance','Liquidity Pools','Liquidity Sweep','Fair Value Gap (FVG)'],['RSI-14','Stochastic','Bollinger Bands','Divergence'],['Volume Profile','Order Flow / Delta','MACD','VWAP Filter'],names];sets.forEach((set,i)=>{let u=set.map(n=>full.components[n]).filter(x=>x&&x.score>0),sc=u.length?u.reduce((s,x)=>s+x.score,0)/u.length:0,sg=u.reduce((s,x)=>s+x.bias,0),nz=u.filter(x=>x.bias),ag=nz.length?nz.filter(x=>x.bias===Math.sign(sg)).length/nz.length:0;out.combinations['C'+(i+1)]={indicators:set,score:Math.round(sc),agreement:Math.round(ag*100),action:sc>=70&&ag>=.55?(sg>0?'BUY':sg<0?'SELL':'WAIT'):'WAIT',pass:u.length>=Math.max(2,Math.ceil(set.length*.5))}});out.master=full;W.RIZVI_INDICATOR_TEST_REPORT=out;W.RIZVI_INDICATOR_CONFLUENCE=full;W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.indicatorConfluence={status:'TESTED',score:full.score,action:full.action,agreement:full.agreement,components:full.components};W.dispatchEvent(new CustomEvent('rizvi:indicator-confluence-update',{detail:out}));return out}
 W.RIZVI_RUN_INDICATOR_TESTS=tests;W.RIZVI_GET_INDICATOR_CONFLUENCE=build;setTimeout(tests,2500);setInterval(tests,5000);
 })();
 </script>
@@ -1473,10 +1600,10 @@ function render(){
  const compMap=new Map(Object.entries(components).map(([k,v])=>[normalize(k),v]));
  const rawMap=new Map(Object.entries(raw).map(([k,v])=>[normalize(k),v]));
  const specs=[
-  [['EMA 9/21',['EMA','EMA9','EMA21','EMA20']],['RSI-14',['RSI','RSI14']],['VWAP Filter',['VWAP','vwap']],['Trend 5',['TREND5','TREND']],['Volatility',['VOLATILITY','ATR','atr']]],
-  [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Structure Prediction',['STRUCTUREPREDICTION','STRUCTUREFORECAST']],['Candle Patterns',['CANDLEPATTERN','CANDLE','PATTERN']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']],['Support / Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']]],
-  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE','vp']],['Liquidity',['LIQUIDITY']],['Delta Buy / Sell',['DELTABUYSELL','DELTA','BUYSELLDELTA']],['Order Flow / Footprint',['ORDERFLOWFOOTPRINT','ORDERFLOW','FOOTPRINT']]],
-  [['Bullish / Bearish Divergence',['DIVERGENCE','BULLISHBEARISHDIVERGENCE']],['Trading Sessions',['TRADINGSESSIONS','SESSIONS','SESSION']],['OF Signal (Buy/Sell/Wait)',['OFSIGNAL','ORDERFLOWSIGNAL']],['Combo Confirmation',['COMBO','COMBOCONFIRMATION']]]
+  [['EMA 9/21',['EMA','EMA9','EMA21']],['SMA 200',['SMA200','SMA']],['MACD',['MACD']],['ADX / DMI',['ADX','DMI','DIPLUS','DIMINUS']],['VWAP Filter',['VWAP']]],
+  [['RSI-14',['RSI14','RSI']],['Stochastic',['STOCHASTIC','STOCH']],['ATR',['ATR']],['Bollinger Bands',['BOLLINGER','BBANDS']]],
+  [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Support / Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']],['Liquidity Pools',['LIQUIDITYPOOLS','LIQUIDITY']],['Liquidity Sweep',['LIQUIDITYSWEEP','SWEEP']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']]],
+  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE']],['Candle Pattern / Price Action',['CANDLEPATTERN','CANDLE','PRICEACTION']],['Order Flow / Delta',['ORDERFLOW','DELTA','FOOTPRINT']],['Divergence',['DIVERGENCE']]]
  ];
  function readIndicator(aliases){
   for(const a of aliases){const k=normalize(a);if(compMap.has(k)){const v=compMap.get(k);if(v&&typeof v==='object'&&(v.score!=null||v.value!=null||v.bias!=null||v.status))return{v,source:'component'};}}
@@ -1494,12 +1621,13 @@ function render(){
    const label=document.createElement('span');label.textContent=name;
    const val=document.createElement('b');
    if(found){
-    const v=found.v, value=v.score??v.value??v.bias??v.name??v.status;
+    const v=found.v, value=v.value??v.name??v.score??v.bias??v.status;
     val.textContent=fmt(value);
     const stat=String(v.status||'').toUpperCase();
-    const isReported=value!=null&&!stat.includes('WAITING')&&!stat.includes('NOT_ATTACHED');
+    const unavailable=/WAITING|NOT_ATTACHED|NOT_AVAILABLE|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|INSUFFICIENT|UNAVAILABLE|NO_DATA/.test(stat);
+    const isReported=value!=null&&!unavailable;
     if(isReported)reported++;else val.className='pending';
-    if(v.status)val.title=String(v.status);
+    val.title=[v.status,v.score!=null?'score '+v.score:null,v.bias!=null?'bias '+v.bias:null,v.note].filter(Boolean).join(' · ');
    }else{
     val.textContent='NOT REPORTED';val.className='pending';
     val.title='No calculation exposed by the current runtime report';
