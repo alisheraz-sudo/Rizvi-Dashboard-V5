@@ -370,9 +370,9 @@
     const tp2Pips=isXAU?70:Math.max(tp1Pips+1,Math.round(riskPips*2));
     const tp3Pips=isXAU?100:Math.max(tp2Pips+1,Math.round(riskPips*3));
     const risk=riskPips*pip, tp1=tp1Pips*pip, tp2=tp2Pips*pip, tp3=tp3Pips*pip;
-    if(dir==='SELL') return {entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
+    if(dir==='SELL') return {symbol:sym,direction:dir,entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
       riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
-    return {entry:p,sl:p-risk,tp1:p+tp1,tp2:p+tp2,tp3:p+tp3,
+    return {symbol:sym,direction:dir,entry:p,sl:p-risk,tp1:p+tp1,tp2:p+tp2,tp3:p+tp3,
       riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
   }
 
@@ -401,31 +401,40 @@
     const raw=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
     ctx.clearRect(0,0,c.width,c.height);
     if(!lv||!raw.length)return;
+    const sig=window.RIZVI_FINAL_SIGNAL||window.RIZVI_MASTER_SIGNAL||{};
+    const direction=sig.direction;
+    const qualified=window.RIZVI_MASTER_CONFIRMATION?.qualified===true ||
+      ((direction==='BUY'||direction==='SELL')&&Number(sig.quality)>=80);
+    if(!qualified||!['BUY','SELL'].includes(direction))return;
+    const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const rangeSymbol=String(lv.symbol||window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(active!==rangeSymbol||lv.direction!==direction)return;
     const vals=raw.slice(-70).flatMap(b=>[Number(b.h),Number(b.l)]).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
     if(!vals.length)return;
     const max=Math.max(...vals),min=Math.min(...vals);
     const sy=v=>c.height-30-(v-min)/(max-min||1)*(c.height-60);
-    const entryY=sy(Number(lv.entry)), slY=sy(Number(lv.sl)), tp3Y=sy(Number(lv.tp3));
+    const entryY=sy(Number(lv.entry)),slY=sy(Number(lv.sl)),tp1Y=sy(Number(lv.tp1)),tp2Y=sy(Number(lv.tp2)),tp3Y=sy(Number(lv.tp3));
+    const boxW=78,priceScaleW=86,x=Math.max(8,c.width-priceScaleW-boxW),right=x+boxW;
+    const top=Math.max(4,Math.min(entryY,tp3Y)),tpH=Math.max(2,Math.abs(entryY-tp3Y));
+    const slTop=Math.min(entryY,slY),slH=Math.max(2,Math.abs(entryY-slY));
     ctx.save();
-    // Visible risk/reward zones behind the level lines.
-    ctx.fillStyle='rgba(0,210,145,.16)';
-    ctx.fillRect(0,Math.min(entryY,tp3Y),c.width,Math.max(2,Math.abs(entryY-tp3Y)));
-    ctx.fillStyle='rgba(145,85,205,.20)';
-    ctx.fillRect(0,Math.min(entryY,slY),c.width,Math.max(2,Math.abs(entryY-slY)));
-    const items=[['ENTRY',lv.entry],['SL',lv.sl],['TP1',lv.tp1],['TP2',lv.tp2],['TP3',lv.tp3]];
-    ctx.font='bold 14px sans-serif';ctx.lineWidth=1;
-    items.forEach(([name,v])=>{
-      if(!Number.isFinite(Number(v)))return;
-      const y=sy(Number(v));
-      ctx.strokeStyle=name==='SL'?'rgba(175,115,225,.95)':name==='ENTRY'?'rgba(75,190,235,.95)':'rgba(45,225,165,.95)';
-      ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle='#eaf3f8';
-      ctx.fillText(name+' '+Number(v).toFixed(2),12,Math.max(16,y-5));
+    ctx.fillStyle='rgba(0,190,115,.14)';ctx.fillRect(x,top,boxW,tpH);
+    ctx.strokeStyle='rgba(0,217,145,.85)';ctx.lineWidth=1;ctx.strokeRect(x,top,boxW,tpH);
+    ctx.fillStyle='rgba(142,52,176,.20)';ctx.fillRect(x,slTop,boxW,slH);
+    ctx.strokeStyle='rgba(142,52,176,.98)';ctx.lineWidth=1;ctx.strokeRect(x,slTop,boxW,slH);
+    const items=[['ENTRY',lv.entry,entryY,'#35bde9'],['SL',lv.sl,slY,'#c58af0'],['TP1',lv.tp1,tp1Y,'#25d99a'],['TP2',lv.tp2,tp2Y,'#25d99a'],['TP3',lv.tp3,tp3Y,'#25d99a']];
+    ctx.font='bold 11px sans-serif';ctx.lineWidth=1;
+    items.forEach(([name,value,y,color])=>{
+      if(!Number.isFinite(Number(value)))return;
+      ctx.strokeStyle=color;ctx.setLineDash(name==='ENTRY'||name==='SL'?[]:[4,3]);
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
+      const label=name+' '+Number(value).toFixed(2),tw=ctx.measureText(label).width;
+      const ly=Math.max(11,Math.min(c.height-5,y-4)),lx=Math.max(5,x-tw-6);
+      ctx.fillStyle='rgba(3,16,28,.92)';ctx.fillRect(lx-4,ly-10,tw+7,13);
+      ctx.fillStyle=color;ctx.fillText(label,lx,ly);
     });
     ctx.restore();
   }
-
   window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
   window.addEventListener('rizvi:master-confirmation-update',e=>{
     const m=e.detail||{};
