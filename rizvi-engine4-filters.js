@@ -13,6 +13,8 @@ function session(now){
 }
 function corr(xs,ys){if(xs.length<10||xs.length!==ys.length)return null;const mx=xs.reduce((a,b)=>a+b,0)/xs.length,my=ys.reduce((a,b)=>a+b,0)/ys.length;let n=0,dx=0,dy=0;for(let i=0;i<xs.length;i++){const a=xs[i]-mx,b=ys[i]-my;n+=a*b;dx+=a*a;dy+=b*b;}return dx&&dy?n/Math.sqrt(dx*dy):null;}
 function calcDxy(payload,bars,symbol){
+ const assetName=String(symbol||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(assetName==='BTCUSD')return {status:'UNAVAILABLE',signal:'WAIT',reason:'DXY inverse-correlation filter is scoped to XAU/USD and is not applied to BTCUSD'};
  const d=payload?.dxy;if(!d||d.status!=='LIVE'||!Array.isArray(d.bars))return {status:'UNAVAILABLE',signal:'WAIT',reason:d?.reason||'DXY data unavailable'};
  const asset=new Map();for(const b of bars){const t=Number(b.t),c=num(b.c);if(!Number.isFinite(t)||c===null)continue;asset.set(Math.floor(t/300)*300,c);}
  const dx=new Map();for(const b of d.bars){if(Number.isFinite(Number(b.t))&&num(b.c)!==null)dx.set(Math.floor(Number(b.t)/300)*300,Number(b.c));}
@@ -20,14 +22,14 @@ function calcDxy(payload,bars,symbol){
  for(let i=1;i<keys.length;i++){const k=keys[i],p=keys[i-1];if(k-p>600)continue;const ax=asset.get(p),ay=asset.get(k),bx=dx.get(p),by=dx.get(k);if(ax&&ay&&bx&&by){gx.push((ay-ax)/ax);gd.push((by-bx)/bx);}}
  const correlation=corr(gx.slice(-48),gd.slice(-48)),lastKeys=keys.slice(-4);
  const dxyDirection=lastKeys.length>=2?(dx.get(lastKeys.at(-1))>dx.get(lastKeys[0])?'BUY':dx.get(lastKeys.at(-1))<dx.get(lastKeys[0])?'SELL':'NEUTRAL'):'WAIT';
- if(correlation===null)return {status:'UNAVAILABLE',signal:'WAIT',reason:'Not enough aligned XAU/DXY candles for correlation',source:d.source};
+ if(correlation===null)return {status:'UNAVAILABLE',signal:'WAIT',reason:'Not enough aligned '+String(symbol||'XAU/USD')+'/DXY candles for correlation',source:d.source};
  return {status:'LIVE',signal:correlation<=-0.25?'INVERSE_CONFIRMED':correlation>=0.25?'CORRELATION_CONFLICT':'WEAK_CORRELATION',correlation:Number(correlation.toFixed(3)),dxyDirection,source:d.source,pairedReturns:gx.length,updatedAt:Date.now(),reason:'Pearson correlation of aligned 5-minute '+String(symbol||'asset')+' / DXY returns'};
 }
 function dayRange(bars,now,symbol='XAU/USD'){
  const dayStart=Math.floor(now/86400000)*86400,rows=bars.filter(b=>Number(b.t)>=dayStart&&Number(b.t)<=Math.floor(now/1000)&&[b.h,b.l].every(v=>num(v)!==null));
- if(!rows.length)return {status:'UNAVAILABLE',reason:'No XAU candles for current UTC day'};
+ if(!rows.length)return {status:'UNAVAILABLE',reason:'No '+String(symbol)+' candles for current UTC day'};
  const first=Math.min(...rows.map(b=>Number(b.t))),latest=Math.max(...rows.map(b=>Number(b.t)));
- if(first>dayStart+600)return {status:'UNAVAILABLE',reason:'XAU feed does not cover the start of the current UTC day; daily extremes may be incomplete'};
+ if(first>dayStart+600)return {status:'UNAVAILABLE',reason:String(symbol)+' feed does not cover the start of the current UTC day; daily extremes may be incomplete'};
  return {status:'LIVE',high:Math.max(...rows.map(b=>Number(b.h))),low:Math.min(...rows.map(b=>Number(b.l))),source:'Validated '+String(symbol)+' OHLC from UTC day start',updatedAt:now,firstBarAt:first,lastBarAt:latest};
 }
 async function poll(){
