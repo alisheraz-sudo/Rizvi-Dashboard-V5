@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from api_contract import validate_evaluation_request
 from regime_adaptive_engine import evaluate, health
+from market_sources import fetch_delta_trade_flow
 
 HOST = "0.0.0.0"
 PORT = int(os.environ.get("PORT", "8000"))
@@ -77,11 +78,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(422, {"ok": False, "signal": "WAIT", "confidence": None,
                                  "reason": contract_error, "autoTrading": False})
                 return
+            symbol = str(data.get("symbol", "BTCUSD")).strip().upper()[:32]
+            order_flow = data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None
+            # Public Delta trade flow is diagnostic-only and BTC-specific. It never trades.
+            if order_flow is None and symbol in {"BTCUSD", "BTCUSDT", "BTC-USD", "BTC/USD"}:
+                order_flow = fetch_delta_trade_flow(symbol)
             result = evaluate(
                 data["bars"],
-                symbol=str(data.get("symbol", "BTCUSD"))[:32],
+                symbol=symbol,
                 timeframe=str(data.get("timeframe", "1m")).strip().lower()[:8],
-                order_flow=data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None,
+                order_flow=order_flow,
                 dxy_bars=data.get("dxy_bars") if isinstance(data.get("dxy_bars"), list) else None,
                 news_events=data.get("news_events") if isinstance(data.get("news_events"), list) else None,
                 higher_timeframe_bars=data.get("higher_timeframe_bars") if isinstance(data.get("higher_timeframe_bars"), list) else None,
