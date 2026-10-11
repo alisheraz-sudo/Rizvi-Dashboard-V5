@@ -28,6 +28,21 @@ class IndicatorCalculationsTests(unittest.TestCase):
         self.assertFalse(result["ready_for_signal"])
         self.assertEqual(result["symbol"], "XAUUSD")
 
+    def test_engine_1_ema_9_21_uses_sma_seed_and_reports_spread(self):
+        bars = sample_bars()
+        result = calculate_roster(bars, "BTCUSD", "1m")
+        item = result["indicators"]["ema_9_21"]
+        self.assertEqual(item["status"], "CALCULATED_CANDIDATE")
+        self.assertIsNotNone(item["value"]["ema9"])
+        self.assertIsNotNone(item["value"]["ema21"])
+        self.assertEqual(item["value"]["bias"], "bullish")
+        self.assertGreater(item["value"]["spread"], 0)
+        self.assertGreater(item["value"]["spread_percent"], 0)
+        bad = [dict(bar) for bar in bars]
+        bad[-1]["close"] = float("nan")
+        with self.assertRaises(ValueError):
+            calculate_roster(bad, "BTCUSD", "1m")
+
     def test_external_data_indicators_remain_unavailable(self):
         items = calculate_roster(sample_bars(), "XAUUSD", "1m")["indicators"]
         for key in ("delta_buy_sell", "orderflow_footprint", "dxy_inverse", "us_high_impact_news"):
