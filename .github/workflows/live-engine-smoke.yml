@@ -80,7 +80,8 @@ jobs:
                   with urllib.request.urlopen(req, timeout=20) as response:
                       result = json.loads(response.read().decode("utf-8"))
               except urllib.error.HTTPError as exc:
-                  raise RuntimeError(f"Python engine endpoint failed: HTTP {exc.code}") from exc
+                  detail = exc.read().decode("utf-8", errors="replace")[:500]
+                  raise RuntimeError(f"Python engine endpoint failed: HTTP {exc.code}: {detail}") from exc
               except urllib.error.URLError as exc:
                   raise RuntimeError(f"Python engine endpoint connection failed: {exc.reason}") from exc
               if not result.get("ok"):
