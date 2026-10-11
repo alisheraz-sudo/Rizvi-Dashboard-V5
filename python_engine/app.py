@@ -84,6 +84,7 @@ class Handler(BaseHTTPRequestHandler):
             # BTCUSDT is deliberately not substituted with BTCUSD.
             canonical_symbol = symbol.replace("/", "").replace("-", "")
             if order_flow is None and canonical_symbol == "BTCUSD":
+                # Public exchange lookup is best-effort and must not stall the signal-only API.
                 order_flow = fetch_delta_trade_flow("BTCUSD")
             result = evaluate(
                 data["bars"],
