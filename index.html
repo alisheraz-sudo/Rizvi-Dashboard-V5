@@ -308,6 +308,7 @@
   function stop(){requestSeq++;clearInterval(timer);timer=null;}
   window.addEventListener('rizvi:symbol-change',e=>{e.detail?.symbol==='BTCUSD'?start():stop();});
   if(currentSymbol()==='BTCUSD')start();else stop();
+})();
 </script><script id="rizvi-default-timeframe-v65">
 (function(){ window.RIZVI_CANDLE_TIMEFRAME='1M'; })();
 </script><script>
@@ -513,7 +514,8 @@ async function btc(){
  return normalizeBars(d?.bars);
 }
 async function gold(){
- const d=await json('/market/xau/intraday?hours=36');
+ const d=await json('/market/xau/intraday?hours=36&allowStale=1');
+ window.RIZVI_XAU_DATA_STALE=!!d?.stale||d?.live===false;
  const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
  const ohlc=a.map(x=>Array.isArray(x)
    ? {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}
@@ -537,7 +539,7 @@ async function gold(){
  }
  /* Always anchor the active XAU candle to the dashboard's current minute.
     The upstream historical feed can lag even while its HTTP request succeeds. */
- try{
+ if(window.RIZVI_GOLD_MARKET_LOCKED!==true)try{
    const s=await json('/market/xau/spot');
    const p=Number(s?.data?.spot_usd_oz??s?.spot_usd_oz);
    if(Number.isFinite(p)){
@@ -580,7 +582,7 @@ async function select(sym){
  clearInterval(timer);timer=null;
  if(inFlight){try{inFlight.abort()}catch{}}
  window.RIZVI_CURRENT_SYMBOL=sym;
- if(sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true){setStatus(sym,'MARKET_CLOSED_PAUSED','Gold live-feed requests paused by user while market is closed');return;}
+ const goldClosed=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
  const cached=cache[sym];
  /* Use only the requested symbol's own cache; never show another symbol's bars. */
  if(cached?.length){
@@ -598,11 +600,13 @@ async function select(sym){
   const bars=await load;
   if(my!==generation||window.RIZVI_CURRENT_SYMBOL!==sym)return;
   if(!bars.length)throw new Error('No valid '+sym+' bars returned');
-  publish(sym,bars,'LIVE');
+  const displayStatus=goldClosed?'MARKET_CLOSED_LAST_AVAILABLE':(sym==='XAU/USD'&&window.RIZVI_XAU_DATA_STALE?'STALE':'LIVE');
+  publish(sym,bars,displayStatus);
+  if(goldClosed){setStatus(sym,'MARKET_CLOSED_LAST_AVAILABLE','Market closed; showing last available Gold candles without synthetic updates');return;}
  }catch(e){
   if(my!==generation||window.RIZVI_CURRENT_SYMBOL!==sym)return;
   /* Keep the last valid bars for this symbol; never replace them with blanks. */
-  if(cache[sym]?.length) setStatus(sym,'STALE',String(e.message||e));
+  if(cache[sym]?.length) setStatus(sym,goldClosed?'MARKET_CLOSED_LAST_AVAILABLE':'STALE',String(e.message||e));
   else {
    window.RIZVI_CHART_STATUS={symbol:sym,status:'UNAVAILABLE',updatedAt:Date.now(),error:String(e.message||e),bars:0};
    window.dispatchEvent(new CustomEvent('rizvi:chart-status',{detail:window.RIZVI_CHART_STATUS}));
@@ -611,6 +615,7 @@ async function select(sym){
   if(inFlight===load)inFlight=null;
  }
  if(my!==generation||window.RIZVI_CURRENT_SYMBOL!==sym)return;
+ if(goldClosed)return;
  timer=setInterval(async()=>{
   if(my!==generation||window.RIZVI_CURRENT_SYMBOL!==sym){clearInterval(timer);return;}
   try{
