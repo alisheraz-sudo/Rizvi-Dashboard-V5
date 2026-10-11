@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rizvi Dashboard V5</title><style>
+<!doctype html><html><head>
+<script id="rizvi-gold-market-lock">window.RIZVI_GOLD_MARKET_LOCKED=true;</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rizvi Dashboard V5</title><style>
 *{box-sizing:border-box}body{margin:0;padding:14px;min-width:1100px;background:#020d18;color:#e9f2f8;font:14px Arial,sans-serif}.app{max-width:1280px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 14px;border-bottom:1px solid #173650}.brand{font-size:27px;font-weight:800}.brand b{color:#1689ff}.brand small{font-size:16px;color:#aab8c5;margin-left:28px}.quote{display:flex;gap:16px;align-items:center;font-weight:800}.coin{color:#f6a800;font-size:24px}.up,.green{color:#00e39a}.clock{text-align:right;color:#a9bac8;font-size:12px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.btn{height:44px;border-radius:7px;color:#fff;font-size:15px;font-weight:900;border:1px solid}.signalHead{justify-content:flex-start;gap:34px;padding:0 16px}.signalHead>div{display:flex;align-items:center;gap:10px}.signalHead>div span{margin-bottom:0}.signalHead>div b{font-size:20px}.buy{background:#08b45e;border-color:#20f18e}.sell{background:#d72c3d;border-color:#ff5c69}.unwind{background:#e69a0b;border-color:#ffc83e}.signalHead{border:1px solid #1c4a70;border-radius:9px;display:flex;align-items:center;justify-content:space-around;background:#061727}.signalHead span{display:block;color:#b8c8d4;font-size:13px;margin-bottom:5px}.signalHead b{font-size:23px;color:#00e39a}.badge{font-size:10px!important;background:#10b875;color:#04150d!important;padding:6px 9px;border-radius:5px;display:inline-block!important}.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}.chart{height:550px;border:1px solid #1d4666;border-radius:9px;position:relative;overflow:hidden;background:#031421}.head{height:47px;padding:13px;border-bottom:1px solid #102c44;display:flex;justify-content:space-between}.tf span{font-size:10px;color:#7990a3;padding:5px}.tf .sel{color:#fff;border-bottom:2px solid #1689ff}.grid{position:absolute;inset:47px 0 0;background:linear-gradient(#0a253a 1px,transparent 1px),linear-gradient(90deg,#0a253a 1px,transparent 1px);background-size:12.5% 12.5%}.candles{position:absolute;left:8px;right:82px;top:80px;bottom:45px}.c{position:absolute;width:7px}.c:after{content:"";position:absolute;left:3px;top:-9px;width:1px;height:calc(100% + 18px);background:currentColor}.g{background:#19d6c0;color:#19d6c0}.r{background:#ff4755;color:#ff4755}.price{position:absolute;left:0;right:0;top:178px;border-top:1px dotted #00caa0;z-index:3}.tag{position:absolute;right:0;top:167px;z-index:3;background:#05b878;color:#03151b;padding:5px 8px;border-radius:4px;font-weight:900}.axis{position:absolute;right:7px;z-index:3;top:78px;bottom:40px;display:flex;flex-direction:column;justify-content:space-between;color:#8fa3b4;font-size:11px}.right{display:flex;flex-direction:column;gap:12px}.card{border:1px solid #1c6fca;border-radius:9px;background:#041725;padding:12px}.card.gborder{border-color:#00b87a}.title{font-size:17px;font-weight:800;margin-bottom:11px}.title b{color:#1689ff}.big{display:flex;justify-content:space-between;font-size:23px;font-weight:900;color:#00e39a;border-bottom:1px solid #173650;padding-bottom:9px}.rows{display:grid;gap:8px;margin-top:10px}.row{display:flex;justify-content:space-between;font-size:13px}.row b{color:#00e39a}.note{border-top:1px solid #173650;margin-top:11px;padding-top:9px;color:#8fa5b8;font-size:11px;line-height:1.5}.checks{display:grid;gap:7px;margin:12px 0}.check:before{content:"✓";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:7px;background:#12b96c;color:#00150c;border-radius:50%;font-weight:900}.ready{text-align:center;background:#087e58;border:1px solid #11e091;border-radius:6px;padding:10px;font-weight:900}.rangeRows{display:grid;gap:9px}.marketRange{border-color:#7a5a18}.marketRange .rangeRow b{color:#5fc8ff}.marketRange .title b{color:#5fc8ff}.rangeRow{display:flex;justify-content:space-between;font-size:13px}.rangeRow b{color:#00e39a}.rangeRow .risk{color:#e967ff}.bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px}.bottom .example{box-shadow:inset 0 1px 0 #ffffff08}.example{min-height:190px;border:1px solid;border-radius:9px;padding:13px;background:#061823}.ex1{border-color:#e22e42}.ex2{border-color:#00bf83}.ex3{border-color:#d99b18}.exBig{font-size:21px;font-weight:900;margin:16px 0 10px;color:#00e39a}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:11px;color:#8fa5b7}.meta b{color:#dce8ef}.exAction{margin-top:14px;text-align:center;border:1px solid;border-radius:5px;padding:7px;font-weight:800}.legend{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #173c58;border-radius:9px;margin-top:12px;padding:12px;text-align:center;background:#04131f}.legend div{border-right:1px solid #31506a;padding:0 8px;color:#9db0c0;font-size:11px;line-height:1.5}.legend div:last-child{border:0}.legend b{display:block;color:#00e39a}.foot{text-align:center;color:#71889b;font-size:11px;margin-top:10px}.signalHead{min-height:48px}.actions{display:grid;grid-template-columns:95px 95px 95px minmax(360px,1fr);gap:8px;margin:12px 0}.right{display:flex;flex-direction:column;gap:12px}.chart{height:550px}.range{right:112px;width:136px}.lev{right:-78px}.legend{grid-template-columns:repeat(4,1fr)}.legend div{border-right:1px solid #31506a;border-bottom:0;padding:0 8px}}@media(max-width:900px){body{padding:0;min-width:0;width:100vw;overflow-x:hidden}.app{width:1280px;max-width:none;margin:0;transform-origin:top left;transform:scale(.30)}.top{width:1280px;padding:8px 6px 12px}.actions{grid-template-columns:82px 82px 82px minmax(270px,1fr);gap:7px;margin:8px 0 5px}.btn{height:38px;font-size:13px;border-radius:7px}.signalHead{min-height:44px;padding:5px 10px;justify-content:flex-start;gap:24px}.signalHead span{font-size:9px}.signalHead b{font-size:16px}.badge{font-size:7px!important;padding:3px 5px}.main{grid-template-columns:minmax(0,1fr) 320px;gap:10px}.main>main{position:relative;top:-8px}.chart{height:500px}.bottom{grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:7px}.example{min-height:155px;padding:8px}.exBig{font-size:16px;margin:8px 0 6px}.right{gap:9px}.card{padding:9px}.legend{grid-template-columns:repeat(4,1fr);margin-top:9px;padding:10px}.foot{margin:8px 0}} .bottom{display:none!important}.example,.ex1,.ex2,.ex3{display:none!important}</style><style id="rizvi-v124-chart-only-layout">
 /* V124: clean chart-first view; header contains only Rizvi Dashboard. */
 .top{justify-content:flex-start!important;padding:8px 6px 12px!important}
@@ -389,6 +390,7 @@
 </script><script>
 (function(){
  async function gold(){
+  if(window.RIZVI_GOLD_MARKET_LOCKED===true){window.RIZVI_GOLD_FEED={status:'PAUSED_MARKET_CLOSED',reason:'Gold live feed paused by user while market is closed'};return;}
   try{
    const d=await fetch('/market/xau/spot',{cache:'no-store'}).then(r=>r.json());
    const p=Number(d?.data?.spot_usd_oz ?? d?.spot_usd_oz);
@@ -507,6 +509,7 @@ async function select(sym){
  clearInterval(timer);timer=null;
  if(inFlight){try{inFlight.abort()}catch{}}
  window.RIZVI_CURRENT_SYMBOL=sym;
+ if(sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true){setStatus(sym,'MARKET_CLOSED_PAUSED','Gold live-feed requests paused by user while market is closed');return;}
  const cached=cache[sym];
  /* Use only the requested symbol's own cache; never show another symbol's bars. */
  if(cached?.length){
@@ -1080,6 +1083,7 @@ publish();
 (function(){
   const symbols=['XAUUSD'];
   async function pull(symbol){
+    if(window.RIZVI_GOLD_MARKET_LOCKED===true)return;
     try{
       const r=await fetch('/ctrader/orderflow?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
       const j=await r.json();
@@ -1265,80 +1269,73 @@ sync();
 })();
 </script>
 <script id="rizvi-symbol-agnostic-engine-feed-bridge-v132">
-/* V132: align the active symbol OHLC snapshot across indicator confluence and weighted algorithms.
-   Does not create/replace a chart renderer, change feed ownership, or enable trading. */
+/* Engine 5: validates chart/feed alignment, evaluates indicator + algorithm engines,
+   and is the single final signal writer. Gold feed polling remains user-locked while market is closed. */
 (function(){
-  'use strict';
-  if(window.__RIZVI_V132_SYMBOL_BRIDGE)return;
-  window.__RIZVI_V132_SYMBOL_BRIDGE=true;
-  const W=window;
-  const activeSymbol=()=>{const s=String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD').toUpperCase().replace(/\s/g,'');return /^(XAU\/?USD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';};
-  const num=x=>{const n=Number(x);return Number.isFinite(n)?n:NaN};
-  let lastBarsKey='',lastPublish=0;
-  function normalize(list){
-    return (Array.isArray(list)?list:[]).map(b=>({
-      t:num(b.t??b.time??b.timestamp??b.date),
-      o:num(b.o??b.open),h:num(b.h??b.high),l:num(b.l??b.low),
-      c:num(b.c??b.close),v:num(b.v??b.volume??0)
-    })).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
-  }
-  function tick(){
-    const symbol=activeSymbol();
-    if(symbol==='UNSUPPORTED'){
-      W.RIZVI_INDICATOR_ENGINE_STATUS={state:'WAITING_FOR_SUPPORTED_SYMBOL',symbol,updatedAt:Date.now()};
-      return;
-    }
-    let bars=normalize(W.RIZVI_RAW_BARS);
-    if(!bars.length)bars=normalize(W.RIZVI_AGG_BARS);
-    if(!bars.length)bars=normalize(W.state?.ohlc);
-    if(!bars.length){
-      W.RIZVI_INDICATOR_ENGINE_STATUS={state:'WAITING_FOR_OHLC',symbol,bars:0,updatedAt:Date.now()};
-      return;
-    }
-    const key=bars.length+':'+bars[bars.length-1].t+':'+bars[bars.length-1].c;
-    /* One canonical, normalized snapshot for both scoring engines; prevent stale cross-symbol bars. */
-    W.RIZVI_RAW_BARS=bars;
-    W.RIZVI_AGG_BARS=bars;
-    W.RIZVI_INDICATOR_ENGINE_STATUS={state:'FEED_ATTACHED',symbol,bars:bars.length,lastBarTime:bars[bars.length-1].t,lastPrice:bars[bars.length-1].c,updatedAt:Date.now()};
-    W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-    if(key===lastBarsKey&&Date.now()-lastPublish<4500)return;
-    lastBarsKey=key;
-    let report=null;
-    try{if(typeof W.RIZVI_RUN_INDICATOR_TESTS==='function')report=W.RIZVI_RUN_INDICATOR_TESTS();}catch(e){W.RIZVI_INDICATOR_ENGINE_STATUS.engineError=String(e)}
-    try{if(typeof W.RIZVI_RUN_MULTI_ALGORITHM_TESTS==='function')W.RIZVI_RUN_MULTI_ALGORITHM_TESTS()}catch(e){W.RIZVI_INDICATOR_ENGINE_STATUS.algorithmError=String(e)}
-    const conf=W.RIZVI_INDICATOR_CONFLUENCE||report?.master||{};
-    const algo=W.RIZVI_MASTER_ALGORITHM||{};
-    const components=conf.components||{};
-    const active=Object.values(components).filter(x=>Number(x?.score)>0);
-    const indicatorAgreement=Number(conf.agreement)||0;
-    const indicatorConfidence=Math.max(0,Math.min(100,Number(conf.score)||0));
-    const indicatorDirection=['BUY','SELL'].includes(conf.action)?conf.action:'WAIT';
-    const algoDirection=['BUY','SELL'].includes(algo.action)?algo.action:'WAIT';
-    const algoConfidence=Math.max(0,Math.min(100,Number(algo.confidence)||0));
-    const aligned=indicatorDirection!=='WAIT'&&indicatorDirection===algoDirection;
-    const direction=aligned?indicatorDirection:'WAIT';
-    const confidence=Math.round((indicatorConfidence+algoConfidence)/2);
-    const agreement=indicatorAgreement;
-    const qualified=(aligned&&confidence>=80&&agreement>=70);
-    const indicatorStatus={};
-    Object.keys(components).forEach(k=>{indicatorStatus[k]={status:Number(components[k]?.score)>0?'CALCULATED':'WAITING_FOR_DATA',score:Number(components[k]?.score)||0,bias:Number(components[k]?.bias)||0}});
-    const master={symbol,direction,confidence,qualified,agreement,bars:bars.length,updatedAt:Date.now(),indicatorStatus,alignment:{status:aligned?'ALIGNED':'WAIT_FOR_ALIGNMENT',indicatorAction:indicatorDirection,algorithmAction:algoDirection,indicatorScore:indicatorConfidence,algorithmScore:algoConfidence,algorithm:algo.algorithm||null},source:symbol+' OHLC → indicator confluence + multi-algorithm engine',autoTrading:false};
-    W.RIZVI_MASTER_CONFIRMATION=master;
-    W.RIZVI_INDICATOR_ENGINE_STATUS={...W.RIZVI_INDICATOR_ENGINE_STATUS,state:'RUNNING',symbol,activeIndicators:active.length,indicators:Object.keys(components).length,action:direction,score:confidence,agreement,qualified,updatedAt:master.updatedAt};
-    W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-    W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:master}));
-    W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:master}));
-    lastPublish=Date.now();
-  }
-  W.RIZVI_GET_INDICATOR_ENGINE_STATUS=()=>W.RIZVI_INDICATOR_ENGINE_STATUS||{state:'UNKNOWN'};
-  W.RIZVI_GET_GOLD_ENGINE_STATUS=()=>W.RIZVI_INDICATOR_ENGINE_STATUS||{state:'UNKNOWN'};
-  tick();
-  setInterval(tick,2500);
-  W.addEventListener('rizvi:candle-update',tick);
-  W.addEventListener('rizvi:chart-source',tick);
-  W.addEventListener('rizvi:chart-status',tick);
-  W.addEventListener('rizvi:ctrader',e=>{if(e.detail?.type==='history'||e.detail?.type==='bar'||e.detail?.type==='quote')setTimeout(tick,0)});
-  W.addEventListener('rizvi:symbol-change',()=>{lastBarsKey='';setTimeout(tick,0)});
+ 'use strict';
+ if(window.__RIZVI_V132_SYMBOL_BRIDGE)return;
+ window.__RIZVI_V132_SYMBOL_BRIDGE=true;
+ const W=window, clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
+ const symbolNow=()=>{const s=String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD').toUpperCase().replace(/\s/g,'');return /^(XAU\/?USD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';};
+ const tfNow=()=>String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
+ const msTime=t=>{let n=Number(t);if(!Number.isFinite(n)||n<=0)return NaN;return n<1e12?n*1000:n;};
+ function barsNow(){const a=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[];return a.map(b=>({t:Number(b.t??b.time??b.timestamp),o:Number(b.o??b.open),h:Number(b.h??b.high),l:Number(b.l??b.low),c:Number(b.c??b.close),v:Number(b.v??b.volume??0)})).filter(b=>[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);}
+ function wait(symbol,reason,extra={}){
+  const out={symbol,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'WAIT',engine5:{state:'WAIT',reason,...extra},feedStatus:W.RIZVI_FEED_STATUS||null,alignment:{status:'WAIT',reason}};
+  W.RIZVI_MASTER_CONFIRMATION=out;W.RIZVI_SIGNAL_DIRECTION='WAIT';
+  W.RIZVI_INDICATOR_ENGINE_STATUS={state:reason==='Gold market closed — feed polling paused'?'PAUSED_MARKET_CLOSED':'WAITING_FOR_VALIDATED_FEED',symbol,reason,updatedAt:out.updatedAt};
+  W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:out}));
+  W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:out}));
+ }
+ function tick(){
+  const symbol=symbolNow(),tf=tfNow();
+  if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
+  if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
+  const feed=W.RIZVI_FEED_STATUS||{},bs=barsNow(),last=bs.at(-1);
+  if(feed.ok!==true||feed.symbol!==symbol||String(feed.timeframe||'').toUpperCase()!==tf){wait(symbol,'Chart/feed symbol or timeframe not aligned',{feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
+  const age=last?Date.now()-msTime(last.t):Infinity;
+  if(bs.length<21||!last||!Number.isFinite(age)||age<0||age>180000){wait(symbol,'OHLC missing, insufficient, or stale',{bars:bs.length,barAgeMs:Number.isFinite(age)?age:null});return;}
+  /* Stamp the active symbol onto the exact canonical snapshot consumed by both test suites. */
+  W.RIZVI_RAW_BARS=bs;W.RIZVI_AGG_BARS=bs;
+  let ir=null,ar=null;
+  try{if(typeof W.RIZVI_RUN_INDICATOR_TESTS==='function')ir=W.RIZVI_RUN_INDICATOR_TESTS();}catch(e){wait(symbol,'Indicator engine exception',{error:String(e)});return;}
+  try{if(typeof W.RIZVI_RUN_MULTI_ALGORITHM_TESTS==='function')ar=W.RIZVI_RUN_MULTI_ALGORITHM_TESTS();}catch(e){wait(symbol,'Algorithm engine exception',{error:String(e)});return;}
+  const conf=W.RIZVI_INDICATOR_CONFLUENCE||ir?.master||{}, report=W.RIZVI_MULTI_ALGORITHM_REPORT||ar;
+  const confTime=Date.parse(ir?.timestamp||conf?.timestamp||'')||Number(conf?.timestamp)||0;
+  const algoTime=Date.parse(report?.timestamp||'')||0;
+  const confSym=conf?.symbol||symbol, algoSym=report?.symbol||symbol;
+  if(confSym!==symbol||algoSym!==symbol||!confTime||!algoTime||Date.now()-confTime>15000||Date.now()-algoTime>15000){wait(symbol,'Indicator/algorithm reports are stale or from another symbol',{indicatorSymbol:confSym,algorithmSymbol:algoSym,indicatorAgeMs:confTime?Date.now()-confTime:null,algorithmAgeMs:algoTime?Date.now()-algoTime:null});return;}
+  const components=conf.components||{}, entries=Object.values(components), active=entries.filter(x=>Number(x?.score)>0);
+  const indicatorAction=['BUY','SELL'].includes(conf.action)?conf.action:'WAIT', indicatorScore=clamp(conf.score), agreement=clamp(conf.agreement);
+  const algos=report.algorithms||{}, rows=Object.values(algos);
+  const buy=rows.filter(x=>x.action==='BUY').length, sell=rows.filter(x=>x.action==='SELL').length;
+  const majority=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
+  const alignedCount=rows.filter(x=>x.action===indicatorAction&&['BUY','SELL'].includes(indicatorAction)).length;
+  const algoMean=rows.length?rows.reduce((s,x)=>s+clamp(x.confidence),0)/rows.length:0;
+  const aligned=indicatorAction!=='WAIT'&&majority===indicatorAction;
+  const confidence=Math.round((indicatorScore+algoMean)/2);
+  const qualified=aligned&&alignedCount>=4&&rows.length>=5&&confidence>=80&&agreement>=70&&active.length>=6;
+  const direction=qualified?indicatorAction:'WAIT';
+  const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',
+   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
+   indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA',score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
+   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsEvaluated:rows.length},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
+  W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
+  W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
+  W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
+  W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:result}));
+  W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:result}));
+ }
+ W.RIZVI_GET_INDICATOR_ENGINE_STATUS=()=>W.RIZVI_INDICATOR_ENGINE_STATUS||{state:'UNKNOWN'};
+ W.RIZVI_GET_GOLD_ENGINE_STATUS=()=>W.RIZVI_INDICATOR_ENGINE_STATUS||{state:'UNKNOWN'};
+ tick();setInterval(tick,2500);
+ W.addEventListener('rizvi:candle-update',tick);
+ W.addEventListener('rizvi:ohlc-feed-update',tick);
+ W.addEventListener('rizvi:chart-source',tick);
+ W.addEventListener('rizvi:chart-status',tick);
+ W.addEventListener('rizvi:timeframe-update',tick);
+ W.addEventListener('rizvi:direct-tv-status',tick);
+ W.addEventListener('rizvi:symbol-change',()=>setTimeout(tick,0));
 })();
 </script>
 
