@@ -193,24 +193,77 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
     vol_total = sum(vols20)
     vwap20 = sum(p * v for p, v in zip(typical, vols20)) / vol_total if vol_total else None
 
-    # Three-candle fair-value-gap candidate on the latest completed three-bar window.
-    fvg = None
-    if len(bars) >= 3:
-        a, c = bars[-3], bars[-1]
-        if float(c["low"]) > float(a["high"]):
-            fvg = {"type": "bullish", "lower": float(a["high"]), "upper": float(c["low"])}
-        elif float(c["high"]) < float(a["low"]):
-            fvg = {"type": "bearish", "lower": float(c["high"]), "upper": float(a["low"])}
-
-    # Basic recent swing levels; descriptive levels, not guaranteed support/resistance.
-    window = min(20, len(bars))
-    resistance, support = max(highs[-window:]), min(lows[-window:])
-    prior_high, prior_low = max(highs[-window-1:-1]), min(lows[-window-1:-1])
+    # Engine 2: confirmed two-sided pivots, structure breaks, and active FVGs.
+    # A pivot is only confirmed after two candles have printed to its right.
+    pivot_highs, pivot_lows = [], []
+    for i in range(2, len(bars) - 2):
+        hi = float(bars[i]["high"])
+        lo = float(bars[i]["low"])
+        if all(hi > float(bars[j]["high"]) for j in (i-2, i-1, i+1, i+2)):
+            pivot_highs.append((i, hi))
+        if all(lo < float(bars[j]["low"]) for j in (i-2, i-1, i+1, i+2)):
+            pivot_lows.append((i, lo))
+    recent_ph = [p for p in pivot_highs if p[0] >= max(0, len(bars)-60)]
+    recent_pl = [p for p in pivot_lows if p[0] >= max(0, len(bars)-60)]
+    resistance_candidates = [p for _, p in recent_ph if p >= close]
+    support_candidates = [p for _, p in recent_pl if p <= close]
+    resistance = min(resistance_candidates) if resistance_candidates else (max((p for _, p in recent_ph), default=max(highs[-20:])))
+    support = max(support_candidates) if support_candidates else (min((p for _, p in recent_pl), default=min(lows[-20:])))
+    prior_window = min(20, len(bars)-1)
+    prior_high = max(highs[-prior_window-1:-1])
+    prior_low = min(lows[-prior_window-1:-1])
     sweep = "none"
     if highs[-1] > prior_high and close < prior_high:
         sweep = "buy-side liquidity sweep candidate"
     elif lows[-1] < prior_low and close > prior_low:
         sweep = "sell-side liquidity sweep candidate"
+
+    # Find the newest still-active 3-candle FVG in the recent lookback.
+    # A bullish gap is fully filled only when a later low reaches its lower edge;
+    # a bearish gap is fully filled only when a later high reaches its upper edge.
+    fvg = None
+    fvg_start = max(2, len(bars) - 80)
+    for i in range(len(bars) - 1, fvg_start - 1, -1):
+        left, right = bars[i-2], bars[i]
+        left_high, left_low = float(left["high"]), float(left["low"])
+        right_high, right_low = float(right["high"]), float(right["low"])
+        if right_low > left_high:
+            lower, upper = left_high, right_low
+            later = bars[i+1:]
+            fully_filled = any(float(b["low"]) <= lower for b in later)
+            if not fully_filled:
+                partially_filled = any(float(b["low"]) < upper for b in later)
+                fvg = {"type": "bullish", "lower": lower, "upper": upper,
+                       "fill_status": "partially_filled" if partially_filled else "unfilled",
+                       "formed_at": right.get("timestamp")}
+                break
+        if right_high < left_low:
+            lower, upper = right_high, left_low
+            later = bars[i+1:]
+            fully_filled = any(float(b["high"]) >= upper for b in later)
+            if not fully_filled:
+                partially_filled = any(float(b["high"]) > lower for b in later)
+                fvg = {"type": "bearish", "lower": lower, "upper": upper,
+                       "fill_status": "partially_filled" if partially_filled else "unfilled",
+                       "formed_at": right.get("timestamp")}
+                break
+
+    # Price-action structure: compare the two latest confirmed swing highs/lows.
+    structure = {"trend": "unconfirmed", "higher_high": None, "higher_low": None,
+                 "break": "none", "latest_swing_high": recent_ph[-1][1] if recent_ph else None,
+                 "latest_swing_low": recent_pl[-1][1] if recent_pl else None}
+    if len(recent_ph) >= 2 and len(recent_pl) >= 2:
+        hh = recent_ph[-1][1] > recent_ph[-2][1]
+        lh = recent_ph[-1][1] < recent_ph[-2][1]
+        hl = recent_pl[-1][1] > recent_pl[-2][1]
+        ll = recent_pl[-1][1] < recent_pl[-2][1]
+        structure.update({"higher_high": hh, "higher_low": hl,
+                          "trend": "bullish_structure" if hh and hl else
+                                   "bearish_structure" if lh and ll else "mixed_or_range"})
+    if close > prior_high:
+        structure["break"] = "bullish_break_of_structure_candidate"
+    elif close < prior_low:
+        structure["break"] = "bearish_break_of_structure_candidate"
 
     body = close - float(last["open"])
     candle_range = float(last["high"]) - float(last["low"])
@@ -328,17 +381,22 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
         "vwap_filter": _item({"rolling_20_bar_vwap": vwap20, "bias": "above" if vwap20 is not None and close > vwap20 else "below" if vwap20 is not None and close < vwap20 else "at_or_unavailable"}, "PROXY_NOT_SESSION_VWAP", "Rolling 20-bar OHLCV proxy, not true exchange/session VWAP."),
         "volatility_regime": _item(regime, "CALCULATED" if regime else "INSUFFICIENT_HISTORY"),
         "atr_14": _item(atr, "CALCULATED" if atr is not None else "INSUFFICIENT_HISTORY"),
-        "market_structure": _item({"recent_resistance": resistance, "recent_support": support, "close_vs_range": "break_above" if close > prior_high else "break_below" if close < prior_low else "inside_prior_range"}),
+        "market_structure": _item(structure, "CALCULATED_CANDIDATE" if len(recent_ph) >= 2 and len(recent_pl) >= 2 else "INSUFFICIENT_CONFIRMED_SWINGS", "Confirmed two-sided pivots; latest two highs and lows are compared. Breaks are candidates, not guaranteed trend changes."),
         "structure_prediction": _item(
-            {"candidate": "bullish_continuation" if close > prior_high and close > float(last["open"]) else
-                         "bearish_continuation" if close < prior_low and close < float(last["open"]) else
+            {"candidate": "bullish_continuation_candidate" if structure["trend"] == "bullish_structure" and close > float(last["open"]) else
+                         "bearish_continuation_candidate" if structure["trend"] == "bearish_structure" and close < float(last["open"]) else
                          "range_or_reversal_unconfirmed",
-             "close": close, "prior_range_high": prior_high, "prior_range_low": prior_low},
+             "structure": structure["trend"], "close": close,
+             "prior_range_high": prior_high, "prior_range_low": prior_low},
             "DESCRIPTIVE_CANDIDATE_ONLY",
-            "Rule-based market-structure scenario label, not a forecast and not eligible to drive a signal without separate validation."),
+            "Rule-based scenario derived from confirmed pivots and latest candle; not a forecast."),
         "candle_patterns": _item(candle_pattern, "CANDIDATE_REQUIRES_VALIDATION"),
-        "fvg": _item(fvg, "CANDIDATE_REQUIRES_VALIDATION", "Three-candle OHLCV gap candidate; not an order-block or execution guarantee."),
-        "support_resistance": _item({"resistance": resistance, "support": support}, "RECENT_RANGE_LEVELS"),
+        "fvg": _item(fvg, "CALCULATED_CANDIDATE" if fvg else "NO_ACTIVE_FVG", "Newest recent three-candle gap that has not been fully filled; partial fills are labeled."),
+        "support_resistance": _item({"resistance": resistance, "support": support,
+                                     "resistance_basis": "nearest_confirmed_pivot_or_recent_extreme",
+                                     "support_basis": "nearest_confirmed_pivot_or_recent_extreme"},
+                                    "CALCULATED_CANDIDATE" if recent_ph or recent_pl else "RECENT_RANGE_FALLBACK",
+                                    "Levels are descriptive OHLC pivots/extremes, not guaranteed support or resistance."),
         "volume_profile": _item(volume_profile_proxy, "OHLCV_CLOSE_BIN_PROXY", "Not tick-level or exchange-native volume profile."),
         "liquidity_sweeps": _item(sweep, "CANDIDATE_REQUIRES_VALIDATION"),
         "delta_buy_sell": _item(flow_values, "CALCULATED_LIVE_PROXY" if flow_valid else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
