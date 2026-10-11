@@ -59,7 +59,11 @@ def _atr(bars: Sequence[Dict[str, Any]], period: int = 14) -> Optional[float]:
 def _stamp_seconds(value: Any) -> Optional[float]:
     if _finite(value):
         x = float(value)
-        return x / 1000.0 if x > 100_000_000_000 else x
+        if x > 100_000_000_000_000:
+            return x / 1_000_000.0
+        if x > 100_000_000_000:
+            return x / 1000.0
+        return x
     if isinstance(value, str):
         try:
             dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
