@@ -367,7 +367,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
              dxy_bars: Optional[Sequence[Dict[str, Any]]] = None,
              news_events: Optional[Sequence[Dict[str, Any]]] = None,
              higher_timeframe_bars: Optional[Sequence[Dict[str, Any]]] = None) -> Dict[str, Any]:
-    """Evaluate OHLCV bars and return JSON-serializable engine diagnostics and a signal."""
+    """Evaluate the locked 20-indicator roster and Engine 5; remain WAIT until validated."""
     supported_timeframes = {"1m", "5m", "15m", "30m", "1h"}
     if timeframe not in supported_timeframes:
         return {"ok": False, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
@@ -376,13 +376,11 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         bars = _normalise_bars(raw_bars)
     except (ValueError, TypeError) as exc:
         return {"ok": False, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
-                "signal": "WAIT", "reason": str(exc), "autoTrading": False}
+                "signal": "WAIT", "confidence": None, "reason": str(exc), "autoTrading": False}
+
     x = _indicator_values(bars)
     regime = _regime(x)
     weights = _adaptive_weights(regime)
-
-    # Route the canonical 20 indicators to the approved 6/5/4/5 specialist-engine
-    # groups. Legacy 18-family directional grouping is deliberately not used here.
     roster = roster_snapshot()
     diagnostics = calculate_roster(
         raw_bars, symbol=symbol, timeframe=timeframe,
@@ -390,6 +388,39 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         higher_timeframe_bars=higher_timeframe_bars,
     )
     engines = _locked_engine_reports(diagnostics)
+    indicator_items = diagnostics.get("indicators", {})
+    status_counts: Dict[str, int] = {}
+    unverified_ids = []
+    for engine in roster["engines"]:
+        for item in engine["indicators"]:
+            indicator_id = item["id"]
+            result = indicator_items.get(indicator_id, {})
+            status = str(result.get("status", "MISSING_OUTPUT"))
+            status_counts[status] = status_counts.get(status, 0) + 1
+            # A value is not signal-ready merely because a candidate/proxy was calculated.
+            if result.get("value") is None or status not in {"VALIDATED_LIVE"}:
+                unverified_ids.append(indicator_id)
+
+    engines_aligned = (
+        len(engines) == 4
+        and all(engines.get("engine_%d" % i, {}).get("aligned") is True for i in range(1, 5))
+        and sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)) == 20
+    )
+    engine_5 = {
+        "name": "Master Evaluation Engine",
+        "role": "Evaluate Engines 1–4 and gate the final signal",
+        "input_engines": 4,
+        "expected_indicators": 20,
+        "received_indicators": sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)),
+        "engine_mapping_aligned": engines_aligned,
+        "indicator_status_counts": status_counts,
+        "unverified_indicator_ids": unverified_ids,
+        "ready_for_signal": False,
+        "signal": "WAIT",
+        "confidence": None,
+        "status": "BLOCKED_PENDING_LIVE_VALIDATION",
+        "reason": "Engine 5 has evaluated the roster and engine mapping, but live-source validation and end-to-end checks are not complete.",
+    }
     return {
         "ok": True,
         "version": ENGINE_VERSION,
@@ -398,59 +429,17 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         "timeframe": timeframe,
         "regime": regime,
         "engines": engines,
+        "engine_5": engine_5,
         "weights": weights,
         "indicators": x,
         "indicator_roster": roster,
         "indicator_diagnostics": diagnostics,
         "signal": "WAIT",
         "confidence": None,
-        "reason": "Stage 1: locked 20-indicator roster is registered; scoring remains disabled until calculations, feeds and engine alignment pass validation.",
+        "reason": "Signal generation is gated until all required indicator calculations, external feeds, cross-engine alignment and live validation pass.",
         "autoTrading": False,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-
-    usable = {k: v["score"] for k, v in engines.items() if v["score"] is not None}
-    if len(usable) < 3 or regime == "UNKNOWN":
-        return {"ok": True, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
-                "regime": regime, "engines": engines, "weights": weights, "indicators": x,
-                "signal": "WAIT", "confidence": None,
-                "reason": "Insufficient independent engine confirmation or regime data",
-                "autoTrading": False, "timestamp": datetime.now(timezone.utc).isoformat()}
-    # Renormalize over available groups only; do not invent votes for missing groups.
-    active_total = sum(weights[k] for k in usable)
-    score = sum(usable[k] * weights[k] for k in usable) / active_total if active_total else 0.0
-    agreement = sum(1 for val in usable.values() if val > 0.15) if score > 0 else sum(1 for val in usable.values() if val < -0.15)
-    direction = "BUY" if score > 0 else "SELL" if score < 0 else "WAIT"
-    confidence = round(min(100.0, abs(score) * 100.0), 1)
-    # Conservative consensus: at least 3 engines must support the chosen direction.
-    supporting = sum(1 for val in usable.values() if (val > 0.15 if direction == "BUY" else val < -0.15 if direction == "SELL" else False))
-    if confidence < WEAK_THRESHOLD * 100 or supporting < 3:
-        signal = "WAIT"
-        reason = "Consensus below threshold: requires >=70% directional score and 3 supporting engines"
-    elif confidence < BUY_THRESHOLD * 100:
-        signal = "WEAK_BUY" if direction == "BUY" else "WEAK_SELL"
-        reason = "Directional score is 70-79%; weak setup only"
-    else:
-        signal = direction
-        reason = "Strong setup: score >=80% and at least 3 engines agree"
-    flow_status = "NOT_ATTACHED"
-    if isinstance(order_flow, dict) and order_flow.get("status") == "LIVE":
-        # Only label it live if caller supplies explicit validated side-volume values.
-        if _num(order_flow.get("buy_volume")) and _num(order_flow.get("sell_volume")):
-            flow_status = "LIVE_VALIDATED"
-        else:
-            flow_status = "INVALID_PAYLOAD"
-    return {
-        "ok": True, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
-        "regime": regime, "engines": engines, "weights": weights,
-        "master_engine": {"score": round(score, 4), "confidence": confidence,
-                          "supporting_engines": supporting, "available_engines": len(usable),
-                          "signal": signal, "reason": reason},
-        "signal": signal, "confidence": confidence, "reason": reason,
-        "indicators": x, "order_flow_status": flow_status,
-        "autoTrading": False, "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-
 
 def health() -> Dict[str, Any]:
     roster = roster_snapshot()
