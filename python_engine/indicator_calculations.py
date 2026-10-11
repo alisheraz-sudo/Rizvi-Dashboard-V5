@@ -79,6 +79,41 @@ def _item(value: Any, status: str = "CALCULATED", note: str = "") -> Dict[str, A
     return {"value": value, "status": status, "note": note}
 
 
+def _valid_aux_bars(raw: Sequence[Dict[str, Any]], minimum: int = 20) -> Optional[List[Dict[str, Any]]]:
+    """Validate auxiliary OHLCV data without silently aligning unrelated timestamps."""
+    if not isinstance(raw, (list, tuple)) or len(raw) < minimum:
+        return None
+    result = []
+    stamps = []
+    for bar in raw:
+        if not isinstance(bar, dict) or not all(_finite(bar.get(k)) for k in ("open", "high", "low", "close", "volume")):
+            return None
+        o, h, l, c, v = (float(bar[k]) for k in ("open", "high", "low", "close", "volume"))
+        if min(o, h, l, c) <= 0 or v < 0 or h < max(o, c, l) or l > min(o, c, h):
+            return None
+        stamp = _stamp_seconds(bar.get("timestamp"))
+        if stamp is None:
+            return None
+        stamps.append(stamp)
+        result.append(bar)
+    if any(stamps[i] <= stamps[i - 1] for i in range(1, len(stamps))):
+        return None
+    return result
+
+
+def _pearson(xs: Sequence[float], ys: Sequence[float]) -> Optional[float]:
+    """Pearson correlation with a strict zero-variance guard."""
+    if len(xs) != len(ys) or len(xs) < 20:
+        return None
+    mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+    dx, dy = [x - mx for x in xs], [y - my for y in ys]
+    sx = sum(x * x for x in dx)
+    sy = sum(y * y for y in dy)
+    if sx <= 1e-18 or sy <= 1e-18:
+        return None
+    return sum(x * y for x, y in zip(dx, dy)) / (sx * sy) ** 0.5
+
+
 def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe: str,
                      *, dxy_bars: Optional[Sequence[Dict[str, Any]]] = None,
                      news_events: Optional[Sequence[Dict[str, Any]]] = None,
@@ -235,12 +270,25 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
     values = {
         "ema_9_21": _item({"ema9": e9, "ema21": e21, "bias": "bullish" if e9 is not None and e21 is not None and e9 > e21 else "bearish" if e9 is not None and e21 is not None and e9 < e21 else "neutral"}),
         "rsi_14": _item(rsi, "CALCULATED" if rsi is not None else "INSUFFICIENT_HISTORY"),
-        "trend_5": _item(None, "UNAVAILABLE_MISSING_TIMEFRAME_CONTEXT", "Requires synchronized 5m/15m bars; no higher-timeframe bars were supplied.") if not higher_timeframe_bars else _item("requires dedicated multi-timeframe implementation", "PENDING_VALIDATION"),
+        "trend_5": _item(None, "UNAVAILABLE_MISSING_TIMEFRAME_CONTEXT", "Requires at least 20 timestamped, validated higher-timeframe candles.") if not higher_timeframe_bars else _item(
+            (lambda aux: {"ema9": _ema([float(b["close"]) for b in aux], 9),
+                          "ema21": _ema([float(b["close"]) for b in aux], 21),
+                          "bias": "bullish" if _ema([float(b["close"]) for b in aux], 9) > _ema([float(b["close"]) for b in aux], 21)
+                                  else "bearish" if _ema([float(b["close"]) for b in aux], 9) < _ema([float(b["close"]) for b in aux], 21)
+                                  else "neutral"} if aux else None)(_valid_aux_bars(higher_timeframe_bars)),
+            "CALCULATED_CANDIDATE" if _valid_aux_bars(higher_timeframe_bars) else "INVALID_HIGHER_TIMEFRAME_DATA",
+            "EMA 9/21 on supplied higher-timeframe candles; caller must ensure timeframe and symbol match."),
         "vwap_filter": _item({"rolling_20_bar_vwap": vwap20, "bias": "above" if vwap20 is not None and close > vwap20 else "below" if vwap20 is not None and close < vwap20 else "at_or_unavailable"}, "PROXY_NOT_SESSION_VWAP", "Rolling 20-bar OHLCV proxy, not true exchange/session VWAP."),
         "volatility_regime": _item(regime, "CALCULATED" if regime else "INSUFFICIENT_HISTORY"),
         "atr_14": _item(atr, "CALCULATED" if atr is not None else "INSUFFICIENT_HISTORY"),
         "market_structure": _item({"recent_resistance": resistance, "recent_support": support, "close_vs_range": "break_above" if close > prior_high else "break_below" if close < prior_low else "inside_prior_range"}),
-        "structure_prediction": _item(None, "NOT_A_PREDICTION", "No forward prediction is emitted; structure context is descriptive only."),
+        "structure_prediction": _item(
+            {"candidate": "bullish_continuation" if close > prior_high and close > float(last["open"]) else
+                         "bearish_continuation" if close < prior_low and close < float(last["open"]) else
+                         "range_or_reversal_unconfirmed",
+             "close": close, "prior_range_high": prior_high, "prior_range_low": prior_low},
+            "DESCRIPTIVE_CANDIDATE_ONLY",
+            "Rule-based market-structure scenario label, not a forecast and not eligible to drive a signal without separate validation."),
         "candle_patterns": _item(candle_pattern, "CANDIDATE_REQUIRES_VALIDATION"),
         "fvg": _item(fvg, "CANDIDATE_REQUIRES_VALIDATION", "Three-candle OHLCV gap candidate; not an order-block or execution guarantee."),
         "support_resistance": _item({"resistance": resistance, "support": support}, "RECENT_RANGE_LEVELS"),
@@ -255,7 +303,15 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
         "divergence": _item(divergence, "CANDIDATE_REQUIRES_VALIDATION"),
         "trading_sessions": _item(session, "UTC_TIME_BUCKET_ONLY", "UTC bucket, not broker/exchange session calendar."),
         "day_high_low": _item({"day_high_utc": day_high, "day_low_utc": day_low}, "UTC_DAY_FROM_SUPPLIED_BARS"),
-        "dxy_inverse": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires synchronized DXY OHLCV and correlation window.") if not dxy_bars else _item(None, "PENDING_CORRELATION_VALIDATION", "DXY bars supplied but synchronized correlation calculation is not yet validated."),
+        "dxy_inverse": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires at least 20 synchronized, timestamp-matched DXY candles.") if not dxy_bars else _item(
+            (lambda aux: (lambda pairs: (lambda corr: {"correlation": corr, "classification": "inverse" if corr is not None and corr <= -0.30 else "positive" if corr is not None and corr >= 0.30 else "weak_or_unclear", "matched_returns": len(pairs)} if corr is not None else None)(
+                _pearson([p[0] for p in pairs], [p[1] for p in pairs])))([(100.0*(float(b["close"])/float(a["close"])-1.0), 100.0*(float(d["close"])/float(c["close"])-1.0))
+                    for a,b,c,d in zip(bars[:-1], bars[1:], aux[:-1], aux[1:])
+                    if _stamp_seconds(a.get("timestamp")) == _stamp_seconds(c.get("timestamp"))
+                    and _stamp_seconds(b.get("timestamp")) == _stamp_seconds(d.get("timestamp"))])
+             if aux else None)(_valid_aux_bars(dxy_bars, 21)),
+            "CALCULATED_CANDIDATE" if _valid_aux_bars(dxy_bars, 21) else "INVALID_DXY_DATA",
+            "Pearson correlation of timestamp-matched candle returns; candidate only until DXY source, symbol and synchronization are independently verified."),
         "us_high_impact_news": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires validated economic calendar and release timestamps.") if not news_events else _item(None, "PENDING_NEWS_SCHEMA_VALIDATION", "Events supplied but calendar schema/impact mapping is not yet validated."),
     }
     return {
