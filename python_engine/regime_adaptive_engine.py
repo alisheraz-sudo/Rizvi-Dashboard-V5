@@ -307,7 +307,7 @@ def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, A
             })
         statuses = [str(item["status"]) for item in assigned]
         unavailable = sum(1 for status in statuses if "UNAVAILABLE" in status or status.startswith("MISSING"))
-        validated = sum(1 for status in statuses if status == "CALCULATED")
+        validated = sum(1 for status in statuses if status == "CALCULATED" or status.startswith("CALCULATED_"))
         mapping_complete = (
             len(assigned) == int(group["indicator_count"])
             and all(item["id"] for item in assigned)
