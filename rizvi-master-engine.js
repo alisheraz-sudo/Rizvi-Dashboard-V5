@@ -40,6 +40,8 @@
     return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s cTrader depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:'LIVE',source:'CTRADER_LEVEL2',symbol:got};
   }
   function run(){
+    /* Engine 5 is the sole final signal writer once the symbol-alignment bridge is loaded. */
+    if(window.__RIZVI_V132_SYMBOL_BRIDGE)return;
     const symbol=window.RIZVI_CURRENT_SYMBOL||'XAU/USD';
     const feed=window.RIZVI_FEED_STATUS;
     if(!feed||feed.ok!==true||feed.symbol!==symbol){
