@@ -1285,7 +1285,7 @@ function build(){
   'SMA 200':Number.isFinite(s200)?mk(px(s200),clamp(55+Math.min(25,Math.abs(close-s200)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*5)),smaBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need 200 bars'),
   'MACD':macd?mk('MACD '+px(macd.line)+' / Signal '+px(macd.signal)+' / Hist '+px(macd.hist),clamp(50+Math.min(35,Math.abs(macd.hist)/Math.max(Number.isFinite(a)?a:1e-9,1e-9)*20),50,90),macd.hist>0?1:macd.hist<0?-1:0,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 35 bars'),
   'ADX / DMI':dmi?mk('ADX '+px(dmi.adx)+' · +DI '+px(dmi.plus)+' / −DI '+px(dmi.minus),clamp(50+dmi.adx/2,50,90),dmi.adx>=18?(dmi.plus>dmi.minus?1:dmi.minus>dmi.plus?-1:0):0,'CALCULATED'):missing('INSUFFICIENT_BARS','Need enough bars for DMI/ADX'),
-  'VWAP Filter':Number.isFinite(vw)?mk(px(vw),vwapScore,vwapBias,'CALCULATED','Rolling 100-bar VWAP proxy; requires positive feed volume'):missing('NO_REAL_VOLUME','VWAP requires at least 10 valid bars with real positive volume'),
+  'VWAP Filter':Number.isFinite(vw)?mk(px(vw),vwapScore,vwapBias,'CALCULATED','Rolling 100-bar VWAP proxy; positive feed volume is required, volume type is not independently verified'):missing('NO_REAL_VOLUME','VWAP requires at least 10 valid bars with positive feed volume'),
   'RSI-14':Number.isFinite(rv)?mk(px(rv),clamp(50+Math.abs(rv-50)),rsiBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 15 bars'),
   'Stochastic':stoch?mk('%K '+px(stoch.k)+' / %D '+px(stoch.d),clamp(50+Math.abs(stoch.k-stoch.d)),stochBias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need at least 16 bars'),
   'ATR':Number.isFinite(a)?mk(px(a),50,0,'CALCULATED','Volatility measurement; non-directional'):missing('INSUFFICIENT_BARS','Need enough bars for ATR'),
