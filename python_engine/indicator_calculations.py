@@ -275,8 +275,8 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
                           "ema21": _ema([float(b["close"]) for b in aux], 21),
                           "bias": "bullish" if _ema([float(b["close"]) for b in aux], 9) > _ema([float(b["close"]) for b in aux], 21)
                                   else "bearish" if _ema([float(b["close"]) for b in aux], 9) < _ema([float(b["close"]) for b in aux], 21)
-                                  else "neutral"} if aux else None)(_valid_aux_bars(higher_timeframe_bars)),
-            "CALCULATED_CANDIDATE" if _valid_aux_bars(higher_timeframe_bars) else "INVALID_HIGHER_TIMEFRAME_DATA",
+                                  else "neutral"} if aux else None)(_valid_aux_bars(higher_timeframe_bars, 21)),
+            "CALCULATED_CANDIDATE" if _valid_aux_bars(higher_timeframe_bars, 21) else "INVALID_HIGHER_TIMEFRAME_DATA",
             "EMA 9/21 on supplied higher-timeframe candles; caller must ensure timeframe and symbol match."),
         "vwap_filter": _item({"rolling_20_bar_vwap": vwap20, "bias": "above" if vwap20 is not None and close > vwap20 else "below" if vwap20 is not None and close < vwap20 else "at_or_unavailable"}, "PROXY_NOT_SESSION_VWAP", "Rolling 20-bar OHLCV proxy, not true exchange/session VWAP."),
         "volatility_regime": _item(regime, "CALCULATED" if regime else "INSUFFICIENT_HISTORY"),
