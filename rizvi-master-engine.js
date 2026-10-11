@@ -102,9 +102,9 @@
     const bearishDiv=prevHigh!==null&&lastHigh!==null&&lastHigh>prevHigh&&prevRsi!==null&&lastRsi!==null&&lastRsi<prevRsi;
     const bullishDiv=prevLow!==null&&lastLow!==null&&lastLow<prevLow&&prevRsi!==null&&lastRsi!==null&&lastRsi>prevRsi;
     const divergence=bullishDiv?'BUY':bearishDiv?'SELL':'NEUTRAL';
-    const prev=bars.at(-2), prevPrev=bars.at(-3);
-    const bullishEngulf=prev&&prevPrev&&prev.c>prev.o&&prevPrev.c<prevPrev.o&&prev.c>=prevPrev.o&&prev.o<=prevPrev.c;
-    const bearishEngulf=prev&&prevPrev&&prev.c<prev.o&&prevPrev.c>prevPrev.o&&prev.c<=prevPrev.o&&prev.o>=prevPrev.c;
+    const prevCandle=bars.at(-2), prevPrev=bars.at(-3);
+    const bullishEngulf=prevCandle&&prevPrev&&prevCandle.c>prevCandle.o&&prevPrev.c<prevPrev.o&&prevCandle.c>=prevPrev.o&&prevCandle.o<=prevPrev.c;
+    const bearishEngulf=prevCandle&&prevPrev&&prevCandle.c<prevCandle.o&&prevPrev.c>prevPrev.o&&prevCandle.c<=prevPrev.o&&prevCandle.o>=prevPrev.c;
     const candlePattern=bullishEngulf?'BUY':bearishEngulf?'SELL':candleBias;
     const rangeLevels=window.RIZVI_MARKET_RANGE||{};
     const rangeSignals={};
