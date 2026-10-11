@@ -23,11 +23,11 @@ ENGINES = [
         "id": 2,
         "name": "Market Structure & Price Action",
         "indicators": [
-            {"id": "market_structure", "name": "Market Structure", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
-            {"id": "structure_prediction", "name": "Structure Prediction", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
-            {"id": "candle_patterns", "name": "Candle Patterns / Price Action", "source": "ohlcv", "status": "LEGACY_BASIC_PATTERN_REQUIRES_VALIDATION"},
-            {"id": "fvg", "name": "Fair Value Gap (FVG)", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
-            {"id": "support_resistance", "name": "Support & Resistance", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
+            {"id": "market_structure", "name": "Market Structure", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
+            {"id": "structure_prediction", "name": "Structure Prediction", "source": "ohlcv", "status": "DESCRIPTIVE_CANDIDATE_NOT_FORECAST"},
+            {"id": "candle_patterns", "name": "Candle Patterns / Price Action", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
+            {"id": "fvg", "name": "Fair Value Gap (FVG)", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
+            {"id": "support_resistance", "name": "Support & Resistance", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
         ],
     },
     {
