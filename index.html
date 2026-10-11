@@ -308,6 +308,7 @@
   function stop(){requestSeq++;clearInterval(timer);timer=null;}
   window.addEventListener('rizvi:symbol-change',e=>{e.detail?.symbol==='BTCUSD'?start():stop();});
   if(currentSymbol()==='BTCUSD')start();else stop();
+})();
 </script><script id="rizvi-default-timeframe-v65">
 (function(){ window.RIZVI_CANDLE_TIMEFRAME='1M'; })();
 </script><script>
