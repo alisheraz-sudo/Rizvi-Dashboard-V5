@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "python_engine/**"
+      - "indicator-proxy.js"
+      - "indicator-proxy.test.js"
+      - "server.js"
       - ".github/workflows/indicator-stage1.yml"
   push:
     branches:
