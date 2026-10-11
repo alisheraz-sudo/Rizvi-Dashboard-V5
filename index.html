@@ -1473,10 +1473,10 @@ function render(){
  const compMap=new Map(Object.entries(components).map(([k,v])=>[normalize(k),v]));
  const rawMap=new Map(Object.entries(raw).map(([k,v])=>[normalize(k),v]));
  const specs=[
-  [['EMA',['EMA','ema20']],['SMA',['SMA','simpleMovingAverage']],['MACD',['MACD']],['DI+ / DI−',['DIPLUSMINUS','DIPDI-MINUS','DI','ADXDI']],['Ichimoku',['ICHIMOKU']]],
-  [['RSI',['RSI','rsi']],['Stochastic',['STOCHASTIC','STOCH']],['CCI',['CCI']],['MFI',['MFI']],['ROC',['ROC']],['Williams %R',['WILLIAMSR','WILLIAMSPERCENTR','WILLR']]],
-  [['VWAP',['VWAP','vwap']],['OBV',['OBV']],['CMF',['CMF']],['Volume Profile',['VOLUME_PROFILE','VOLUMEPROFILE','vp']],['Candle Pattern',['CANDLE','CANDLEPATTERN','PATTERN']]],
-  [['Bollinger Bands',['BOLLINGERBANDS','BOLLINGER','BBANDS']],['ATR',['ATR','atr']]]
+  [['EMA 9/21',['EMA','EMA9','EMA21','EMA20']],['RSI-14',['RSI','RSI14']],['VWAP Filter',['VWAP','vwap']],['Trend 5',['TREND5','TREND']],['Volatility',['VOLATILITY','ATR','atr']]],
+  [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Structure Prediction',['STRUCTUREPREDICTION','STRUCTUREFORECAST']],['Candle Patterns',['CANDLEPATTERN','CANDLE','PATTERN']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']],['Support / Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']]],
+  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE','vp']],['Liquidity',['LIQUIDITY']],['Delta Buy / Sell',['DELTABUYSELL','DELTA','BUYSELLDELTA']],['Order Flow / Footprint',['ORDERFLOWFOOTPRINT','ORDERFLOW','FOOTPRINT']]],
+  [['Bullish / Bearish Divergence',['DIVERGENCE','BULLISHBEARISHDIVERGENCE']],['Trading Sessions',['TRADINGSESSIONS','SESSIONS','SESSION']],['OF Signal (Buy/Sell/Wait)',['OFSIGNAL','ORDERFLOWSIGNAL']],['Combo Confirmation',['COMBO','COMBOCONFIRMATION']]]
  ];
  function readIndicator(aliases){
   for(const a of aliases){const k=normalize(a);if(compMap.has(k)){const v=compMap.get(k);if(v&&typeof v==='object'&&(v.score!=null||v.value!=null||v.bias!=null||v.status))return{v,source:'component'};}}
