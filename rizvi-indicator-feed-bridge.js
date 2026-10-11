@@ -36,14 +36,14 @@ function fail(sym,reason){
 async function poll(){
  if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
- if(sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true){window.RIZVI_FEED_STATUS={ok:false,symbol:sym,timeframe:tf,source:'PAUSED_BY_USER',updatedAt:Date.now(),reason:'Gold live-feed polling paused while market is closed'};busy=false;return;}
+ const goldLocked=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
  if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
- function validateRows(rows,label){
+ function validateRows(rows,label,allowStale=false){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
   if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
   const now=Math.floor(Date.now()/1000),latest=bars[bars.length-1],age=now-latest.t;
-  if(age<0||age>Math.max(TF_SECONDS[tf]*3,180))throw new Error(label+' stale (latest bar age '+age+'s)');
-  return {bars,latest};
+  if(age<0||(age>Math.max(TF_SECONDS[tf]*3,180)&&!allowStale))throw new Error(label+' stale (latest bar age '+age+'s)');
+  return {bars,latest,age,stale:age>Math.max(TF_SECONDS[tf]*3,180)};
  }
  try{
   if(sym==='UNSUPPORTED'){fail(sym,'No OHLC endpoint configured for this symbol');return;}
@@ -55,10 +55,10 @@ async function poll(){
    validated=validateRows(data.bars,data.source||'Coinbase');
   }else{
    try{
-    const response=await fetch('/market/xau/intraday',{cache:'no-store',credentials:'same-origin'});
+    const response=await fetch('/market/xau/intraday'+(goldLocked?'?allowStale=1':''),{cache:'no-store',credentials:'same-origin'});
     data=await response.json();
     if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
-    validated=validateRows(data.bars,data.source||'XAUS-OHLC');
+    validated=validateRows(data.bars,data.source||'XAUS-OHLC',data.stale===true);
    }catch(e){
     primaryError=String(e?.message||e);
     // Use cTrader only when it is actually connected, authorized, and returns fresh real OHLC.
@@ -76,8 +76,20 @@ async function poll(){
   const bars=validated.bars,latest=validated.latest;
   window.RIZVI_DIRECT_SYMBOL=sym;window.RIZVI_CURRENT_SYMBOL=sym;
   window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
-  window.RIZVI_FEED_STATUS={ok:true,symbol:sym,timeframe:tf,source:data.source||'backend OHLC',bars:bars.length,latestBarAt:latest.t,updatedAt:Date.now(),key};
-  try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason:'OK source='+(data.source||'backend OHLC')+' bars='+bars.length+' latestAgeSeconds='+Math.max(0,Math.floor(Date.now()/1000)-latest.t)})}).catch(()=>{});}catch(_){}
+  const latestAgeSeconds=Math.max(0,Math.floor(Date.now()/1000)-latest.t);
+  if(sym==='XAU/USD'&&(data?.stale===true||validated.stale)){
+   const reason='LAST AVAILABLE GOLD DATA ONLY — candles are stale ('+latestAgeSeconds+'s); indicator values are historical, Engine 5 must WAIT';
+   window.RIZVI_FEED_STATUS={ok:false,stale:true,live:false,symbol:sym,timeframe:tf,source:data.source||'last available OHLC',bars:bars.length,latestBarAt:latest.t,latestAgeSeconds,updatedAt:Date.now(),key,reason};
+   window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,reason,feedStatus:window.RIZVI_FEED_STATUS};
+   window.RIZVI_SIGNAL_DIRECTION='WAIT';
+   window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
+   try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason})}).catch(()=>{});}catch(_){}
+   lastGoodAt=Date.now();lastKey=key;
+   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
+   return;
+  }
+  window.RIZVI_FEED_STATUS={ok:true,stale:false,live:true,symbol:sym,timeframe:tf,source:data.source||'backend OHLC',bars:bars.length,latestBarAt:latest.t,latestAgeSeconds,updatedAt:Date.now(),key};
+  try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason:'OK source='+(data.source||'backend OHLC')+' bars='+bars.length+' latestAgeSeconds='+latestAgeSeconds})}).catch(()=>{});}catch(_){}
   lastGoodAt=Date.now();lastKey=key;
   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
  }catch(e){fail(sym,String(e?.message||e));}

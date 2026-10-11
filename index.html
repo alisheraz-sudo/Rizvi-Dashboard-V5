@@ -1634,7 +1634,8 @@ function render(){
    }
    d.append(label,val);host.appendChild(d);
   });
-  status.textContent=reported+' / '+items.length+' values reported · '+items.length+' assigned indicators';
+  const feed=W.RIZVI_FEED_STATUS||{};
+  status.textContent=(feed.stale===true&&feed.symbol==='XAU/USD'?'LAST AVAILABLE · NOT LIVE · ':'')+reported+' / '+items.length+' values reported · '+items.length+' assigned indicators';
  });
  const algos=report.algorithms||{},algoRows=Object.values(algos);
  const regime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime||'Not reported';
