@@ -44,7 +44,12 @@ jobs:
               raise ValueError("BTC candle timestamp is missing or invalid")
 
           try:
-              market = get_json(os.environ["MARKET_URL"])
+              try:
+                  market = get_json(os.environ["MARKET_URL"])
+              except urllib.error.HTTPError as exc:
+                  raise RuntimeError(f"BTC market endpoint failed: HTTP {exc.code}") from exc
+              except urllib.error.URLError as exc:
+                  raise RuntimeError(f"BTC market endpoint connection failed: {exc.reason}") from exc
               if not market.get("ok"):
                   raise RuntimeError("BTC market endpoint returned ok=false")
               raw = market.get("bars")
@@ -71,8 +76,13 @@ jobs:
                   headers={"Content-Type": "application/json", "Accept": "application/json"},
                   method="POST"
               )
-              with urllib.request.urlopen(req, timeout=20) as response:
-                  result = json.loads(response.read().decode("utf-8"))
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as response:
+                      result = json.loads(response.read().decode("utf-8"))
+              except urllib.error.HTTPError as exc:
+                  raise RuntimeError(f"Python engine endpoint failed: HTTP {exc.code}") from exc
+              except urllib.error.URLError as exc:
+                  raise RuntimeError(f"Python engine endpoint connection failed: {exc.reason}") from exc
               if not result.get("ok"):
                   raise RuntimeError("Engine rejected BTC bars: " + str(result.get("reason", result.get("error", "unknown error"))))
               if result.get("autoTrading") is not False:
