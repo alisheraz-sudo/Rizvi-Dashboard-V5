@@ -8,7 +8,10 @@ from datetime import datetime, timezone
 from math import isfinite
 from typing import Any, Dict, List, Optional, Sequence
 
-from indicator_registry import ENGINES, ROSTER_VERSION
+try:
+    from .indicator_registry import ROSTER_VERSION
+except ImportError:  # Support direct execution from the python_engine directory.
+    from indicator_registry import ROSTER_VERSION
 
 
 def _finite(v: Any) -> bool:
