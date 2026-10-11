@@ -122,7 +122,7 @@ class IndicatorCalculationsTests(unittest.TestCase):
             bars.append({"timestamp": 1_800_000_000 + i * 60, "open": 100.0,
                          "high": 101.0, "low": 99.0, "close": 100.0, "volume": 100.0})
         bars[-3].update({"open": 100.2, "high": 101.0, "low": 99.8, "close": 100.8})
-        bars[-2].update({"open": 101.8, "high": 102.8, "low": 102.5, "close": 102.6})
+        bars[-2].update({"open": 102.55, "high": 102.8, "low": 102.5, "close": 102.6})
         bars[-1].update({"open": 102.6, "high": 103.0, "low": 102.4, "close": 102.8})
         result = calculate_roster(bars, "BTCUSD", "1m")
         fvg = result["indicators"]["fvg"]
