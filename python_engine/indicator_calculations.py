@@ -270,12 +270,24 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
     upper_wick = float(last["high"]) - max(float(last["open"]), close)
     lower_wick = min(float(last["open"]), close) - float(last["low"])
     candle_pattern = "neutral"
-    if candle_range > 0 and abs(body) >= 0.65 * candle_range:
-        candle_pattern = "bullish strong-body candidate" if body > 0 else "bearish strong-body candidate"
-    elif lower_wick > abs(body) * 1.8 and lower_wick > upper_wick:
-        candle_pattern = "lower-wick rejection candidate"
-    elif upper_wick > abs(body) * 1.8 and upper_wick > lower_wick:
-        candle_pattern = "upper-wick rejection candidate"
+    if len(bars) >= 2:
+        previous = bars[-2]
+        prev_open, prev_close = float(previous["open"]), float(previous["close"])
+        bullish_engulf = (prev_close < prev_open and close > float(last["open"])
+                          and float(last["open"]) <= prev_close and close >= prev_open)
+        bearish_engulf = (prev_close > prev_open and close < float(last["open"])
+                          and float(last["open"]) >= prev_close and close <= prev_open)
+        if bullish_engulf:
+            candle_pattern = "bullish engulfing candidate"
+        elif bearish_engulf:
+            candle_pattern = "bearish engulfing candidate"
+    if candle_pattern == "neutral":
+        if candle_range > 0 and abs(body) >= 0.65 * candle_range:
+            candle_pattern = "bullish strong-body candidate" if body > 0 else "bearish strong-body candidate"
+        elif lower_wick > abs(body) * 1.8 and lower_wick > upper_wick:
+            candle_pattern = "lower-wick rejection candidate"
+        elif upper_wick > abs(body) * 1.8 and upper_wick > lower_wick:
+            candle_pattern = "upper-wick rejection candidate"
 
     # Session and day boundaries use UTC explicitly; they are not exchange-local sessions.
     stamp = _stamp_seconds(last.get("timestamp"))
