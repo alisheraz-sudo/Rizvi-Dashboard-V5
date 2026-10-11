@@ -80,7 +80,7 @@ class Handler(BaseHTTPRequestHandler):
             result = evaluate(
                 data["bars"],
                 symbol=str(data.get("symbol", "BTCUSD"))[:32],
-                timeframe=str(data.get("timeframe", "1m"))[:8],
+                timeframe=str(data.get("timeframe", "1m")).strip().lower()[:8],
                 order_flow=data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None,
             )
             self._send(200 if result.get("ok") else 422, result)
