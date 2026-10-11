@@ -47,6 +47,31 @@ class IndicatorRosterStage1Tests(unittest.TestCase):
         self.assertFalse(result["indicator_roster_ready"])
         self.assertFalse(result["autoTrading"])
 
+    def test_engine_reports_follow_locked_6_5_4_5_roster(self):
+        result = evaluate(sample_bars(), symbol="BTCUSD", timeframe="1m")
+        engines = result["engines"]
+        self.assertEqual(list(engines.keys()), ["engine_1", "engine_2", "engine_3", "engine_4"])
+        self.assertEqual(
+            [engines["engine_%d" % i]["expected_indicators"] for i in range(1, 5)],
+            [6, 5, 4, 5],
+        )
+        self.assertEqual(
+            [engines["engine_%d" % i]["returned_indicators"] for i in range(1, 5)],
+            [6, 5, 4, 5],
+        )
+        self.assertTrue(all(engine["aligned"] for engine in engines.values()))
+        self.assertTrue(all(engine["signal"] == "WAIT" for engine in engines.values()))
+        self.assertTrue(all(engine["score"] is None for engine in engines.values()))
+        roster_ids = [
+            [item["id"] for item in group["indicators"]]
+            for group in result["indicator_roster"]["engines"]
+        ]
+        engine_ids = [
+            [item["id"] for item in engines["engine_%d" % i]["indicators"]]
+            for i in range(1, 5)
+        ]
+        self.assertEqual(engine_ids, roster_ids)
+
     def test_stage1_fails_closed_instead_of_publishing_legacy_signal(self):
         result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
         self.assertTrue(result["ok"])
