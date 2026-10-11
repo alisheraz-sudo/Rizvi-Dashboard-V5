@@ -73,6 +73,18 @@ class IndicatorAppHttpTests(unittest.TestCase):
         self.assertFalse(body["autoTrading"])
         self.assertFalse(body["indicator_diagnostics"]["ready_for_signal"])
 
+
+    def test_valid_btc_request_returns_diagnostics_but_not_a_trade_signal(self):
+        status, body = self.post({"symbol": "BTCUSD", "timeframe": "1m", "bars": self.bars()})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["indicator_roster"]["actual_count"], 20)
+        self.assertEqual(body["indicator_roster"]["engine_counts"], {"1": 6, "2": 5, "3": 4, "4": 5})
+        self.assertEqual(body["signal"], "WAIT")
+        self.assertIsNone(body["confidence"])
+        self.assertFalse(body["autoTrading"])
+        self.assertFalse(body["indicator_diagnostics"]["ready_for_signal"])
+
     def test_stale_candles_fail_closed(self):
         status, body = self.post({"symbol": "BTCUSD", "timeframe": "1m", "bars": self.bars(last_age=600)})
         self.assertEqual(status, 422)
