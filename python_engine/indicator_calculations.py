@@ -19,11 +19,14 @@ def _finite(v: Any) -> bool:
 
 
 def _ema(values: Sequence[float], period: int) -> Optional[float]:
-    if len(values) < period:
+    """SMA-seeded EMA; requires a full seed window and finite numeric input."""
+    if period < 1 or len(values) < period:
+        return None
+    if any(not _finite(x) for x in values):
         return None
     alpha = 2.0 / (period + 1.0)
-    value = float(values[0])
-    for x in values[1:]:
+    value = sum(float(x) for x in values[:period]) / period
+    for x in values[period:]:
         value += alpha * (float(x) - value)
     return value
 
@@ -305,7 +308,14 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
             flow_valid = True
 
     values = {
-        "ema_9_21": _item({"ema9": e9, "ema21": e21, "bias": "bullish" if e9 is not None and e21 is not None and e9 > e21 else "bearish" if e9 is not None and e21 is not None and e9 < e21 else "neutral"}),
+        "ema_9_21": _item(
+            {"ema9": e9, "ema21": e21,
+             "spread": (e9 - e21) if e9 is not None and e21 is not None else None,
+             "spread_percent": (100.0 * (e9 - e21) / close) if e9 is not None and e21 is not None and close else None,
+             "bias": "bullish" if e9 is not None and e21 is not None and e9 > e21 else
+                     "bearish" if e9 is not None and e21 is not None and e9 < e21 else "neutral"},
+            "CALCULATED_CANDIDATE" if e9 is not None and e21 is not None else "INSUFFICIENT_HISTORY",
+            "SMA-seeded EMA(9) and EMA(21), newest candle last; candidate only pending live-feed and reference-value validation."),
         "rsi_14": _item(rsi, "CALCULATED" if rsi is not None else "INSUFFICIENT_HISTORY"),
         "trend_5": _item(None, "UNAVAILABLE_MISSING_TIMEFRAME_CONTEXT", "Requires at least 20 timestamped, validated higher-timeframe candles.") if not higher_timeframe_bars else _item(
             (lambda aux: {"ema9": _ema([float(b["close"]) for b in aux], 9),
