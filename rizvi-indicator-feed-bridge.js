@@ -4,7 +4,7 @@
 if(window.__RIZVI_OHLC_BRIDGE_V1)return;
 window.__RIZVI_OHLC_BRIDGE_V1=true;
 const TF_SECONDS={'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400};
-let busy=false,rerunRequested=false,lastKey='',lastGoodAt=0;
+let busy=false,rerunRequested=false,lastKey='',lastGoodAt=0,requestSeq=0;
 function symbol(){
  const s=String(window.RIZVI_CURRENT_SYMBOL||window.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD').toUpperCase();
  return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
@@ -34,6 +34,7 @@ function fail(sym,reason){
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
 }
 async function poll(){
+ const seq=++requestSeq;
  if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  const goldLocked=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
@@ -73,8 +74,9 @@ async function poll(){
     catch(e2){throw new Error('XAUS failed: '+primaryError+'; cTrader fallback failed: '+String(e2?.message||e2));}
    }
   }
+  if(seq!==requestSeq||key!==symbol()+'|'+timeframe())return;
   const bars=validated.bars,latest=validated.latest;
-  window.RIZVI_DIRECT_SYMBOL=sym;window.RIZVI_CURRENT_SYMBOL=sym;
+  window.RIZVI_DIRECT_SYMBOL=sym;
   window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
   const latestAgeSeconds=Math.max(0,Math.floor(Date.now()/1000)-latest.t);
   if(sym==='XAU/USD'&&(data?.stale===true||validated.stale)){
@@ -92,7 +94,7 @@ async function poll(){
   try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason:'OK source='+(data.source||'backend OHLC')+' bars='+bars.length+' latestAgeSeconds='+latestAgeSeconds})}).catch(()=>{});}catch(_){}
   lastGoodAt=Date.now();lastKey=key;
   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
- }catch(e){fail(sym,String(e?.message||e));}
+ }catch(e){if(seq===requestSeq&&sym===symbol()&&tf===timeframe())fail(sym,String(e?.message||e));}
  finally{busy=false;if(rerunRequested){rerunRequested=false;setTimeout(poll,50);}}
 }
 function start(){poll();setInterval(poll,15000);const onSymbolChange=()=>setTimeout(poll,0);window.addEventListener('rizvi:symbol-change',onSymbolChange);document.addEventListener('rizvi:symbol-change',onSymbolChange);document.getElementById('symbolSelect')?.addEventListener('change',onSymbolChange);window.addEventListener('rizvi:direct-tv-status',onSymbolChange);}
