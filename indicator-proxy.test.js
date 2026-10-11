@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { evaluateDiagnostics, normalizeSymbol, validateDashboardPayload } = require('./indicator-proxy');
+const { evaluateDiagnostics, normalizeBars, normalizeSymbol, validateDashboardPayload } = require('./indicator-proxy');
 
 function bars(count = 60) {
   return Array.from({ length: count }, (_, i) => ({
@@ -24,6 +24,16 @@ test('rejects invalid symbol, timeframe and insufficient bars', () => {
   assert.match(validateDashboardPayload(payload({ timeframe: '2m' })), /timeframe/i);
   assert.match(validateDashboardPayload(payload({ bars: bars(59) })), /60/);
   assert.equal(validateDashboardPayload(payload()), null);
+});
+
+test('normalizes compact candles and filters invalid OHLCV ranges', () => {
+  const result = normalizeBars([
+    { t: 1800000000, o: 2600, h: 2601, l: 2599, c: 2600.5, v: 10 },
+    { t: 1800000060, o: 2600, h: 2598, l: 2599, c: 2600.5, v: 10 }
+  ]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].timestamp, 1800000000);
+  assert.equal(result[0].open, 2600);
 });
 
 test('fails closed when engine URL is not configured', async () => {
