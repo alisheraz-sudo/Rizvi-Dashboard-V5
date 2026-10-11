@@ -99,6 +99,25 @@ test('bridge waits until it has at least 60 bars', async () => {
   assert.equal(h.window.RIZVI_PYTHON_DIAGNOSTICS.state, 'WAITING_FOR_60_BARS');
 });
 
+
+test('bridge forwards BTC candles only when the selected and chart symbols agree', async () => {
+  const h = harness({ symbol: 'BTCUSD', chartSymbol: 'BTCUSD', timeframe: '5M' });
+  await runInitialTick(h);
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].body.symbol, 'BTCUSD');
+  assert.equal(h.requests[0].body.timeframe, '5m');
+  assert.equal(h.requests[0].body.bars.length, 80);
+  assert.equal(h.window.RIZVI_PYTHON_DIAGNOSTICS.autoTrading, false);
+});
+
+test('bridge records engine failures without inventing a signal', async () => {
+  const h = harness({ responseStatus: 502 });
+  await runInitialTick(h);
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.window.RIZVI_PYTHON_DIAGNOSTICS.state, 'ENGINE_ERROR');
+  assert.equal(h.window.RIZVI_PYTHON_DIAGNOSTICS.autoTrading, false);
+});
+
 test('bridge clearly records an unconfigured engine response without enabling trading', async () => {
   const h = harness({ responseStatus: 503 });
   await runInitialTick(h);
