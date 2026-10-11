@@ -1,14 +1,23 @@
 """Optional public-market diagnostics. No trading or account permissions are used."""
 import json
+import time
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+
+ _FLOW_CACHE = {}
+_FLOW_CACHE_AT = {}
 
 
 def fetch_binance_trade_flow(symbol="BTCUSDT", limit=500):
     """Return a short BTCUSDT spot aggressor-flow snapshot, explicitly a proxy for BTCUSD."""
     if str(symbol).upper() not in {"BTCUSD", "BTCUSDT", "BTC-USD", "BTC/USD"}:
         return None
+    cache_key = str(symbol).upper()
+    now = time.time()
+    if cache_key in _FLOW_CACHE and now - _FLOW_CACHE_AT.get(cache_key, 0) < 5:
+        return _FLOW_CACHE[cache_key]
     params = urlencode({"symbol": "BTCUSDT", "limit": max(50, min(int(limit), 1000))})
     request = Request(
         "https://data-api.binance.vision/api/v3/aggTrades?" + params,
@@ -20,8 +29,12 @@ def fetch_binance_trade_flow(symbol="BTCUSDT", limit=500):
                 return None
             trades = json.loads(response.read(1_000_000).decode("utf-8"))
     except Exception:
+        _FLOW_CACHE[cache_key] = None
+        _FLOW_CACHE_AT[cache_key] = now
         return None
     if not isinstance(trades, list) or len(trades) < 10:
+        _FLOW_CACHE[cache_key] = None
+        _FLOW_CACHE_AT[cache_key] = now
         return None
 
     buy_volume = 0.0
@@ -52,8 +65,10 @@ def fetch_binance_trade_flow(symbol="BTCUSDT", limit=500):
 
     total = buy_volume + sell_volume
     if not times or total <= 0:
+        _FLOW_CACHE[cache_key] = None
+        _FLOW_CACHE_AT[cache_key] = now
         return None
-    return {
+    result = {
         "status": "LIVE",
         "source": "Binance Spot BTCUSDT aggregate trades",
         "instrument": "BTCUSDT",
@@ -68,3 +83,6 @@ def fetch_binance_trade_flow(symbol="BTCUSDT", limit=500):
         "delta_percent": 100.0 * (buy_volume - sell_volume) / total,
         "footprint": footprint,
     }
+    _FLOW_CACHE[cache_key] = result
+    _FLOW_CACHE_AT[cache_key] = now
+    return result
