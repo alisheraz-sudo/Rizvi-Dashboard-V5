@@ -1467,43 +1467,46 @@ const clean=v=>String(v??'—').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim()
 const fmt=v=>typeof v==='number'&&Number.isFinite(v)?(Math.round(v*100)/100).toString():clean(v);
 function render(){
  const W=window, master=W.RIZVI_MASTER_CONFIRMATION||{}, conf=W.RIZVI_INDICATOR_CONFLUENCE||W.RIZVI_INDICATOR_TEST_REPORT||{}, report=W.RIZVI_MULTI_ALGORITHM_REPORT||{}, eng=W.RIZVI_INDICATOR_ENGINE_STATUS||W.RIZVI_GOLD_ENGINE_STATUS||{};
- const components=conf.components||master.indicatorStatus||eng.indicators||{};
- const entries=Object.entries(components).filter(([k,v])=>v&&typeof v==='object');
- const buckets=[[],[],[],[]];
- const assigned={
-  EMA:0,RSI:0,VWAP:0,
-  TREND:1,CANDLE:1,LIQUIDITY:1,
-  VOLUME_PROFILE:2,DELTA:2,ORDER_FLOW:2,
-  DIVERGENCE:3
- };
- const classify=k=>{
-  const key=k.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(Object.prototype.hasOwnProperty.call(assigned,key))return assigned[key];
-  const s=key.toLowerCase();
-  if(/rsi|ema|vwap|macd|momentum|movingaverage/.test(s))return 0;
-  if(/trend|structure|support|resistance|candle|pattern|fvg|session|liquidity|rangelevel/.test(s))return 1;
-  if(/delta|orderflow|footprint|volume|buying|selling|imbalance/.test(s))return 2;
-  return 3;
- };
- entries.forEach(([k,v])=>buckets[classify(k)].push([k,v]));
+ const components=conf.components||conf.master?.components||master.indicatorStatus||eng.indicators||{};
  const raw=conf.raw||conf.master?.raw||master.raw||{};
- if(Number.isFinite(Number(raw.atr))&&Number(raw.atr)>0)buckets[3].push(['ATR',{value:Number(raw.atr),status:'CALCULATED'}]);
- const labels=['Indicator readings','Structure / trend readings','Confirmation readings','Remaining indicator and risk readings'];
- buckets.forEach((items,i)=>{
+ const normalize=k=>String(k).toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const compMap=new Map(Object.entries(components).map(([k,v])=>[normalize(k),v]));
+ const rawMap=new Map(Object.entries(raw).map(([k,v])=>[normalize(k),v]));
+ const specs=[
+  [['EMA',['EMA','ema20']],['SMA',['SMA','simpleMovingAverage']],['MACD',['MACD']],['DI+ / DI−',['DIPLUSMINUS','DIPDI-MINUS','DI','ADXDI']],['Ichimoku',['ICHIMOKU']]],
+  [['RSI',['RSI','rsi']],['Stochastic',['STOCHASTIC','STOCH']],['CCI',['CCI']],['MFI',['MFI']],['ROC',['ROC']],['Williams %R',['WILLIAMSR','WILLIAMSPERCENTR','WILLR']]],
+  [['VWAP',['VWAP','vwap']],['OBV',['OBV']],['CMF',['CMF']],['Volume Profile',['VOLUME_PROFILE','VOLUMEPROFILE','vp']],['Candle Pattern',['CANDLE','CANDLEPATTERN','PATTERN']]],
+  [['Bollinger Bands',['BOLLINGERBANDS','BOLLINGER','BBANDS']],['ATR',['ATR','atr']]]
+ ];
+ function readIndicator(aliases){
+  for(const a of aliases){const k=normalize(a);if(compMap.has(k)){const v=compMap.get(k);if(v&&typeof v==='object'&&(v.score!=null||v.value!=null||v.bias!=null||v.status))return{v,source:'component'};}}
+  for(const a of aliases){const k=normalize(a);if(rawMap.has(k)){const v=rawMap.get(k);if(v!=null&&typeof v!=='object')return{v:{value:v,status:'CALCULATED'},source:'raw'};if(v&&typeof v==='object'&&(v.score!=null||v.value!=null||v.bias!=null||v.status||v.name))return{v,source:'raw'};}}
+  return null;
+ }
+ specs.forEach((items,i)=>{
   const host=$('engine'+(i+1)+'Data'),status=$('engine'+(i+1)+'Status');
   if(!host||!status)return;
-  status.textContent=items.length?items.length+' reported values · display grouping only':'No matching live values reported';
   host.replaceChildren();
-  if(!items.length){const d=document.createElement('div');d.className='engine-item';d.textContent='Pending — no indicator values exposed by the live report.';host.appendChild(d);return;}
-  items.forEach(([k,v])=>{
-   const value=v.score??v.value??v.bias??v.status??'—';
-   const state=Number(v.score??v.value)!==0?'REPORTED':'WAITING / ZERO';
+  let reported=0;
+  items.forEach(([name,aliases])=>{
+   const found=readIndicator([name,...aliases]);
    const d=document.createElement('div');d.className='engine-item';
-   const name=document.createElement('span');name.textContent=clean(k);
-   const val=document.createElement('b');val.textContent=fmt(value);
-   if(state!=='REPORTED')val.className='pending';
-   d.append(name,val);host.appendChild(d);
+   const label=document.createElement('span');label.textContent=name;
+   const val=document.createElement('b');
+   if(found){
+    const v=found.v, value=v.score??v.value??v.bias??v.name??v.status;
+    val.textContent=fmt(value);
+    const stat=String(v.status||'').toUpperCase();
+    const isReported=value!=null&&!stat.includes('WAITING')&&!stat.includes('NOT_ATTACHED');
+    if(isReported)reported++;else val.className='pending';
+    if(v.status)val.title=String(v.status);
+   }else{
+    val.textContent='NOT REPORTED';val.className='pending';
+    val.title='No calculation exposed by the current runtime report';
+   }
+   d.append(label,val);host.appendChild(d);
   });
+  status.textContent=reported+' / '+items.length+' values reported · '+items.length+' assigned indicators';
  });
  const algos=report.algorithms||{},algoRows=Object.values(algos);
  const regime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime||'Not reported';
