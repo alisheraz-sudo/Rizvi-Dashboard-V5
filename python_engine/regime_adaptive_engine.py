@@ -308,6 +308,11 @@ def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, A
         statuses = [str(item["status"]) for item in assigned]
         unavailable = sum(1 for status in statuses if "UNAVAILABLE" in status or status.startswith("MISSING"))
         validated = sum(1 for status in statuses if status == "CALCULATED")
+        mapping_complete = (
+            len(assigned) == int(group["indicator_count"])
+            and all(item["id"] for item in assigned)
+            and len({item["id"] for item in assigned}) == int(group["indicator_count"])
+        )
         reports["engine_%d" % engine_id] = {
             "id": engine_id,
             "name": group["name"],
@@ -316,11 +321,13 @@ def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, A
             "validated_calculations": validated,
             "unavailable_indicators": unavailable,
             "indicators": assigned,
-            "aligned": len(assigned) == int(group["indicator_count"]),
+            "mapping_complete": mapping_complete,
+            "aligned": mapping_complete,
+            "data_validated": mapping_complete and validated == int(group["indicator_count"]),
             "ready_for_signal": False,
             "signal": "WAIT",
             "score": None,
-            "reason": "Roster mapping is present; scoring remains blocked until each indicator and required feed is validated.",
+            "reason": "Indicator IDs are routed to this engine; signal readiness remains blocked until all calculations and required feeds are validated.",
         }
     return reports
 
