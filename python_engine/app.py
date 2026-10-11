@@ -80,9 +80,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             symbol = str(data.get("symbol", "BTCUSD")).strip().upper()[:32]
             order_flow = data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None
-            # Public Delta trade flow is diagnostic-only and BTC-specific. It never trades.
-            if order_flow is None and symbol in {"BTCUSD", "BTCUSDT", "BTC-USD", "BTC/USD"}:
-                order_flow = fetch_delta_trade_flow(symbol)
+            # Only map BTCUSD aliases to the matching Delta BTCUSD contract.
+            # BTCUSDT is deliberately not substituted with BTCUSD.
+            canonical_symbol = symbol.replace("/", "").replace("-", "")
+            if order_flow is None and canonical_symbol == "BTCUSD":
+                order_flow = fetch_delta_trade_flow("BTCUSD")
             result = evaluate(
                 data["bars"],
                 symbol=symbol,
