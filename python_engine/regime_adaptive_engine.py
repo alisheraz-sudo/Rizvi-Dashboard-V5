@@ -12,6 +12,8 @@ from statistics import mean, pstdev
 from typing import Any, Dict, List, Optional, Sequence
 from datetime import datetime, timezone
 
+from indicator_registry import roster_snapshot, ROSTER_VERSION
+
 
 ENGINE_VERSION = "rizvi-regime-adaptive-v1.0"
 MIN_BARS = 60
@@ -319,6 +321,28 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
     engines = _compute_engines(x)
     regime = _regime(x)
     weights = _adaptive_weights(regime)
+
+    # Stage 1 safety gate: the old scorer is not equivalent to the locked 20-indicator
+    # roster. Return diagnostics for audit, but do not publish its legacy signal as valid.
+    roster = roster_snapshot()
+    return {
+        "ok": True,
+        "version": ENGINE_VERSION,
+        "roster_version": ROSTER_VERSION,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "regime": regime,
+        "engines": engines,
+        "weights": weights,
+        "indicators": x,
+        "indicator_roster": roster,
+        "signal": "WAIT",
+        "confidence": None,
+        "reason": "Stage 1: locked 20-indicator roster is registered; scoring remains disabled until calculations, feeds and engine alignment pass validation.",
+        "autoTrading": False,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
     usable = {k: v["score"] for k, v in engines.items() if v["score"] is not None}
     if len(usable) < 3 or regime == "UNKNOWN":
         return {"ok": True, "version": ENGINE_VERSION, "symbol": symbol, "timeframe": timeframe,
@@ -363,9 +387,13 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
 
 
 def health() -> Dict[str, Any]:
-    return {"ok": True, "engine": ENGINE_VERSION, "engines": 5,
-            "indicator_inventory": 18, "autoTrading": False,
-            "mode": "signal_only", "requires_ohlcv_bars": MIN_BARS}
+    roster = roster_snapshot()
+    return {"ok": True, "engine": ENGINE_VERSION, "roster_version": ROSTER_VERSION,
+            "engines": 5, "indicator_inventory": roster["actual_count"],
+            "indicator_engine_counts": roster["engine_counts"],
+            "indicator_roster_ready": roster["ready_for_signal"],
+            "autoTrading": False, "mode": "signal_only",
+            "requires_ohlcv_bars": MIN_BARS}
 
 
 if __name__ == "__main__":
