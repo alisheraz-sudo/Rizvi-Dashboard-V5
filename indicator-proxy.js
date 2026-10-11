@@ -1,7 +1,7 @@
 'use strict';
 
 const SYMBOLS = new Map([
-  ['XAUUSD', 'XAUUSD'], ['XAUUSD=X', 'XAUUSD'], ['XAUUSDSPOT', 'XAUUSD'],
+  ['XAUUSD', 'XAUUSD'], ['XAUUSDX', 'XAUUSD'], ['XAUUSDSPOT', 'XAUUSD'],
   ['GOLD', 'XAUUSD'], ['XAU', 'XAUUSD'],
   ['BTCUSD', 'BTCUSD'], ['BTCUSD', 'BTCUSD'], ['BTCUSDT', 'BTCUSD'],
   ['BTC-USD', 'BTCUSD']
