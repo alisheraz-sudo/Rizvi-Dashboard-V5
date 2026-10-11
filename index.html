@@ -1827,3 +1827,78 @@ window.addEventListener('rizvi:indicator-update',render);
   },3000);
 })();
 </script>
+
+<script id="rizvi-engine1-panel-display-fix">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const specs=[
+ ['EMA 9/21',['EMA 9/21','EMA','EMA9','EMA21']],
+ ['RSI-14',['RSI-14','RSI14','RSI']],
+ ['Trend (5)',['Trend (5)','TREND5','TREND']],
+ ['VWAP Filter',['VWAP Filter','VWAP']],
+ ['Volatility Regime Filter',['Volatility Regime Filter','VOLATILITYREGIME','VOLATILITYREGIMEFILTER']],
+ ['ATR (14)',['ATR (14)','ATR14','ATR']]
+];
+const norm=s=>String(s).toUpperCase().replace(/[^A-Z0-9]/g,'');
+const clean=s=>String(s??'—').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+function render(){
+ const host=$('engine1Data'),status=$('engine1Status');
+ if(!host||!status)return;
+ const W=window;
+ const sources=[
+  W.RIZVI_INDICATOR_CONFLUENCE?.components,
+  W.RIZVI_INDICATOR_TEST_REPORT?.master?.components,
+  W.RIZVI_INDICATOR_TEST_REPORT?.components,
+  W.RIZVI_MASTER_CONFIRMATION?.indicatorStatus,
+  W.RIZVI_INDICATOR_ENGINE_STATUS?.indicators,
+  W.RIZVI_GOLD_ENGINE_STATUS?.indicators
+ ].filter(x=>x&&typeof x==='object');
+ const maps=sources.map(obj=>new Map(Object.entries(obj).map(([k,v])=>[norm(k),v])));
+ const rawSources=[
+  W.RIZVI_INDICATOR_CONFLUENCE?.raw,
+  W.RIZVI_INDICATOR_TEST_REPORT?.master?.raw,
+  W.RIZVI_MASTER_CONFIRMATION?.raw
+ ].filter(x=>x&&typeof x==='object').map(obj=>new Map(Object.entries(obj).map(([k,v])=>[norm(k),v])));
+ host.replaceChildren();
+ let reported=0;
+ for(const [name,aliases] of specs){
+  let found=null;
+  for(const map of maps){
+   for(const alias of aliases){const v=map.get(norm(alias));if(v!=null){found=v;break;}}
+   if(found!=null)break;
+  }
+  if(found==null){
+   for(const map of rawSources){
+    for(const alias of aliases){const v=map.get(norm(alias));if(v!=null){found=(v&&typeof v==='object')?v:{value:v,status:'CALCULATED'};break;}}
+    if(found!=null)break;
+   }
+  }
+  const d=document.createElement('div');d.className='engine-item';
+  const label=document.createElement('span');label.textContent=name;
+  const val=document.createElement('b');
+  let value=null,stat='';
+  if(found!=null){
+   if(typeof found==='object'){
+    value=found.value??found.name??found.display??found.result??null;
+    stat=String(found.status||'').toUpperCase();
+    if(value==null&&found.score!=null)value='Score '+found.score;
+    if(value==null&&found.bias!=null)value='Bias '+found.bias;
+    if(value==null&&stat)value=clean(stat);
+   }else value=found;
+  }
+  const unavailable=/WAITING|NOT_ATTACHED|NOT_AVAILABLE|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|INSUFFICIENT|UNAVAILABLE|NO_DATA/.test(stat);
+  if(value!=null&&!unavailable){val.textContent=clean(value);reported++;}
+  else{val.textContent=stat?clean(stat):'WAITING FOR DATA';val.className='pending';}
+  if(found&&typeof found==='object')val.title=[found.status,found.score!=null?'score '+found.score:null,found.bias!=null?'bias '+found.bias:null,found.note].filter(Boolean).join(' · ');
+  d.append(label,val);host.appendChild(d);
+ }
+ status.textContent=reported+' / 6 values reported · 6 assigned indicators';
+}
+render();
+setInterval(render,1000);
+window.addEventListener('rizvi:indicator-confluence-update',render);
+window.addEventListener('rizvi:indicator-update',render);
+window.addEventListener('rizvi:master-confirmation-update',render);
+})();
+</script>
