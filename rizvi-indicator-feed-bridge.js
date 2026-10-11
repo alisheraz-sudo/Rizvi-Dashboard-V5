@@ -52,7 +52,7 @@ async function poll(){
    const response=await fetch('/market/btc/intraday?granularity='+TF_SECONDS[tf],{cache:'no-store',credentials:'same-origin'});
    data=await response.json();
    if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
-   validated=validateRows(data.bars,data.source||'Coinbase');
+   validated=validateRows(data.bars,data.source||'BTC OHLC endpoint');
   }else{
    try{
     const response=await fetch('/market/xau/intraday'+(goldLocked?'?allowStale=1':''),{cache:'no-store',credentials:'same-origin'});
