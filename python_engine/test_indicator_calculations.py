@@ -116,5 +116,41 @@ class IndicatorCalculationsTests(unittest.TestCase):
         self.assertFalse(result["autoTrading"])
 
 
+    def test_engine_2_detects_recent_unfilled_fvg_and_marks_fill_state(self):
+        bars = []
+        for i in range(80):
+            bars.append({"timestamp": 1_800_000_000 + i * 60, "open": 100.0,
+                         "high": 101.0, "low": 99.0, "close": 100.0, "volume": 100.0})
+        bars[-3].update({"open": 100.2, "high": 101.0, "low": 99.8, "close": 100.8})
+        bars[-2].update({"open": 101.8, "high": 102.8, "low": 102.5, "close": 102.6})
+        bars[-1].update({"open": 102.6, "high": 103.0, "low": 102.4, "close": 102.8})
+        result = calculate_roster(bars, "BTCUSD", "1m")
+        fvg = result["indicators"]["fvg"]
+        self.assertEqual(fvg["status"], "CALCULATED_CANDIDATE")
+        self.assertEqual(fvg["value"]["type"], "bullish")
+        self.assertEqual(fvg["value"]["fill_status"], "unfilled")
+        self.assertLess(fvg["value"]["lower"], fvg["value"]["upper"])
+
+        # The later candle fully trades back through the gap's lower edge.
+        bars[-1].update({"open": 100.4, "high": 100.8, "low": 100.0, "close": 100.2})
+        result = calculate_roster(bars, "BTCUSD", "1m")
+        self.assertNotEqual(result["indicators"]["fvg"]["value"], fvg["value"])
+
+    def test_engine_2_detects_engulfing_candle_pattern(self):
+        bars = sample_bars()
+        bars[-2].update({"open": 2607.0, "high": 2607.2, "low": 2606.5, "close": 2606.6})
+        bars[-1].update({"open": 2606.4, "high": 2607.5, "low": 2606.2, "close": 2607.3})
+        result = calculate_roster(bars, "XAUUSD", "1m")
+        self.assertEqual(result["indicators"]["candle_patterns"]["value"], "bullish engulfing candidate")
+
+    def test_engine_2_support_resistance_is_explicitly_descriptive(self):
+        result = calculate_roster(sample_bars(), "BTCUSD", "1m")
+        item = result["indicators"]["support_resistance"]
+        self.assertIn(item["status"], {"CALCULATED_CANDIDATE", "RECENT_RANGE_FALLBACK"})
+        self.assertIn("support", item["value"])
+        self.assertIn("resistance", item["value"])
+        self.assertIn("not guaranteed", item["note"])
+
+
 if __name__ == "__main__":
     unittest.main()
