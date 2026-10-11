@@ -204,9 +204,16 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
         buy_volume = trade_flow.get("buy_volume")
         sell_volume = trade_flow.get("sell_volume")
         source = str(trade_flow.get("source", "")).strip()
-        if (source and age_seconds is not None and -30 <= age_seconds <= 120
+        instrument = str(trade_flow.get("instrument", "")).strip().upper().replace("/", "").replace("-", "")
+        expected_instrument = str(symbol).strip().upper().replace("/", "").replace("-", "")
+        trade_count = trade_flow.get("trade_count")
+        # Validate freshness, matching instrument, positive volume and minimum trade sample.
+        if (source == "Delta Exchange public BTCUSD trades API"
+                and instrument == expected_instrument == "BTCUSD"
+                and age_seconds is not None and -30 <= age_seconds <= 120
                 and _finite(buy_volume) and _finite(sell_volume)
                 and float(buy_volume) >= 0 and float(sell_volume) >= 0
+                and _finite(trade_count) and int(trade_count) >= 10
                 and float(buy_volume) + float(sell_volume) > 0):
             total_flow = float(buy_volume) + float(sell_volume)
             flow_values = {
