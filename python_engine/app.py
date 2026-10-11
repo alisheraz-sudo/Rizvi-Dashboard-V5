@@ -82,6 +82,9 @@ class Handler(BaseHTTPRequestHandler):
                 symbol=str(data.get("symbol", "BTCUSD"))[:32],
                 timeframe=str(data.get("timeframe", "1m")).strip().lower()[:8],
                 order_flow=data.get("order_flow") if isinstance(data.get("order_flow"), dict) else None,
+                dxy_bars=data.get("dxy_bars") if isinstance(data.get("dxy_bars"), list) else None,
+                news_events=data.get("news_events") if isinstance(data.get("news_events"), list) else None,
+                higher_timeframe_bars=data.get("higher_timeframe_bars") if isinstance(data.get("higher_timeframe_bars"), list) else None,
             )
             self._send(200 if result.get("ok") else 422, result)
         except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
