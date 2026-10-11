@@ -69,6 +69,7 @@
     const structure=last.c>priorHi?'BUY':last.c<priorLo?'SELL':(last.c>=e21?'BUY':'SELL');
     const candleBias=last.c<Number(last.o||prev.c)?'SELL':last.c>Number(last.o||prev.c)?'BUY':'NEUTRAL';
     const of=orderFlow(symbol);
+    const engine4=window.RIZVI_ENGINE4_CONTEXT||{};
     const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
     const liqScore=clamp(liq.status?Number(liq.score||liq.liquidityScore||0):0);
 
@@ -171,6 +172,7 @@
     add('fvg',fvgSignal,WEIGHTS.fvg,true);
 
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
+    const engine4NewsBlocked=engine4.usNews?.status==='LIVE'&&engine4.usNews.blocked===true;
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
     const weightedScore=activeWeight?clamp((lead/activeWeight)*100):0;
     const directionalMargin=activeWeight?clamp(((lead-conflict)/activeWeight)*100):0;
@@ -230,7 +232,8 @@
 
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     // Respect the requested thresholds: below 70 = WAIT, 70–79 = weak, 80+ = strong only with confirmation.
-    const direction=confidence<70?'WAIT':state.stableDirection;
+    const engine4DxyConflict=engine4.dxy?.status==='LIVE'&&engine4.dxy.signal==='CORRELATION_CONFLICT'&&engine4.dxy.dxyDirection===state.stableDirection;
+    const direction=confidence<70||engine4NewsBlocked||engine4DxyConflict?'WAIT':state.stableDirection;
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     // Keep the 95-point compatibility metric as a stricter research flag, not a blocker for every 80+ confirmed setup.
     const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=80&&weightedScore>=80&&directionalMargin>=50&&activeIndicators>=8&&alignedIndicators>=6;
@@ -251,7 +254,11 @@
       delta:{signal:deltaSignal,confidence:delta===null?null:of.confidence,reason:delta===null?'L2 unavailable':'L2 bid/ask imbalance',imbalance:delta},
       candlePattern:{signal:candlePattern,confidence:bullishEngulf||bearishEngulf?78:60,reason:bullishEngulf||bearishEngulf?'engulfing pattern':'candle body'},
       fvg:{signal:fvg.signal,confidence:fvg.confidence,reason:fvg.reason,type:fvg.type,top:fvg.top,bottom:fvg.bottom,filled:fvg.filled},
-      rangeLevels:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:'Day/4H/1H/30M/15M high-low context',levels:rangeLevels}
+      rangeLevels:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:'Day/4H/1H/30M/15M high-low context',levels:rangeLevels},
+      dxyInverseCorrelation:{signal:engine4.dxy?.signal||'UNAVAILABLE',confidence:engine4.dxy?.correlation==null?null:Math.round(Math.abs(engine4.dxy.correlation)*100),reason:engine4.dxy?.reason||'DXY data unavailable',correlation:engine4.dxy?.correlation??null},
+      highImpactUSNews:{signal:engine4.usNews?.status==='LIVE'?(engine4.usNews.blocked?'BLOCK':'CLEAR'):'UNAVAILABLE',confidence:engine4.usNews?.status==='LIVE'?100:null,reason:engine4.usNews?.activeEvent?.title||(engine4.usNews?.reason||'No validated news status'),nextEvent:engine4.usNews?.nextEvent||null},
+      tradingSessions:{signal:engine4.session?.active?.join(' + ')||'UNAVAILABLE',confidence:engine4.session?.status==='LIVE'?100:null,reason:engine4.session?.source||'Session clock unavailable'},
+      dayHighLow:{signal:engine4.dayHighLow?.status==='LIVE'?'LIVE':'UNAVAILABLE',confidence:engine4.dayHighLow?.status==='LIVE'?100:null,reason:engine4.dayHighLow?.reason||engine4.dayHighLow?.source||'Day range unavailable',high:engine4.dayHighLow?.high??null,low:engine4.dayHighLow?.low??null}
     };
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
@@ -259,8 +266,8 @@
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
       settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:80,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
-      contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL'},
-      indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,fvg:true},
+      contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL',dxyInverseCorrelation:engine4.dxy?.signal||'UNAVAILABLE',highImpactUSNews:engine4.usNews?.blocked?'BLOCK':'CLEAR',tradingSessions:engine4.session?.active||[],dayHighLow:engine4.dayHighLow?.status==='LIVE'?'LIVE':'UNAVAILABLE'},
+      indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,dxyInverseCorrelation:engine4.dxy?.status==='LIVE',highImpactUSNews:engine4.usNews?.status==='LIVE',tradingSessions:engine4.session?.status==='LIVE',dayHighLow:engine4.dayHighLow?.status==='LIVE'},
       algoRunReport
     };
     window.RIZVI_SIGNAL_QUALIFICATION={
