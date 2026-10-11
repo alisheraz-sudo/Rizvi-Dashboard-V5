@@ -83,6 +83,7 @@ function build(){
 function setTf(tf){
  tf=String(tf||'').toUpperCase();if(!TF[tf])return;
  currentTF=tf;window.RIZVI_CANDLE_TIMEFRAME=tf;setHeader(tf);build();
+ window.dispatchEvent(new CustomEvent('rizvi:timeframe-update',{detail:{timeframe:currentTF,symbol:selectedSymbol()}}));
 }
 function wire(){
  if(wired)return;wired=true;
