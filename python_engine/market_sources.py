@@ -51,7 +51,7 @@ def fetch_delta_trade_flow(symbol="BTCUSD", limit=500):
         "Accept": "application/json",
     })
     try:
-        with urlopen(request, timeout=4.0) as response:
+        with urlopen(request, timeout=1.0) as response:
             if response.status != 200:
                 raise ValueError("non-200 market-data response")
             payload = json.loads(response.read(1_000_000).decode("utf-8"))
