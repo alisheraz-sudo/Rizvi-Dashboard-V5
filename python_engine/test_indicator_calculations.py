@@ -39,6 +39,29 @@ class IndicatorCalculationsTests(unittest.TestCase):
         self.assertEqual(items["volume_profile"]["status"], "OHLCV_CLOSE_BIN_PROXY")
         self.assertEqual(items["trading_sessions"]["status"], "UTC_TIME_BUCKET_ONLY")
 
+    def test_higher_timeframe_trend_is_calculated_only_from_valid_timestamped_bars(self):
+        base = sample_bars()
+        result = calculate_roster(base, "BTCUSD", "1m", higher_timeframe_bars=base)
+        trend = result["indicators"]["trend_5"]
+        self.assertEqual(trend["status"], "CALCULATED_CANDIDATE")
+        self.assertEqual(trend["value"]["bias"], "bullish")
+
+    def test_structure_prediction_is_explicitly_candidate_only(self):
+        result = calculate_roster(sample_bars(), "XAUUSD", "1m")
+        item = result["indicators"]["structure_prediction"]
+        self.assertEqual(item["status"], "DESCRIPTIVE_CANDIDATE_ONLY")
+        self.assertIn("not a forecast", item["note"])
+
+    def test_dxy_correlation_requires_matching_timestamps_and_enough_history(self):
+        bars = sample_bars()
+        result = calculate_roster(bars, "XAUUSD", "1m", dxy_bars=bars)
+        item = result["indicators"]["dxy_inverse"]
+        self.assertEqual(item["status"], "CALCULATED_CANDIDATE")
+        self.assertIsNotNone(item["value"]["correlation"])
+        mismatched = [dict(bar, timestamp=bar["timestamp"] + 5) for bar in bars]
+        result = calculate_roster(bars, "XAUUSD", "1m", dxy_bars=mismatched)
+        self.assertIsNone(result["indicators"]["dxy_inverse"]["value"])
+
     def test_invalid_bars_are_rejected(self):
         bars = sample_bars()
         bars[-1]["high"] = bars[-1]["low"] - 1
