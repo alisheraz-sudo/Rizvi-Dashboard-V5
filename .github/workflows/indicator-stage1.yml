@@ -22,6 +22,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Node proxy tests
+        run: node --test indicator-proxy.test.js
       - name: Compile engine and registry
         run: python -m py_compile python_engine/app.py python_engine/api_contract.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py python_engine/indicator_calculations.py
       - name: Run Stage 1 tests
