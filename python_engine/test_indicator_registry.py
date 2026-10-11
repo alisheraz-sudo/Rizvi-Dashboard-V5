@@ -28,6 +28,16 @@ class IndicatorRosterStage1Tests(unittest.TestCase):
         self.assertEqual(roster["engine_counts"], {"1": 6, "2": 5, "3": 4, "4": 5})
         self.assertFalse(roster["ready_for_signal"])
 
+    def test_engine_2_registry_statuses_match_implemented_candidates(self):
+        roster = roster_snapshot()
+        engine2 = roster["engines"][1]
+        statuses = {item["id"]: item["status"] for item in engine2["indicators"]}
+        self.assertEqual(statuses["market_structure"], "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION")
+        self.assertEqual(statuses["structure_prediction"], "DESCRIPTIVE_CANDIDATE_NOT_FORECAST")
+        self.assertEqual(statuses["candle_patterns"], "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION")
+        self.assertEqual(statuses["fvg"], "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION")
+        self.assertEqual(statuses["support_resistance"], "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION")
+
     def test_external_feed_indicators_are_not_fabricated(self):
         roster = roster_snapshot()
         indicators = {
