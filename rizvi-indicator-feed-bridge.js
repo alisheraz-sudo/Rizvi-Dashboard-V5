@@ -36,6 +36,7 @@ function fail(sym,reason){
 async function poll(){
  if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
+ if(sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true){window.RIZVI_FEED_STATUS={ok:false,symbol:sym,timeframe:tf,source:'PAUSED_BY_USER',updatedAt:Date.now(),reason:'Gold live-feed polling paused while market is closed'};return;}
  if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'Coinbase':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
  function validateRows(rows,label){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
