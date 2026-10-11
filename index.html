@@ -1317,7 +1317,7 @@ function build(){
   ['Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low','DXY Inverse-Correlation Filter','High-Impact US News Filter']
  ];
  const groupRows=groups.map(keys=>{
-  const rows=keys.map(k=>comp[k]).filter(x=>x&&x.status==='CALCULATED'&&x.score>0&&x.bias!==0);
+  const rows=keys.map(k=>comp[k]).filter(x=>x&&['CALCULATED','LIVE'].includes(String(x.status||'').toUpperCase())&&x.score>0&&x.bias!==0);
   if(!rows.length)return null;
   const sum=rows.reduce((s,x)=>s+x.bias,0),bias=sum>0?1:sum<0?-1:0;
   return bias?{bias,score:rows.reduce((s,x)=>s+x.score,0)/rows.length,rows:rows.length}:null;
