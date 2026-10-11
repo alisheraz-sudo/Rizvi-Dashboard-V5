@@ -3,7 +3,6 @@ const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
 const ctrader=require('./ctrader-order-flow');
-const indicatorProxy=require('./indicator-proxy');
 const {evaluateDiagnostics}=require('./indicator-proxy');
 
 const USER=process.env.RIZVI_USER||'rizvi';
@@ -112,8 +111,6 @@ if(url.pathname==='/login'&&req.method==='GET'){if(validSession(req))return res.
 if(url.pathname==='/login'&&req.method==='POST'){let body='';req.on('data',chunk=>{body+=chunk;if(body.length>10000)req.destroy();});return req.on('end',()=>{const {username,password}=parseForm(body);if(username===USER&&password===PASS)return res.writeHead(302,{Location:'/', 'Set-Cookie':`rizvi_session=${makeSession()}; Path=/; Max-Age=604800; HttpOnly; Secure; SameSite=Lax`,'Cache-Control':'no-store'}).end();return send(res,401,'text/html; charset=utf-8',loginPage().replace('</form>','<div style="color:#ff7182;font-size:12px;margin-top:12px;text-align:center">Invalid username or password.</div></form>'),{'Cache-Control':'no-store'});});}
 if(url.pathname==='/logout')return res.writeHead(302,{Location:'/login','Set-Cookie':'rizvi_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax'}).end();
 if(!validSession(req))return res.writeHead(302,{Location:'/login','Cache-Control':'no-store'}).end();
-if(url.pathname==='/api/indicator/evaluate'&&req.method==='POST'){try{const payload=await readJson(req);const result=await indicatorProxy.evaluateDiagnostics(payload);return ofReply(res,result.status,result.body);}catch(e){return ofReply(res,400,{ok:false,signal:'WAIT',confidence:null,reason:'Invalid indicator evaluation request',autoTrading:false});}}
-
  if(url.pathname==='/api/indicator-diagnostics'&&req.method==='POST'){try{const payload=await readJson(req);const result=await evaluateDiagnostics(payload);return ofReply(res,result.status,result.body);}catch(e){return ofReply(res,400,{ok:false,signal:'WAIT',confidence:null,reason:'Invalid diagnostics request',autoTrading:false});}}
 if(url.pathname==='/internal/feed-diagnostic'&&req.method==='POST'){try{const d=await readJson(req),sym=String(d.symbol||'').slice(0,16),tf=String(d.timeframe||'').slice(0,8),reason=String(d.reason||'').replace(/[\r\n\t]/g,' ').slice(0,220);console.warn('[RIZVI_FEED_DIAG]',JSON.stringify({symbol:sym,timeframe:tf,reason,at:new Date().toISOString()}));return ofReply(res,200,{ok:true});}catch(e){return ofReply(res,400,{ok:false,error:'invalid diagnostic'});}}
 const files={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/sw.js':'sw.js','/icons/rizvi-192.svg':'icons/rizvi-192.svg','/icons/rizvi-512.svg':'icons/rizvi-512.svg'};
