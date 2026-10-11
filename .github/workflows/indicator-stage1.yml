@@ -1,0 +1,29 @@
+name: Rizvi V5 Indicator Stage 1
+
+on:
+  pull_request:
+    paths:
+      - "python_engine/**"
+      - ".github/workflows/indicator-stage1.yml"
+  push:
+    branches:
+      - "feat/stage1-20-indicator-backend-alignment"
+    paths:
+      - "python_engine/**"
+      - ".github/workflows/indicator-stage1.yml"
+
+jobs:
+  indicator-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile engine and registry
+        run: python -m py_compile python_engine/app.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py
+      - name: Run Stage 1 tests
+        working-directory: python_engine
+        run: python -m unittest -v test_indicator_registry.py
