@@ -1,18 +1,8 @@
 """Acceptance and edge-case tests for the isolated Rizvi Python engine."""
 import math
 import unittest
-from unittest.mock import patch
 
-from python_engine.regime_adaptive_engine import (
-    MIN_BARS, _adaptive_weights, evaluate, health,
-)
-
-ENGINE_NAMES = (
-    "engine_1_trend",
-    "engine_2_momentum",
-    "engine_3_volume",
-    "engine_4_volatility_price_action",
-)
+from python_engine.regime_adaptive_engine import MIN_BARS, _adaptive_weights, evaluate, health
 
 
 def make_bars(n=100, direction=1):
@@ -22,7 +12,7 @@ def make_bars(n=100, direction=1):
         prev = price
         price += direction * (0.12 + (i % 3) * 0.01)
         rows.append({
-            "timestamp": i,
+            "timestamp": 1_800_000_000 + i * 60,
             "open": prev,
             "high": max(prev, price) + 0.08,
             "low": min(prev, price) - 0.08,
@@ -32,26 +22,23 @@ def make_bars(n=100, direction=1):
     return rows
 
 
-def mocked_engines(score):
-    return {name: {"score": score, "inputs": []} for name in ENGINE_NAMES}
-
-
 class EngineAcceptanceTests(unittest.TestCase):
-    def test_health_reports_five_engines_signal_only(self):
+    def test_health_reports_five_engines_and_locked_twenty_indicator_roster(self):
         result = health()
         self.assertTrue(result["ok"])
         self.assertEqual(result["engines"], 5)
-        self.assertEqual(result["indicator_inventory"], 18)
+        self.assertEqual(result["indicator_inventory"], 20)
+        self.assertEqual(result["indicator_engine_counts"], {"1": 6, "2": 5, "3": 4, "4": 5})
         self.assertFalse(result["autoTrading"])
+        self.assertFalse(result["indicator_roster_ready"])
 
-    def test_all_regime_weights_are_normalized_and_capped(self):
+    def test_adaptive_weights_are_normalized_for_legacy_diagnostics(self):
         for regime in ("TRENDING", "RANGING", "HIGH_VOLATILITY", "LOW_VOLATILITY", "UNKNOWN"):
             weights = _adaptive_weights(regime)
-            self.assertEqual(set(weights), set(ENGINE_NAMES))
             self.assertAlmostEqual(sum(weights.values()), 1.0, places=12)
             self.assertTrue(all(0 <= value <= 0.35 for value in weights.values()))
 
-    def test_indicator_inventory_has_18_core_indicators_and_finite_values(self):
+    def test_legacy_indicator_values_are_finite_when_present(self):
         result = evaluate(make_bars(), symbol="XAUUSD", timeframe="1m")
         self.assertTrue(result["ok"])
         values = result["indicators"]
@@ -60,7 +47,6 @@ class EngineAcceptanceTests(unittest.TestCase):
             "ATR", "VWAP", "OBV", "CCI", "MFI", "CMF", "ADX", "ROC",
             "WILLIAMS_R", "ICHIMOKU_TENKAN", "VOLUME_PROFILE_BIAS", "CANDLE_PATTERN",
         }
-        self.assertEqual(len(expected), 18)
         self.assertTrue(expected.issubset(values))
         for key, value in values.items():
             if value is not None:
@@ -89,10 +75,12 @@ class EngineAcceptanceTests(unittest.TestCase):
 
     def test_iso_timestamps_are_accepted_when_ordered(self):
         bars = make_bars()
-        for row in bars:
-            row["timestamp"] = "2026-10-10T00:%02d:%02dZ" % (row["timestamp"] // 60, row["timestamp"] % 60)
+        for i, row in enumerate(bars):
+            row["timestamp"] = "2026-10-10T00:%02d:%02dZ" % (i // 60, i % 60)
         result = evaluate(bars)
         self.assertTrue(result["ok"])
+        self.assertEqual(result["signal"], "WAIT")
+        self.assertIsNone(result["confidence"])
 
     def test_unsupported_timeframe_fails_safe_to_wait(self):
         result = evaluate(make_bars(), timeframe="2m")
@@ -106,33 +94,19 @@ class EngineAcceptanceTests(unittest.TestCase):
             row["volume"] = 0
         result = evaluate(bars)
         self.assertTrue(result["ok"])
-        self.assertEqual(result["order_flow_status"], "NOT_ATTACHED")
-        self.assertEqual(result["engines"]["engine_3_volume"]["delta"], "NOT_AVAILABLE_FROM_OHLCV")
+        self.assertEqual(result["signal"], "WAIT")
+        self.assertIsNone(result["confidence"])
         self.assertFalse(result["autoTrading"])
+        self.assertEqual(result["indicator_diagnostics"]["indicators"]["delta_buy_sell"]["status"],
+                         "UNAVAILABLE_UNLESS_VALIDATED_FEED")
 
-    def test_exact_70_percent_is_weak_and_exact_80_percent_is_strong(self):
-        bars = make_bars()
-        with patch("python_engine.regime_adaptive_engine._indicator_values", return_value={"LAST_CLOSE": 100.0}), \
-             patch("python_engine.regime_adaptive_engine._compute_engines", return_value=mocked_engines(0.70)), \
-             patch("python_engine.regime_adaptive_engine._regime", return_value="TRENDING"):
-            result = evaluate(bars)
-            self.assertEqual(result["confidence"], 70.0)
-            self.assertEqual(result["signal"], "WEAK_BUY")
-        with patch("python_engine.regime_adaptive_engine._indicator_values", return_value={"LAST_CLOSE": 100.0}), \
-             patch("python_engine.regime_adaptive_engine._compute_engines", return_value=mocked_engines(0.80)), \
-             patch("python_engine.regime_adaptive_engine._regime", return_value="TRENDING"):
-            result = evaluate(bars)
-            self.assertEqual(result["confidence"], 80.0)
-            self.assertEqual(result["signal"], "BUY")
-            self.assertFalse(result["autoTrading"])
-
-    def test_below_70_percent_is_wait(self):
-        with patch("python_engine.regime_adaptive_engine._indicator_values", return_value={"LAST_CLOSE": 100.0}), \
-             patch("python_engine.regime_adaptive_engine._compute_engines", return_value=mocked_engines(0.69)), \
-             patch("python_engine.regime_adaptive_engine._regime", return_value="TRENDING"):
-            result = evaluate(make_bars())
-            self.assertEqual(result["confidence"], 69.0)
+    def test_scoring_is_disabled_even_when_legacy_calculations_exist(self):
+        for direction in (1, -1):
+            result = evaluate(make_bars(direction=direction), symbol="XAUUSD", timeframe="1m")
             self.assertEqual(result["signal"], "WAIT")
+            self.assertIsNone(result["confidence"])
+            self.assertIn("indicator_diagnostics", result)
+            self.assertFalse(result["autoTrading"])
 
 
 if __name__ == "__main__":
