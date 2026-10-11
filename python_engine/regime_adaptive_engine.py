@@ -430,6 +430,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         "regime": regime,
         "engines": engines,
         "engine_5": engine_5,
+        "master_engine": engine_5,
         "weights": weights,
         "indicators": x,
         "indicator_roster": roster,
