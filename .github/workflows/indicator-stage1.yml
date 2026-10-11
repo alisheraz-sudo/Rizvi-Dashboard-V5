@@ -34,6 +34,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check server.js && node --check indicator-proxy.js && node --check indicator-diagnostics-bridge.js && node --check indicator-proxy.test.js
       - name: Run Node proxy tests
         run: node --test indicator-proxy.test.js
       - name: Compile engine and registry
