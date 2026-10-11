@@ -674,10 +674,23 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
     m15Low:document.getElementById('m15Low')
   };
   function fmt(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
+  function canonicalSymbol(raw){
+    const s=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(s==='XAUUSD'||s==='GOLD')return 'XAU/USD';
+    if(s==='BTCUSD'||s==='BTCUSDT')return 'BTCUSD';
+    return s;
+  }
+  function activeSymbol(){
+    return canonicalSymbol(window.RIZVI_CURRENT_SYMBOL||window.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD');
+  }
+  let refreshSeq=0;
   function publish(r){
+    // Never let a late response from the other asset overwrite the active asset's levels.
+    if(!r||canonicalSymbol(r.symbol)!==activeSymbol())return false;
     window.RIZVI_MARKET_RANGE=r;
     Object.keys(out).forEach(k=>{if(out[k])out[k].textContent=fmt(r[k]);});
     window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:r}));
+    return true;
   }
   function attachLiquidityEngine(r,bars){
     const latest=bars[bars.length-1];
@@ -746,6 +759,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
     };
   }
   async function btc(){
+    const seq=refreshSeq;
     try{
       const [r15,r1]=await Promise.all([
         fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=200',{cache:'no-store'}).then(r=>r.json()),
@@ -755,12 +769,13 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
       const bars15=r15.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
       const bars1=r1.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
       const v=buildRange(bars15,'BTCUSD','BINANCE 15M + 1M MICRO');
-      if(v){publish(v);attachLiquidityEngine(v,bars1);window.RIZVI_LIQUIDITY_ENGINE.microTimeframe='1M';}
+      if(v&&seq===refreshSeq&&activeSymbol()==='BTCUSD'&&publish(v)){attachLiquidityEngine(v,bars1);window.RIZVI_LIQUIDITY_ENGINE.microTimeframe='1M';}
     }catch(e){
       window.RIZVI_MARKET_RANGE=Object.assign({},window.RIZVI_MARKET_RANGE||{},{status:'unavailable',source:'BINANCE 15M + 1M MICRO'});
     }
   }
   async function gold(){
+    const seq=refreshSeq;
     // Respect the existing market-closed guard: avoid repeated failing XAU requests and never publish stale range data as current.
     if(window.RIZVI_GOLD_MARKET_LOCKED===true)return;
     try{
@@ -771,11 +786,12 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
       const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
       const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
-      if(v){publish(v);attachLiquidityEngine(v,bars);}
+      if(v&&seq===refreshSeq&&activeSymbol()==='XAU/USD'&&publish(v)){attachLiquidityEngine(v,bars);}
     }catch(e){}
   }
   function refresh(){
-    const sym=window.RIZVI_CURRENT_SYMBOL||document.getElementById('symbolSelect')?.value||'BTCUSD';
+    refreshSeq++;
+    const sym=activeSymbol();
     if(sym==='XAU/USD')gold(); else if(sym==='BTCUSD')btc();
   }
   window.RIZVI_REFRESH_MARKET_RANGE=refresh;
