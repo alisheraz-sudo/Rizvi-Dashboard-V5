@@ -11,7 +11,7 @@ ENGINES = [
         "id": 1,
         "name": "Trend, Momentum & Regime",
         "indicators": [
-            {"id": "ema_9_21", "name": "EMA 9/21", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
+            {"id": "ema_9_21", "name": "EMA 9/21", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
             {"id": "rsi_14", "name": "RSI (14)", "source": "ohlcv", "status": "LEGACY_CALCULATION_REQUIRES_VALIDATION"},
             {"id": "trend_5", "name": "Trend (5)", "source": "multi_timeframe_ohlcv", "status": "PENDING_IMPLEMENTATION"},
             {"id": "vwap_filter", "name": "VWAP Filter", "source": "ohlcv_volume", "status": "LEGACY_PROXY_REQUIRES_VALIDATION"},
