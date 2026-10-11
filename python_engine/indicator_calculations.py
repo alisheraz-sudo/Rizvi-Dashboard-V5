@@ -114,6 +114,43 @@ def _pearson(xs: Sequence[float], ys: Sequence[float]) -> Optional[float]:
     return sum(x * y for x, y in zip(dx, dy)) / (sx * sy) ** 0.5
 
 
+
+def _news_filter(events: Optional[Sequence[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Evaluate a strict, explicit economic-calendar payload; never infer a clear calendar from no data."""
+    unavailable = {"value": None, "status": "UNAVAILABLE_UNLESS_VALIDATED_FEED",
+                   "note": "Requires fresh, validated calendar records with source, observed_at, USD currency, impact and event timestamp."}
+    if not isinstance(events, (list, tuple)) or not events:
+        return unavailable
+    now = datetime.now(timezone.utc).timestamp()
+    normalized = []
+    sources = set()
+    for event in events:
+        if not isinstance(event, dict):
+            return {"value": None, "status": "INVALID_CALENDAR_PAYLOAD", "note": "Every calendar event must be an object."}
+        if event.get("feed_status") != "LIVE" or event.get("validated") is not True:
+            return unavailable
+        source = str(event.get("source", "")).strip()
+        currency = str(event.get("currency", "")).strip().upper()
+        impact = str(event.get("impact", "")).strip().lower()
+        event_stamp = _stamp_seconds(event.get("timestamp"))
+        observed = _stamp_seconds(event.get("observed_at"))
+        if not source or currency not in {"USD", "US"} or impact not in {"high", "3", "high impact"} or event_stamp is None or observed is None:
+            return {"value": None, "status": "INVALID_CALENDAR_PAYLOAD", "note": "Calendar event schema or USD/high-impact classification is invalid."}
+        age = now - observed
+        if age < -60 or age > 6 * 60 * 60:
+            return {"value": None, "status": "STALE_CALENDAR_FEED", "note": "Calendar observation timestamp must be fresh (within six hours)."}
+        sources.add(source)
+        normalized.append((event_stamp, str(event.get("title", "US high-impact event"))))
+    if len(sources) != 1:
+        return {"value": None, "status": "MIXED_CALENDAR_SOURCES", "note": "A single validated calendar source is required per request."}
+    active = [{"timestamp": stamp, "title": title} for stamp, title in normalized if now - 15 * 60 <= stamp <= now + 30 * 60]
+    if active:
+        return {"value": {"blocked": True, "active_events": active, "source": next(iter(sources))},
+                "status": "VALIDATED_EVENT_WINDOW", "note": "High-impact US event is within the configured 15-minute post / 30-minute pre window."}
+    return {"value": {"blocked": False, "active_events": [], "source": next(iter(sources))},
+            "status": "VALIDATED_NO_NEAR_EVENT", "note": "Validated calendar has no high-impact USD event in the configured window."}
+
+
 def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe: str,
                      *, dxy_bars: Optional[Sequence[Dict[str, Any]]] = None,
                      news_events: Optional[Sequence[Dict[str, Any]]] = None,
@@ -312,7 +349,7 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
              if aux else None)(_valid_aux_bars(dxy_bars, 21)),
             "CALCULATED_CANDIDATE" if _valid_aux_bars(dxy_bars, 21) else "INVALID_DXY_DATA",
             "Pearson correlation of timestamp-matched candle returns; candidate only until DXY source, symbol and synchronization are independently verified."),
-        "us_high_impact_news": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires validated economic calendar and release timestamps.") if not news_events else _item(None, "PENDING_NEWS_SCHEMA_VALIDATION", "Events supplied but calendar schema/impact mapping is not yet validated."),
+        "us_high_impact_news": _news_filter(news_events),
     }
     return {
         "version": ROSTER_VERSION,
