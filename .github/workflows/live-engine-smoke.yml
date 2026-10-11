@@ -94,8 +94,17 @@ jobs:
                   raise RuntimeError("Safety check failed: autoTrading must remain false")
               indicators = result.get("indicators")
               engines = result.get("engines")
+              diagnostics = result.get("indicator_diagnostics")
+              diagnostic_items = diagnostics.get("indicators") if isinstance(diagnostics, dict) else None
+              master = result.get("master_engine") or result.get("engine_5")
               if not isinstance(indicators, dict) or not isinstance(engines, dict):
                   raise RuntimeError("Engine response missing indicator or specialist-engine diagnostics")
+              if not isinstance(master, dict):
+                  raise RuntimeError("Incompatible/legacy engine endpoint: response has no Master Engine 5 object")
+              if len(engines) != 4:
+                  raise RuntimeError(f"Expected four specialist engines; received {len(engines)}")
+              if not isinstance(diagnostic_items, dict) or len(diagnostic_items) != 20:
+                  raise RuntimeError("Expected the locked 20-indicator diagnostics roster; endpoint response is incompatible")
               print(json.dumps({
                   "status": "PASS",
                   "market_source": market.get("source"),
@@ -103,9 +112,10 @@ jobs:
                   "latest_candle_age_seconds": round(age, 1),
                   "engine_version": result.get("version"),
                   "regime": result.get("regime"),
-                  "indicator_output_count": len(indicators),
+                  "legacy_indicator_output_count": len(indicators),
+                  "locked_indicator_diagnostic_count": len(diagnostic_items),
                   "specialist_engine_count": len(engines),
-                  "master_engine_present": isinstance(result.get("master_engine"), dict),
+                  "master_engine_present": True,
                   "signal": result.get("signal"),
                   "confidence_score_not_win_probability": result.get("confidence"),
                   "order_flow_status": result.get("order_flow_status", "not returned"),
