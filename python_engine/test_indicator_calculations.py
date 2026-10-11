@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta, timezone
 
 from indicator_calculations import calculate_roster
 from regime_adaptive_engine import evaluate
@@ -61,6 +62,30 @@ class IndicatorCalculationsTests(unittest.TestCase):
         mismatched = [dict(bar, timestamp=bar["timestamp"] + 5) for bar in bars]
         result = calculate_roster(bars, "XAUUSD", "1m", dxy_bars=mismatched)
         self.assertIsNone(result["indicators"]["dxy_inverse"]["value"])
+
+    def test_news_filter_requires_validated_fresh_calendar_and_blocks_near_event(self):
+        now = datetime.now(timezone.utc)
+        event = {
+            "feed_status": "LIVE",
+            "validated": True,
+            "source": "test-calendar",
+            "currency": "USD",
+            "impact": "high",
+            "timestamp": (now + timedelta(minutes=10)).isoformat(),
+            "observed_at": now.isoformat(),
+            "title": "Test high-impact event",
+        }
+        result = calculate_roster(sample_bars(), "XAUUSD", "1m", news_events=[event])
+        item = result["indicators"]["us_high_impact_news"]
+        self.assertEqual(item["status"], "VALIDATED_EVENT_WINDOW")
+        self.assertTrue(item["value"]["blocked"])
+
+    def test_news_filter_fails_closed_on_unvalidated_calendar(self):
+        event = {"currency": "USD", "impact": "high", "timestamp": "2026-10-11T18:00:00Z"}
+        result = calculate_roster(sample_bars(), "XAUUSD", "1m", news_events=[event])
+        item = result["indicators"]["us_high_impact_news"]
+        self.assertIsNone(item["value"])
+        self.assertIn("UNAVAILABLE", item["status"])
 
     def test_invalid_bars_are_rejected(self):
         bars = sample_bars()
