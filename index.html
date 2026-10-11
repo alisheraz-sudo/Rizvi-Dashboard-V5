@@ -761,8 +761,12 @@ select(window.RIZVI_CURRENT_SYMBOL||'BTCUSD');
     }
   }
   async function gold(){
+    // Respect the existing market-closed guard: avoid repeated failing XAU requests and never publish stale range data as current.
+    if(window.RIZVI_GOLD_MARKET_LOCKED===true)return;
     try{
-      const d=await fetch('/market/xau/intraday?hours=36',{cache:'no-store'}).then(r=>r.json());
+      const response=await fetch('/market/xau/intraday?hours=36',{cache:'no-store'});
+      if(!response.ok)throw new Error('XAU range feed HTTP '+response.status);
+      const d=await response.json();
       const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||[]));
       const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
