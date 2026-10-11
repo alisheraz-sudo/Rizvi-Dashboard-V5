@@ -71,7 +71,7 @@ test('bridge forwards the active matching XAU symbol and 1m OHLCV bars', async (
   await runInitialTick(h);
   assert.equal(h.requests.length, 1);
   assert.equal(h.requests[0].url, '/api/indicator-diagnostics');
-  assert.equal(h.requests[0].body.symbol, 'XAU/USD');
+  assert.equal(h.requests[0].body.symbol, 'XAUUSD');
   assert.equal(h.requests[0].body.timeframe, '1m');
   assert.equal(h.requests[0].body.bars.length, 80);
   assert.equal(h.window.RIZVI_PYTHON_DIAGNOSTICS.state, 'RESPONSE_RECEIVED');
