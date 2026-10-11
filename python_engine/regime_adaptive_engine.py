@@ -445,6 +445,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
 def health() -> Dict[str, Any]:
     roster = roster_snapshot()
     return {"ok": True, "engine": ENGINE_VERSION, "roster_version": ROSTER_VERSION,
+            "engine_5_contract": {"master_engine": True, "engine_5": True},
             "engines": 5, "indicator_inventory": roster["actual_count"],
             "indicator_engine_counts": roster["engine_counts"],
             "indicator_roster_ready": roster["ready_for_signal"],
