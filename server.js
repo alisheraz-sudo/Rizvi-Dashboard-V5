@@ -62,6 +62,31 @@ if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){
   return ofReply(res,200,{ok:true,symbol:'BTCUSD',source:'Coinbase fallback',bars,fallbackUsed:true,yahooError,updatedAt:Date.now()});
  }catch(e){return ofReply(res,502,{ok:false,symbol:'BTCUSD',source:'Yahoo Finance + Coinbase fallback',error:'Yahoo: '+yahooError+'; Coinbase: '+String(e.message||'feed failed').slice(0,120)});}
 }
+
+if(url.pathname==='/market/engine4-context'&&req.method==='GET'){
+ const now=Date.now(),out={ok:true,updatedAt:now,dxy:{status:'UNAVAILABLE',reason:'DXY feed not yet validated'},usNews:{status:'UNAVAILABLE',reason:'US calendar feed not yet validated'}};
+ const tasks=[
+  (async()=>{try{
+   const u='https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?range=1d&interval=5m&_='+now;
+   const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   if(!r.ok)throw new Error('Yahoo DXY HTTP '+r.status);
+   const p=await r.json(),z=p?.chart?.result?.[0],ts=z?.timestamp||[],q=z?.indicators?.quote?.[0],bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),c:Number(q.close?.[i])})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)):[],age=bars.length?Math.max(0,Math.floor(now/1000)-bars[bars.length-1].t):Infinity;
+   if(bars.length<12||age>1800)throw new Error('DXY history insufficient or stale');
+   out.dxy={status:'LIVE',source:'Yahoo Finance DX-Y.NYB',bars,updatedAt:now,latestAgeSeconds:age};
+  }catch(e){out.dxy={status:'UNAVAILABLE',reason:String(e.message||e).slice(0,160),updatedAt:now};}})(),
+  (async()=>{try{
+   const r=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json?_'+now,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   if(!r.ok)throw new Error('US calendar HTTP '+r.status);
+   const p=await r.json();if(!Array.isArray(p))throw new Error('Calendar returned invalid data');
+   const events=p.map(e=>{const time=Date.parse(e.date||e.datetime||e.timestamp||'');return {title:String(e.title||e.event||'Untitled event'),country:String(e.country||''),impact:String(e.impact||''),time:Number.isFinite(time)?time:null};}).filter(e=>e.time!==null&&/USD|United States|US\b/i.test(e.country)&&/high/i.test(e.impact)).sort((a,b)=>a.time-b.time);
+   const active=events.find(e=>now>=e.time-30*60000&&now<=e.time+15*60000)||null;
+   const next=events.find(e=>e.time>now)||null;
+   out.usNews={status:'LIVE',source:'Forex Factory public weekly calendar feed',events,blocked:!!active,activeEvent:active,nextEvent:next,windowBeforeMinutes:30,windowAfterMinutes:15,updatedAt:now};
+  }catch(e){out.usNews={status:'UNAVAILABLE',reason:String(e.message||e).slice(0,160),updatedAt:now};}})()
+ ];
+ await Promise.all(tasks);
+ return ofReply(res,200,out);
+}
 if(url.pathname==='/market/xau/spot'&&req.method==='GET'){try{const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data});}catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}}
 if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
  const normalizeBars=rows=>rows.map(x=>{const raw=x.openTime??x.t??x.timestamp??x.time;const parsed=typeof raw==='string'&&!/^\d+(\.\d+)?$/.test(raw)?Date.parse(raw):Number(raw);return {t:Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN,o:Number(x.open??x.o),h:Number(x.high??x.h),l:Number(x.low??x.l),c:Number(x.close??x.c),v:Number(x.tickVolume??x.volume??x.v??0)};}).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
