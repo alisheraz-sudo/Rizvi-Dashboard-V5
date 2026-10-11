@@ -232,7 +232,7 @@
 
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     // Respect the requested thresholds: below 70 = WAIT, 70–79 = weak, 80+ = strong only with confirmation.
-    const engine4DxyConflict=engine4.dxy?.status==='LIVE'&&engine4.dxy.signal==='CORRELATION_CONFLICT'&&engine4.dxy.dxyDirection===state.stableDirection;
+    const engine4DxyConflict=engine4.dxy?.status==='LIVE'&&engine4.dxy.correlation<=-0.25&&engine4.dxy.dxyDirection===state.stableDirection;
     const direction=confidence<70||engine4NewsBlocked||engine4DxyConflict?'WAIT':state.stableDirection;
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     // Keep the 95-point compatibility metric as a stricter research flag, not a blocker for every 80+ confirmed setup.
