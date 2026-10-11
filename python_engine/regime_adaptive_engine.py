@@ -12,8 +12,12 @@ from statistics import mean, pstdev
 from typing import Any, Dict, List, Optional, Sequence
 from datetime import datetime, timezone
 
-from indicator_registry import roster_snapshot, ROSTER_VERSION
-from indicator_calculations import calculate_roster
+try:
+    from .indicator_registry import roster_snapshot, ROSTER_VERSION
+    from .indicator_calculations import calculate_roster
+except ImportError:  # Support direct execution from the python_engine directory.
+    from indicator_registry import roster_snapshot, ROSTER_VERSION
+    from indicator_calculations import calculate_roster
 
 
 ENGINE_VERSION = "rizvi-regime-adaptive-v1.0"
