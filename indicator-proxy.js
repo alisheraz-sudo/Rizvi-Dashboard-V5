@@ -13,6 +13,20 @@ function normalizeSymbol(value) {
   return SYMBOLS.get(key) || null;
 }
 
+function normalizeBars(bars) {
+  return bars.map((bar) => {
+    if (!bar || typeof bar !== 'object' || Array.isArray(bar)) return bar;
+    return {
+      timestamp: bar.timestamp ?? bar.t ?? bar.time,
+      open: bar.open ?? bar.o,
+      high: bar.high ?? bar.h,
+      low: bar.low ?? bar.l,
+      close: bar.close ?? bar.c,
+      volume: bar.volume ?? bar.v ?? 0
+    };
+  });
+}
+
 function validateDashboardPayload(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return 'JSON object required';
   if (!normalizeSymbol(payload.symbol)) return 'Unsupported symbol';
@@ -48,7 +62,7 @@ async function evaluateDiagnostics(payload, options = {}) {
   const requestBody = {
     symbol: normalizeSymbol(payload.symbol),
     timeframe: String(payload.timeframe).toLowerCase(),
-    bars: payload.bars,
+    bars: normalizeBars(payload.bars),
     ...(payload.order_flow && typeof payload.order_flow === 'object' && !Array.isArray(payload.order_flow)
       ? { order_flow: payload.order_flow } : {})
   };
@@ -82,4 +96,4 @@ async function evaluateDiagnostics(payload, options = {}) {
   }
 }
 
-module.exports = { evaluateDiagnostics, normalizeSymbol, validateDashboardPayload };
+module.exports = { evaluateDiagnostics, normalizeSymbol, normalizeBars, validateDashboardPayload };
