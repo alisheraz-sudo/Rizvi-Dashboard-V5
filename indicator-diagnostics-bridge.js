@@ -34,7 +34,8 @@
     const symbol=normSymbol(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value);
     if(!symbol){publish('WAITING_FOR_SUPPORTED_SYMBOL');return;}
     const chartSymbol=normSymbol(W.RIZVI_CHART_STATUS?.symbol||W.RIZVI_DIRECT_TV?.symbol);
-    if(chartSymbol&&chartSymbol!==symbol){publish('WAITING_FOR_SYMBOL_MATCH',{symbol,chartSymbol});return;}
+    if(!chartSymbol){publish('WAITING_FOR_CHART_SYMBOL',{symbol,chartStatus:W.RIZVI_CHART_STATUS?.status||W.RIZVI_DIRECT_TV?.status||null});return;}
+    if(chartSymbol!==symbol){publish('WAITING_FOR_SYMBOL_MATCH',{symbol,chartSymbol});return;}
     const timeframe=activeTf();
     if(!timeframe){publish('WAITING_FOR_SUPPORTED_TIMEFRAME',{symbol,displayTimeframe:W.RIZVI_CANDLE_TIMEFRAME||null});return;}
     const bars=activeBars();
