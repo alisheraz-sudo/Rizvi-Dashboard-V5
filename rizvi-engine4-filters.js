@@ -41,5 +41,5 @@ async function poll(){
  window.RIZVI_ENGINE4_CONTEXT={updatedAt:now,dxy,usNews,session:sessionStatus,dayHighLow:range,symbol:window.RIZVI_CURRENT_SYMBOL||'XAU/USD',autoTrading:false};
  window.dispatchEvent(new CustomEvent('rizvi:engine4-context-update',{detail:window.RIZVI_ENGINE4_CONTEXT}));
 }
-setInterval(poll,60000);poll();setInterval(poll,5000);
+poll();setInterval(poll,60000);
 })();
