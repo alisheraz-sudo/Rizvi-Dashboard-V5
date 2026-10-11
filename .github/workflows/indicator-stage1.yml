@@ -6,6 +6,7 @@ on:
       - "python_engine/**"
       - "indicator-proxy.js"
       - "indicator-proxy.test.js"
+      - "indicator-diagnostics-bridge.js"
       - "server.js"
       - ".github/workflows/indicator-stage1.yml"
   push:
@@ -13,6 +14,10 @@ on:
       - "feat/stage1-20-indicator-backend-alignment"
     paths:
       - "python_engine/**"
+      - "indicator-proxy.js"
+      - "indicator-proxy.test.js"
+      - "indicator-diagnostics-bridge.js"
+      - "server.js"
       - ".github/workflows/indicator-stage1.yml"
 
 jobs:
