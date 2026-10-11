@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from datetime import datetime, timezone
 
 from indicator_registry import roster_snapshot, ROSTER_VERSION
+from indicator_calculations import calculate_roster
 
 
 ENGINE_VERSION = "rizvi-regime-adaptive-v1.0"
@@ -325,6 +326,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
     # Stage 1 safety gate: the old scorer is not equivalent to the locked 20-indicator
     # roster. Return diagnostics for audit, but do not publish its legacy signal as valid.
     roster = roster_snapshot()
+    diagnostics = calculate_roster(raw_bars, symbol=symbol, timeframe=timeframe)
     return {
         "ok": True,
         "version": ENGINE_VERSION,
@@ -336,6 +338,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         "weights": weights,
         "indicators": x,
         "indicator_roster": roster,
+        "indicator_diagnostics": diagnostics,
         "signal": "WAIT",
         "confidence": None,
         "reason": "Stage 1: locked 20-indicator roster is registered; scoring remains disabled until calculations, feeds and engine alignment pass validation.",
