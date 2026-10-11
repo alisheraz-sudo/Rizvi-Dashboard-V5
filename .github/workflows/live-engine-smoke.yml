@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/regime-adaptive-engine-v1
+      - feat/stage1-20-indicator-backend-alignment
 
 permissions:
   contents: read
@@ -21,11 +21,27 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, sys, time, urllib.request, urllib.error
+          from datetime import datetime, timezone
 
           def get_json(url):
               req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "RizviDashboard-LiveSmokeTest/1.0"})
               with urllib.request.urlopen(req, timeout=20) as response:
                   return json.loads(response.read().decode("utf-8"))
+
+          def timestamp_seconds(value):
+              if isinstance(value, (int, float)) and not isinstance(value, bool):
+                  stamp = float(value)
+                  return stamp / 1000.0 if stamp > 100_000_000_000 else stamp
+              if isinstance(value, str):
+                  try:
+                      stamp = float(value)
+                      return stamp / 1000.0 if stamp > 100_000_000_000 else stamp
+                  except ValueError:
+                      parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                      if parsed.tzinfo is None:
+                          parsed = parsed.replace(tzinfo=timezone.utc)
+                      return parsed.timestamp()
+              raise ValueError("BTC candle timestamp is missing or invalid")
 
           try:
               market = get_json(os.environ["MARKET_URL"])
@@ -44,11 +60,11 @@ jobs:
                       "close": b.get("c"),
                       "volume": b.get("v", 0),
                   })
-              now = int(time.time())
-              latest_ts = int(bars[-1]["timestamp"])
+              now = time.time()
+              latest_ts = timestamp_seconds(bars[-1]["timestamp"])
               age = now - latest_ts
               if age < -60 or age > 180:
-                  raise RuntimeError(f"Latest BTC candle is stale or future-dated: age={age}s")
+                  raise RuntimeError(f"Latest BTC candle is stale or future-dated: age={age:.1f}s")
               payload = json.dumps({"symbol": "BTCUSD", "timeframe": "1m", "bars": bars}).encode()
               req = urllib.request.Request(
                   os.environ["ENGINE_URL"], data=payload,
@@ -69,7 +85,7 @@ jobs:
                   "status": "PASS",
                   "market_source": market.get("source"),
                   "bar_count": len(bars),
-                  "latest_candle_age_seconds": age,
+                  "latest_candle_age_seconds": round(age, 1),
                   "engine_version": result.get("version"),
                   "regime": result.get("regime"),
                   "indicator_output_count": len(indicators),
