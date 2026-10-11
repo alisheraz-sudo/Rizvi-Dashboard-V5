@@ -15,7 +15,11 @@ def _timestamp_seconds(value):
         return None
     if isinstance(value, (int, float)) and isfinite(float(value)):
         stamp = float(value)
-        return stamp / 1000.0 if stamp > 100_000_000_000 else stamp
+        if stamp > 100_000_000_000_000:
+            return stamp / 1_000_000.0
+        if stamp > 100_000_000_000:
+            return stamp / 1000.0
+        return stamp
     if isinstance(value, str):
         try:
             parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
