@@ -196,6 +196,31 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
     else:
         regime = "normal volatility"
 
+    flow_valid = False
+    flow_values = None
+    if isinstance(trade_flow, dict) and trade_flow.get("status") == "LIVE":
+        observed_at = _stamp_seconds(trade_flow.get("observed_at"))
+        age_seconds = datetime.now(timezone.utc).timestamp() - observed_at if observed_at is not None else None
+        buy_volume = trade_flow.get("buy_volume")
+        sell_volume = trade_flow.get("sell_volume")
+        source = str(trade_flow.get("source", "")).strip()
+        if (source and age_seconds is not None and -30 <= age_seconds <= 120
+                and _finite(buy_volume) and _finite(sell_volume)
+                and float(buy_volume) >= 0 and float(sell_volume) >= 0
+                and float(buy_volume) + float(sell_volume) > 0):
+            total_flow = float(buy_volume) + float(sell_volume)
+            flow_values = {
+                "buy_volume": float(buy_volume),
+                "sell_volume": float(sell_volume),
+                "delta_volume": float(buy_volume) - float(sell_volume),
+                "delta_percent": 100.0 * (float(buy_volume) - float(sell_volume)) / total_flow,
+                "source": source,
+                "instrument_note": str(trade_flow.get("instrument_note", "")),
+                "observed_at": trade_flow.get("observed_at"),
+                "trade_count": trade_flow.get("trade_count"),
+            }
+            flow_valid = True
+
     values = {
         "ema_9_21": _item({"ema9": e9, "ema21": e21, "bias": "bullish" if e9 is not None and e21 is not None and e9 > e21 else "bearish" if e9 is not None and e21 is not None and e9 < e21 else "neutral"}),
         "rsi_14": _item(rsi, "CALCULATED" if rsi is not None else "INSUFFICIENT_HISTORY"),
@@ -210,8 +235,12 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
         "support_resistance": _item({"resistance": resistance, "support": support}, "RECENT_RANGE_LEVELS"),
         "volume_profile": _item(volume_profile_proxy, "OHLCV_CLOSE_BIN_PROXY", "Not tick-level or exchange-native volume profile."),
         "liquidity_sweeps": _item(sweep, "CANDIDATE_REQUIRES_VALIDATION"),
-        "delta_buy_sell": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires actual bid/ask aggressor or equivalent trade data."),
-        "orderflow_footprint": _item(None, "UNAVAILABLE_UNLESS_VALIDATED_FEED", "Requires granular trade/price-level bid-ask data."),
+        "delta_buy_sell": _item(flow_values, "CALCULATED_LIVE_PROXY" if flow_valid else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
+                               "Live Binance BTCUSDT aggressor-volume proxy; not the broker BTCUSD CFD feed." if flow_valid else "Requires a fresh, validated aggressor-volume feed."),
+        "orderflow_footprint": _item({"source": flow_values["source"], "instrument_note": flow_values["instrument_note"],
+                                      "levels": trade_flow.get("footprint", {})} if flow_valid else None,
+                                     "CALCULATED_LIVE_PROXY" if flow_valid and isinstance(trade_flow.get("footprint"), dict) else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
+                                     "Trade-level price buckets from public BTCUSDT spot trades; not a broker CFD footprint." if flow_valid else "Requires granular trade/price-level bid-ask data."),
         "divergence": _item(divergence, "CANDIDATE_REQUIRES_VALIDATION"),
         "trading_sessions": _item(session, "UTC_TIME_BUCKET_ONLY", "UTC bucket, not broker/exchange session calendar."),
         "day_high_low": _item({"day_high_utc": day_high, "day_low_utc": day_low}, "UTC_DAY_FROM_SUPPLIED_BARS"),
