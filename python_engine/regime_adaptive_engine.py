@@ -363,7 +363,10 @@ def _adaptive_weights(regime: str) -> Dict[str, float]:
 
 
 def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timeframe: str = "1m",
-             order_flow: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+             order_flow: Optional[Dict[str, Any]] = None,
+             dxy_bars: Optional[Sequence[Dict[str, Any]]] = None,
+             news_events: Optional[Sequence[Dict[str, Any]]] = None,
+             higher_timeframe_bars: Optional[Sequence[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Evaluate OHLCV bars and return JSON-serializable engine diagnostics and a signal."""
     supported_timeframes = {"1m", "5m", "15m", "30m", "1h"}
     if timeframe not in supported_timeframes:
@@ -381,7 +384,11 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
     # Route the canonical 20 indicators to the approved 6/5/4/5 specialist-engine
     # groups. Legacy 18-family directional grouping is deliberately not used here.
     roster = roster_snapshot()
-    diagnostics = calculate_roster(raw_bars, symbol=symbol, timeframe=timeframe)
+    diagnostics = calculate_roster(
+        raw_bars, symbol=symbol, timeframe=timeframe,
+        trade_flow=order_flow, dxy_bars=dxy_bars, news_events=news_events,
+        higher_timeframe_bars=higher_timeframe_bars,
+    )
     engines = _locked_engine_reports(diagnostics)
     return {
         "ok": True,
