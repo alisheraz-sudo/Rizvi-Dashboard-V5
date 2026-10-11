@@ -1600,10 +1600,10 @@ function render(){
  const compMap=new Map(Object.entries(components).map(([k,v])=>[normalize(k),v]));
  const rawMap=new Map(Object.entries(raw).map(([k,v])=>[normalize(k),v]));
  const specs=[
-  [['EMA 9/21',['EMA','EMA9','EMA21']],['SMA 200',['SMA200','SMA']],['MACD',['MACD']],['ADX / DMI',['ADX','DMI','DIPLUS','DIMINUS']],['VWAP Filter',['VWAP']]],
-  [['RSI-14',['RSI14','RSI']],['Stochastic',['STOCHASTIC','STOCH']],['ATR',['ATR']],['Bollinger Bands',['BOLLINGER','BBANDS']]],
-  [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Support / Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']],['Liquidity Pools',['LIQUIDITYPOOLS','LIQUIDITY']],['Liquidity Sweep',['LIQUIDITYSWEEP','SWEEP']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']]],
-  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE']],['Candle Pattern / Price Action',['CANDLEPATTERN','CANDLE','PRICEACTION']],['Order Flow / Delta',['ORDERFLOW','DELTA','FOOTPRINT']],['Divergence',['DIVERGENCE']]]
+  [['EMA 9/21',['EMA9/21','EMA','EMA9','EMA21']],['RSI-14',['RSI14','RSI']],['Trend (5)',['TREND5','TREND']],['VWAP Filter',['VWAPFILTER','VWAP']],['Volatility Regime Filter',['VOLATILITYREGIME','REGIMEFILTER']],['ATR (14)',['ATR14','ATR']]],
+  [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Structure Prediction',['STRUCTUREPREDICTION','PREDICTION']],['Candle Patterns / Price Action',['CANDLEPATTERNS','CANDLEPATTERN','CANDLE','PRICEACTION']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']],['Support & Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']]],
+  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE']],['Liquidity Pools / Sweeps',['LIQUIDITYPOOLSSWEEPS','LIQUIDITYPOOLS','LIQUIDITYSWEEP','LIQUIDITY','SWEEP']],['Delta Buy/Sell',['DELTABUYSELL','DELTA']],['Order Flow / Footprint',['ORDERFLOWFOOTPRINT','ORDERFLOW','FOOTPRINT']]],
+  [['Bullish/Bearish Divergence',['BULLISHBEARISHDIVERGENCE','DIVERGENCE']],['Trading Sessions',['TRADINGSESSIONS','SESSION','SESSIONS']],['Day High / Day Low',['DAYHIGHDAYLOW','DAYHIGH','DAYLOW']],['DXY Inverse-Correlation Filter',['DXYINVERSECORRELATION','DXYFILTER','DXY']],['High-Impact US News Filter',['HIGHIMPACTUSNEWS','USNEWSFILTER','NEWSFILTER']]]
  ];
  function readIndicator(aliases){
   for(const a of aliases){const k=normalize(a);if(compMap.has(k)){const v=compMap.get(k);if(v&&typeof v==='object'&&(v.score!=null||v.value!=null||v.bias!=null||v.status))return{v,source:'component'};}}
