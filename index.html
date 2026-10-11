@@ -187,18 +187,89 @@
  .qualityBlock .badge{font-size:7px!important;padding:4px 4px!important;white-space:nowrap!important}
 }
 </style>
+
+<style id="rizvi-v5-locked-engine-panels">
+/* Approved UI-only change: Engine 5 above four equal-size, aligned panels. */
+.actions{grid-template-columns:112px 112px minmax(0,1fr)!important}
+.actions>.btn.unwind{display:none!important}
+.right{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:auto!important;gap:10px!important;width:100%!important;align-items:stretch!important;margin-top:10px!important}
+.right .engine5-card{grid-column:1/-1!important;min-height:142px!important;height:auto!important;border-color:#5c83ac!important}
+.right .engine-card{height:230px!important;min-height:230px!important;max-height:230px!important;display:flex!important;flex-direction:column!important;min-width:0!important;overflow:hidden!important}
+.right .engine-card .title{font-size:15px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin-bottom:8px!important}
+.engine-status{font-size:11px!important;color:#9eb6c8!important;border-bottom:1px solid #173650!important;padding-bottom:7px!important;margin-bottom:7px!important}
+.engine-data{flex:1!important;min-height:0!important;overflow:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:6px!important}
+.engine-item{min-width:0!important;border:1px solid #1d3a50!important;border-radius:5px!important;background:#06131f!important;padding:6px!important}
+.engine-item span{display:block!important;color:#9bb0c0!important;font-size:10px!important;overflow-wrap:anywhere!important}
+.engine-item b{display:block!important;color:#d9e7f0!important;font-size:12px!important;margin-top:4px!important;overflow-wrap:anywhere!important}
+.engine-item .pending{color:#e4b85c!important}
+.engine5-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+.engine-stat{background:#061522!important;border:1px solid #25435b!important;border-radius:6px!important;padding:8px!important;min-width:0!important}
+.engine-stat span{display:block!important;color:#9db3c4!important;font-size:10px!important;margin-bottom:5px!important}
+.engine-stat b{display:block!important;color:#00e39a!important;font-size:14px!important;overflow-wrap:anywhere!important}
+.engine5-reason{margin-top:9px!important;color:#d4e2eb!important;font-size:11px!important;line-height:1.4!important}
+.engine5-foot{margin-top:6px!important;color:#7f99ad!important;font-size:10px!important}
+@media(max-width:900px){
+ .actions{grid-template-columns:1fr 1fr minmax(0,3fr)!important;gap:5px!important;margin:7px 5px 8px!important}
+ .right{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;padding:0 5px!important;box-sizing:border-box!important}
+ .right .engine5-card{min-height:150px!important;padding:8px!important}
+ .engine5-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+ .engine-stat{padding:6px!important}
+ .engine-stat span{font-size:8px!important}
+ .engine-stat b{font-size:11px!important}
+ .right .engine-card{height:205px!important;min-height:205px!important;max-height:205px!important;padding:7px!important}
+ .right .engine-card .title{font-size:10px!important;margin-bottom:6px!important}
+ .engine-status{font-size:8px!important;padding-bottom:5px!important;margin-bottom:5px!important}
+ .engine-data{gap:4px!important}
+ .engine-item{padding:4px!important}
+ .engine-item span{font-size:7px!important}
+ .engine-item b{font-size:9px!important;margin-top:3px!important}
+ .engine5-reason{font-size:9px!important}
+ .engine5-foot{font-size:8px!important}
+}
+@media(max-width:360px){.right .engine-card{height:215px!important;min-height:215px!important;max-height:215px!important}.right .engine-card .title{font-size:9px!important}}
+</style>
 </head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
-<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><button class="btn unwind">⚠ UNWIND</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
+<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b>BUY</b><i>SELL</i><i>WAIT</i></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
 <div class="main"><main>
 <section class="chart"><div class="grid"></div><div class="candles">
 <i class="c g" style="left:2%;top:78%;height:12%"></i><i class="c g" style="left:6%;top:68%;height:13%"></i><i class="c r" style="left:10%;top:63%;height:10%"></i><i class="c g" style="left:14%;top:57%;height:13%"></i><i class="c g" style="left:18%;top:53%;height:12%"></i><i class="c r" style="left:22%;top:55%;height:10%"></i><i class="c g" style="left:26%;top:45%;height:16%"></i><i class="c g" style="left:30%;top:40%;height:15%"></i><i class="c r" style="left:34%;top:43%;height:9%"></i><i class="c g" style="left:38%;top:35%;height:15%"></i><i class="c g" style="left:42%;top:30%;height:16%"></i><i class="c r" style="left:46%;top:35%;height:10%"></i><i class="c g" style="left:50%;top:28%;height:16%"></i><i class="c g" style="left:54%;top:22%;height:14%"></i><i class="c r" style="left:58%;top:27%;height:10%"></i><i class="c g" style="left:62%;top:18%;height:15%"></i><i class="c g" style="left:66%;top:13%;height:14%"></i><i class="c r" style="left:70%;top:19%;height:9%"></i><i class="c g" style="left:74%;top:12%;height:13%"></i><i class="c r" style="left:78%;top:16%;height:9%"></i></div>
 <div class="price"></div><div class="tag" id="chartPriceTag">68,432.50</div><div class="axis"><span>69,000.00</span><span>68,800.00</span><span>68,600.00</span><span>68,400.00</span><span>68,200.00</span><span>68,000.00</span><span>67,800.00</span><span>67,600.00</span><span>67,400.00</span><span>67,200.00</span></div></section>
 <div class="legend"><div><b>↗ BUY / ↓ SELL</b>Signal Direction<br>(Market Analysis)</div><div><b>🛡 HIGH QUALITY</b>Qualified Signal<br>(80–95%)</div><div><b>⚠ UNWIND</b>Exit / Reversal Signal</div><div><b>▣ TRADE RANGE</b>Entry / SL / TP<br>(Based on actual prices)</div></div></main>
-<aside class="right"><section class="card"><div class="title">1. <b>SIGNAL</b> <small>(Market Analysis)</small></div><div class="big"><span>BUY</span><span>68% <em class="badge" style="background:#173c75;color:#7fb8ff">MEDIUM</em></span></div><div class="rows"><div class="row"><span>Trend</span><b>Bullish ↑</b></div><div class="row"><span>Momentum</span><b>Bullish ↑</b></div><div class="row"><span>RSI (14)</span><b>61</b></div><div class="row"><span>Structure</span><b>Support ↑</b></div><div class="row"><span>Volume / Delta</span><b>Positive ↑</b></div></div><div class="note">ⓘ Signal shows potential direction.<br>Not a trade yet.</div></section>
-<section class="card gborder"><div class="title">2. <b class="green">EXECUTION</b> <small>(Trade Qualification)</small></div><div class="row"><span>Quality Score</span><b>88% &nbsp; <em class="badge">HIGH QUALITY</em></b></div><div class="checks"><div class="check">Entry Valid</div><div class="check">SL Valid</div><div class="check">RR Acceptable (1:2)</div><div class="check">Structure Intact</div><div class="check">No Major Reversal</div></div><div class="ready">SIGNAL QUALIFIED</div></section>
-<section class="card"><div class="title">3. <b>TRADE RANGE</b> <small>(Based on Entry/SL/TP)</small></div><div class="rangeRows"><div class="rangeRow"><span>Entry</span><b>68,480.00</b></div><div class="rangeRow"><span>SL</span><b class="risk">68,720.00 (Risk 240)</b></div><div class="rangeRow"><span>TP1</span><b>68,230.00 (1R)</b></div><div class="rangeRow"><span>TP2</span><b>67,980.00 (1.5R)</b></div><div class="rangeRow"><span>TP3</span><b>67,650.00 (2R)</b></div></div><div class="note">ⓘ Range is calculated from actual prices,<br>not just percentage.</div></section><section class="card marketRange"><div class="title">4. <b>MARKET RANGE</b> <small>(Liquidity Levels)</small></div><div class="rangeRows"><div class="rangeRow"><span>DAY HIGH</span><b id="dayHigh">--</b></div><div class="rangeRow"><span>DAY LOW</span><b id="dayLow">--</b></div><div class="rangeRow"><span>4H HIGH</span><b id="h4High">--</b></div><div class="rangeRow"><span>4H LOW</span><b id="h4Low">--</b></div><div class="rangeRow"><span>1H HIGH</span><b id="h1High">--</b></div><div class="rangeRow"><span>1H LOW</span><b id="h1Low">--</b></div><div class="rangeRow"><span>30M HIGH</span><b id="m30High">--</b></div><div class="rangeRow"><span>30M LOW</span><b id="m30Low">--</b></div><div class="rangeRow"><span>15M HIGH</span><b id="m15High">--</b></div><div class="rangeRow"><span>15M LOW</span><b id="m15Low">--</b></div></div><div class="note">ⓘ Live market levels used by the signal engine for liquidity, sweep and structure checks.</div></section></aside></div>
+<aside class="right" aria-label="Engine panels">
+<section class="card engine5-card" aria-live="polite">
+  <div class="title">ENGINE 5 — <b>REGIME-ADAPTIVE EVALUATOR</b></div>
+  <div class="engine5-grid">
+    <div class="engine-stat"><span>Algorithm Status</span><b id="e5State">WAITING FOR DATA</b></div>
+    <div class="engine-stat"><span>Market Regime</span><b id="e5Regime">Not reported</b></div>
+    <div class="engine-stat"><span>Combined Score</span><b id="e5Score">—</b></div>
+    <div class="engine-stat"><span>Final Decision</span><b id="e5Decision">WAIT</b></div>
+  </div>
+  <div class="engine5-reason" id="e5Reason">Waiting for a fresh, aligned indicator and algorithm report.</div>
+  <div class="engine5-foot" id="e5Meta">Auto Trading: OFF · Display-only panel; algorithm logic unchanged.</div>
+</section>
+<section class="card engine-card" data-engine="1">
+  <div class="title">ENGINE 1 — <b>INDICATOR READINGS</b></div>
+  <div class="engine-status" id="engine1Status">Waiting for indicator report</div>
+  <div class="engine-data" id="engine1Data">No live indicator values reported yet.</div>
+</section>
+<section class="card engine-card" data-engine="2">
+  <div class="title">ENGINE 2 — <b>STRUCTURE / TREND</b></div>
+  <div class="engine-status" id="engine2Status">Waiting for indicator report</div>
+  <div class="engine-data" id="engine2Data">No live indicator values reported yet.</div>
+</section>
+<section class="card engine-card" data-engine="3">
+  <div class="title">ENGINE 3 — <b>CONFIRMATION</b></div>
+  <div class="engine-status" id="engine3Status">Waiting for indicator report</div>
+  <div class="engine-data" id="engine3Data">No live indicator values reported yet.</div>
+</section>
+<section class="card engine-card" data-engine="4">
+  <div class="title">ENGINE 4 — <b>SETUP / RISK CHECKS</b></div>
+  <div class="engine-status" id="engine4Status">Waiting for indicator report</div>
+  <div class="engine-data" id="engine4Data">No live indicator values reported yet.</div>
+</section>
+</aside></div>
 <div class="foot">Signal tells you what the market is doing &nbsp; | &nbsp; Qualification tells you if the signal is ready &nbsp; | &nbsp; Unwind helps you manage the trade<br><br>Rizvi Dashboard V5</div></div><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>
 (function(){
   const priceEl=document.getElementById('quotePrice');
@@ -1385,6 +1456,62 @@ function render(){
  box.textContent=lines.join('\n');
 }
 render();setInterval(render,1000);
+})();
+</script>
+
+<script id="rizvi-v5-engine-panel-display">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const clean=v=>String(v??'—').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+const fmt=v=>typeof v==='number'&&Number.isFinite(v)?(Math.round(v*100)/100).toString():clean(v);
+function render(){
+ const W=window, master=W.RIZVI_MASTER_CONFIRMATION||{}, conf=W.RIZVI_INDICATOR_CONFLUENCE||W.RIZVI_INDICATOR_TEST_REPORT||{}, report=W.RIZVI_MULTI_ALGORITHM_REPORT||{}, eng=W.RIZVI_INDICATOR_ENGINE_STATUS||W.RIZVI_GOLD_ENGINE_STATUS||{};
+ const components=conf.components||master.indicatorStatus||eng.indicators||{};
+ const entries=Object.entries(components).filter(([k,v])=>v&&typeof v==='object');
+ const buckets=[[],[],[],[]];
+ const classify=k=>{
+  const s=k.toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(/rsi|ema|vwap|volumeprofile|macd|momentum|atr|movingaverage/.test(s))return 0;
+  if(/trend|structure|support|resistance|candle|pattern|fvg|session|liquidity|rangelevel/.test(s))return 1;
+  if(/delta|divergence|orderflow|footprint|volume|buying|selling|imbalance/.test(s))return 2;
+  return 3;
+ };
+ entries.forEach(([k,v])=>buckets[classify(k)].push([k,v]));
+ const labels=['Indicator readings','Structure / trend readings','Confirmation readings','Remaining indicator and risk readings'];
+ buckets.forEach((items,i)=>{
+  const host=$('engine'+(i+1)+'Data'),status=$('engine'+(i+1)+'Status');
+  if(!host||!status)return;
+  status.textContent=items.length?items.length+' reported values · display grouping only':'No matching live values reported';
+  host.replaceChildren();
+  if(!items.length){const d=document.createElement('div');d.className='engine-item';d.textContent='Pending — no indicator values exposed by the live report.';host.appendChild(d);return;}
+  items.forEach(([k,v])=>{
+   const value=v.score??v.value??v.bias??v.status??'—';
+   const state=Number(v.score??v.value)!==0?'REPORTED':'WAITING / ZERO';
+   const d=document.createElement('div');d.className='engine-item';
+   const name=document.createElement('span');name.textContent=clean(k);
+   const val=document.createElement('b');val.textContent=fmt(value);
+   if(state!=='REPORTED')val.className='pending';
+   d.append(name,val);host.appendChild(d);
+  });
+ });
+ const algos=report.algorithms||{},algoRows=Object.values(algos);
+ const regime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime||'Not reported';
+ const state=master.engine5?.state||master.status||report.status||eng.state||'WAITING FOR DATA';
+ const decision=master.direction||master.engine5?.direction||eng.action||'WAIT';
+ const score=master.confidence??master.score??eng.score;
+ if($('e5State'))$('e5State').textContent=clean(state).toUpperCase();
+ if($('e5Regime'))$('e5Regime').textContent=clean(regime);
+ if($('e5Score'))$('e5Score').textContent=score==null?'—':fmt(score)+'%';
+ if($('e5Decision'))$('e5Decision').textContent=clean(decision).toUpperCase();
+ const reason=master.reason||master.engine5?.reason||master.alignment?.status||'Awaiting fresh aligned reports; score is not a win probability.';
+ if($('e5Reason'))$('e5Reason').textContent=clean(reason);
+ if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · '+entries.length+' indicator outputs reported · UI-only display';
+}
+render();setInterval(render,2000);
+window.addEventListener('rizvi:master-confirmation-update',render);
+window.addEventListener('rizvi:gold-engine-update',render);
+window.addEventListener('rizvi:indicator-update',render);
 })();
 </script>
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
