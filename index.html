@@ -116,7 +116,7 @@
 #rizviSvgChartV73,#rizviLiveSvgV78{display:none!important}
 #rizviTvChartV55{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;z-index:10!important;touch-action:none!important;background:#031421!important}
 #rizviTvChartV55 canvas{touch-action:none!important}
-</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><script id="rizvi-direct-tv-source" src="/rizvi-tradingview-direct.js"></script><script id="rizvi-indicator-feed-bridge" src="/rizvi-indicator-feed-bridge.js?v=20261009c"></script><script id="rizvi-engine4-filters" src="/rizvi-engine4-filters.js?v=20261011a"></script><style id="rizvi-v125-action-row">
+</style><script id="rizvi-v55-tradingview-lib" src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script><script id="rizvi-direct-tv-source" src="/rizvi-tradingview-direct.js"></script><script id="rizvi-indicator-feed-bridge" src="/rizvi-indicator-feed-bridge.js?v=20261012a"></script><script id="rizvi-engine4-filters" src="/rizvi-engine4-filters.js?v=20261011a"></script><style id="rizvi-v125-action-row">
 /* V125: restore the approved one-line action/signal row directly under the header and above the chart. */
 .actions{display:grid!important;grid-template-columns:86px 86px 118px minmax(0,1fr)!important;gap:7px!important;align-items:stretch!important;width:100%!important;margin:8px 0 7px!important}
 .actions .btn{height:38px!important;padding:0 8px!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important}
@@ -1864,6 +1864,18 @@ function render(){
  const host=$('engine1Data'),status=$('engine1Status');
  if(!host||!status)return;
  const W=window;
+ const canon=v=>{const x=String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return x==='GOLD'||x==='XAUUSD'?'XAUUSD':x==='BTCUSD'||x==='BTCUSDT'?'BTCUSD':x;};
+ const active=canon(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||$('symbolSelect')?.value||'XAU/USD');
+ const feed=W.RIZVI_FEED_STATUS||{};
+ const feedAge=Date.now()-Number(feed.updatedAt||0);
+ const maxBarAge=Math.max(({ '1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600 }[String(feed.timeframe||W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase()]||60)*3,180);
+ const feedAligned=feed.ok===true&&feed.live===true&&feed.stale!==true&&canon(feed.symbol)===active&&feedAge>=0&&feedAge<=45000&&Number(feed.latestAgeSeconds)<=maxBarAge;
+ if(!feedAligned){
+  host.replaceChildren();
+  specs.forEach(([name])=>{const d=document.createElement('div');d.className='engine-item';const label=document.createElement('span');label.textContent=name;const val=document.createElement('b');val.className='pending';val.textContent='WAITING FOR FRESH '+(active||'ASSET')+' DATA';d.append(label,val);host.appendChild(d);});
+  status.textContent='BLOCKED · active chart/feed mismatch or stale feed · old values suppressed';
+  return;
+ }
  const sources=[
   W.RIZVI_INDICATOR_CONFLUENCE?.components,
   W.RIZVI_INDICATOR_TEST_REPORT?.master?.components,
