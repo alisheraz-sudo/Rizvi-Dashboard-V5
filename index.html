@@ -1663,7 +1663,7 @@ function render(){
  if($('e5Decision'))$('e5Decision').textContent=clean(decision).toUpperCase();
  const reason=master.reason||master.engine5?.reason||master.alignment?.status||'Awaiting fresh aligned reports; score is not a win probability.';
  if($('e5Reason'))$('e5Reason').textContent=clean(reason);
- if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · '+entries.length+' indicator outputs reported · UI-only display';
+ if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · 20 approved indicators · UI-only display';
 }
 render();setInterval(render,2000);
 window.addEventListener('rizvi:master-confirmation-update',render);
