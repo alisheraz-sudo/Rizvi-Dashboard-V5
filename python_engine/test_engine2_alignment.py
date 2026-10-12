@@ -2,7 +2,7 @@
 import unittest
 
 from indicator_registry import roster_snapshot
-from regime_adaptive_engine import evaluate
+from regime_adaptive_engine import evaluate, _adaptive_weights
 
 
 ENGINE_2_IDS = [
@@ -55,6 +55,21 @@ class Engine2AlignmentTests(unittest.TestCase):
         self.assertEqual(engine2["validated_calculations"], 0)
         self.assertFalse(engine2["data_validated"])
         self.assertFalse(engine2["ready_for_signal"])
+        self.assertEqual(result["signal"], "WAIT")
+        self.assertFalse(result["autoTrading"])
+
+    def test_adaptive_weights_use_canonical_engine_ids(self):
+        for regime in ("TRENDING", "RANGING", "HIGH_VOLATILITY", "LOW_VOLATILITY", "UNKNOWN"):
+            weights = _adaptive_weights(regime)
+            self.assertEqual(set(weights), {"engine_1", "engine_2", "engine_3", "engine_4"})
+            self.assertAlmostEqual(sum(weights.values()), 1.0)
+            self.assertLessEqual(max(weights.values()), 0.35)
+
+    def test_legacy_engine_scorer_is_not_part_of_canonical_path(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        self.assertEqual(set(result["engines"]), {"engine_1", "engine_2", "engine_3", "engine_4"})
+        self.assertTrue(result["engines"]["engine_2"]["mapping_complete"])
+        self.assertEqual(result["engines"]["engine_2"]["indicator_ids"], ENGINE_2_IDS)
         self.assertEqual(result["signal"], "WAIT")
         self.assertFalse(result["autoTrading"])
 
