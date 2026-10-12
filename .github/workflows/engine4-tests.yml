@@ -7,6 +7,8 @@ on:
     paths:
       - 'index.html'
       - 'server.js'
+      - 'indicator-diagnostics-bridge.js'
+      - 'indicator-diagnostics-bridge.test.js'
       - 'tests/engine4-production.test.cjs'
       - 'tests/engine4-context.test.cjs'
       - '.github/workflows/engine4-tests.yml'
@@ -27,5 +29,7 @@ jobs:
           node-version: '22'
       - name: Check dashboard server syntax
         run: node --check server.js
-      - name: Run Engine 4 production tests
-        run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs
+      - name: Check diagnostics bridge syntax
+        run: node --check indicator-diagnostics-bridge.js
+      - name: Run Engine 4 and diagnostics bridge tests
+        run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs indicator-diagnostics-bridge.test.js
