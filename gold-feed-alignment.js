@@ -56,7 +56,7 @@
     const ok = symbol !== 'UNSUPPORTED' && chartMatches && live && fresh && validBars.length >= 21;
 
     return {
-      ok, symbol, timeframe, source: String(state.source || 'chart-ohcl'),
+      ok, symbol, timeframe, source: String(state.source || 'chart-ohlc'),
       bars: validBars.length, updatedAt: now,
       latestBarAt: last ? last.ms : null, latestAgeSeconds,
       live, stale: !live || !fresh, reason: ok ? null :
