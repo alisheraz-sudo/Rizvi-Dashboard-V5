@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'index.html'
+      - 'server.js'
       - 'tests/engine4-production.test.cjs'
       - 'tests/engine4-context.test.cjs'
       - '.github/workflows/engine4-tests.yml'
@@ -24,5 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check dashboard server syntax
+        run: node --check server.js
       - name: Run Engine 4 production tests
         run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs
