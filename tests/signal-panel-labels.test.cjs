@@ -66,6 +66,6 @@ assert.equal(badge.style.display, 'inline-block');
 send('INVALID', 99, true);
 assert.deepEqual(labels.map(k => nodes[k].textContent), labels, 'invalid direction must fall back to WAIT without relabeling');
 assert.equal(nodes.WAIT.style.opacity, '1');
-assert.equal(badge.style.display, 'inline-block');
+assert.equal(badge.style.display, 'none', 'invalid direction must never qualify as a high-quality setup');
 
 console.log('Signal panel label stability tests: 3 scenarios passed.');
