@@ -1,0 +1,152 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+
+const html = fs.readFileSync('index.html', 'utf8');
+const match = html.match(/<script id="rizvi-v5-indicator-confluence-v1">([\\s\\S]*?)<\\/script>/);
+assert.ok(match, 'production Engine 4 indicator script must exist in index.html');
+const productionScript = match[1];
+
+function fixtureBars(count = 260, volume = true) {
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    const base = 2300 + i * 0.12 + Math.sin(i / 4) * 0.7;
+    const open = base + Math.sin(i * 1.3) * 0.16;
+    const close = base + 0.05 + Math.cos(i * 0.7) * 0.19;
+    rows.push({
+      time: 1790000000 + i * 60,
+      open,
+      high: Math.max(open, close) + 0.32,
+      low: Math.min(open, close) - 0.28,
+      close,
+      volume: volume ? 100 + (i % 17) * 5 : 0
+    });
+  }
+  return rows;
+}
+
+function runProduction(bars, extras = {}) {
+  const sandbox = {
+    console,
+    Date,
+    Math,
+    Number,
+    Array,
+    Object,
+    String,
+    Intl,
+    JSON,
+    setTimeout: () => 0,
+    setInterval: () => 0,
+    CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
+    document: { getElementById: () => ({ value: 'XAU/USD' }) },
+    dispatchEvent: () => true,
+    RIZVI_RAW_BARS: bars,
+    RIZVI_CURRENT_SYMBOL: 'XAU/USD',
+    RIZVI_CANDLE_TIMEFRAME: '1M',
+    ...extras
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(productionScript, sandbox, { timeout: 3000, filename: 'production-engine4.js' });
+  return { report: sandbox.RIZVI_RUN_INDICATOR_TESTS(), sandbox };
+}
+
+function referenceEma(values, n) {
+  const k = 2 / (n + 1);
+  let e = values[0];
+  for (let i = 1; i < values.length; i++) e = values[i] * k + e * (1 - k);
+  return e;
+}
+function referenceRsi(values, n = 14) {
+  let gain = 0, loss = 0;
+  for (let i = 1; i <= n; i++) {
+    const d = values[i] - values[i - 1];
+    if (d > 0) gain += d; else loss -= d;
+  }
+  let ag = gain / n, al = loss / n;
+  for (let i = n + 1; i < values.length; i++) {
+    const d = values[i] - values[i - 1], g = d > 0 ? d : 0, l = d < 0 ? -d : 0;
+    ag = (ag * (n - 1) + g) / n;
+    al = (al * (n - 1) + l) / n;
+  }
+  if (ag === 0 && al === 0) return 50;
+  if (al === 0) return 100;
+  if (ag === 0) return 0;
+  return 100 - 100 / (1 + ag / al);
+}
+function referenceAtr(bars, n = 14) {
+  const tr = [];
+  for (let i = 1; i < bars.length; i++) {
+    const b = bars[i], p = bars[i - 1];
+    tr.push(Math.max(b.high - b.low, Math.abs(b.high - p.close), Math.abs(b.low - p.close)));
+  }
+  let a = tr.slice(0, n).reduce((s, x) => s + x, 0) / n;
+  for (let i = n; i < tr.length; i++) a = (a * (n - 1) + tr[i]) / n;
+  return a;
+}
+
+const expectedNames = [
+  'EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)',
+  'Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)',
+  'Support & Resistance','Volume Profile','Liquidity Pools / Sweeps','Delta Buy/Sell',
+  'Order Flow / Footprint','Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
+  'DXY Inverse-Correlation Filter','High-Impact US News Filter'
+];
+
+test('Engine 4 returns all 20 expected indicators and bounded outputs', () => {
+  const bars = fixtureBars();
+  const { report } = runProduction(bars);
+  assert.equal(Object.keys(report.tests).length, 20);
+  assert.deepEqual(Object.keys(report.tests).sort(), [...expectedNames].sort());
+  for (const [name, row] of Object.entries(report.tests)) {
+    assert.ok(row.score === null || (Number.isFinite(row.score) && row.score >= 0 && row.score <= 100), name + ' score range');
+    assert.ok(row.bias === null || [-1, 0, 1].includes(row.bias), name + ' bias range');
+    if (row.pass) assert.ok(row.hasValue, name + ' cannot pass without a value');
+  }
+  assert.equal(report.numericalAccuracyVerified, false, 'diagnostic run must not falsely claim market accuracy');
+});
+
+test('Engine 4 EMA, RSI and ATR agree with independent reference calculations', () => {
+  const bars = fixtureBars();
+  const { report } = runProduction(bars);
+  const closes = bars.map(b => b.close);
+  assert.ok(Math.abs(report.master.raw.ema9 - referenceEma(closes, 9)) < 1e-8, 'EMA 9');
+  assert.ok(Math.abs(report.master.raw.ema21 - referenceEma(closes, 21)) < 1e-8, 'EMA 21');
+  assert.ok(Math.abs(report.master.raw.rsi - referenceRsi(closes, 14)) < 1e-8, 'RSI-14');
+  assert.ok(Math.abs(report.master.raw.atr - referenceAtr(bars, 14)) < 1e-8, 'ATR-14');
+});
+
+test('Engine 4 refuses to mark missing buyer/seller and external context feeds as live', () => {
+  const { report } = runProduction(fixtureBars());
+  const c = report.tests;
+  assert.equal(c['Delta Buy/Sell'].pass, false);
+  assert.equal(c['Order Flow / Footprint'].pass, false);
+  assert.equal(c['Trading Sessions'].pass, false);
+  assert.equal(c['Day High / Day Low'].pass, false);
+  assert.equal(c['DXY Inverse-Correlation Filter'].pass, false);
+  assert.equal(c['High-Impact US News Filter'].pass, false);
+});
+
+test('Engine 4 blocks volume indicators when positive volume is absent', () => {
+  const { report } = runProduction(fixtureBars(260, false));
+  assert.equal(report.tests['VWAP Filter'].status, 'NO_REAL_VOLUME');
+  assert.equal(report.tests['Volume Profile'].status, 'NO_REAL_VOLUME');
+  assert.equal(report.tests['VWAP Filter'].pass, false);
+  assert.equal(report.tests['Volume Profile'].pass, false);
+});
+
+test('Engine 4 does not pass full combinations with insufficient history', () => {
+  const { report } = runProduction(fixtureBars(5));
+  assert.equal(report.bars, 5);
+  assert.equal(report.combinations.C6.pass, false);
+  assert.equal(report.combinations.C6.action, 'WAIT');
+});
+
+test('Engine 4 rejects malformed OHLC rows from its production input', () => {
+  const bars = fixtureBars();
+  bars.push({ time: 1799999999, open: 2300, high: 2200, low: 2301, close: 2302, volume: 100 });
+  const { report } = runProduction(bars);
+  assert.equal(report.bars, 260);
+});
