@@ -48,6 +48,14 @@ class Engine3NumericalTests(unittest.TestCase):
         self.assertEqual(values["value"]["bin_high"], 2600.0)
         self.assertEqual(values["value"]["highest_close_bin"], 0)
 
+    def test_volume_profile_is_unavailable_when_all_recent_volume_is_zero(self):
+        bars = flat_bars()
+        for bar in bars:
+            bar["volume"] = 0.0
+        values = self.calculate(bars)["volume_profile"]
+        self.assertIsNone(values["value"])
+        self.assertEqual(values["status"], "UNAVAILABLE_NO_VOLUME")
+
     def test_buy_side_sweep_candidate_detected_when_wick_breaks_prior_high_and_close_rejects(self):
         bars = flat_bars()
         bars[-1].update({"open": 2600.0, "high": 2603.0, "low": 2599.0, "close": 2600.0})
