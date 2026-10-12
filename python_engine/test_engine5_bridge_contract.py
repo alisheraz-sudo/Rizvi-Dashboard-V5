@@ -1,7 +1,7 @@
 """Regression tests for the Engine 1–4 -> Engine 5 bridge contract."""
 import unittest
 
-from python_engine.regime_adaptive_engine import evaluate
+from regime_adaptive_engine import evaluate
 
 
 def sample_bars(count=90):
