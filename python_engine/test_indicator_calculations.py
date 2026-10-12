@@ -108,6 +108,18 @@ class IndicatorCalculationsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_roster(bars, "XAUUSD", "1m")
 
+    def test_engine2_rejects_non_chronological_candles(self):
+        bars = sample_bars()
+        bars[-1]["timestamp"] = bars[-2]["timestamp"]
+        with self.assertRaisesRegex(ValueError, "strictly increasing"):
+            calculate_roster(bars, "XAUUSD", "1m")
+
+    def test_engine2_rejects_non_positive_prices(self):
+        bars = sample_bars()
+        bars[-1]["low"] = 0.0
+        with self.assertRaisesRegex(ValueError, "non-positive OHLC prices"):
+            calculate_roster(bars, "XAUUSD", "1m")
+
     def test_engine_exposes_diagnostics_but_never_emits_signal_yet(self):
         result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
         self.assertEqual(len(result["indicator_diagnostics"]["indicators"]), 20)
