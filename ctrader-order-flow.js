@@ -38,7 +38,8 @@ const PT = {
   GET_TB_RES: 2138,
   GET_ACCOUNTS_BY_TOKEN_REQ: 2149,
   GET_ACCOUNTS_BY_TOKEN_RES: 2150,
-  HEARTBEAT_EVENT: 51
+  HEARTBEAT_EVENT: 51,
+  ERROR_RES: 50
 };
 
 function normalized(x) {
@@ -80,7 +81,7 @@ function accountIdFromEnv() {
 }
 
 function wantedSymbols() {
-  return (process.env.CTRADER_SYMBOLS || 'XAUUSD,BTCUSD')
+  return (process.env.CTRADER_SYMBOLS || 'XAUUSD')
     .split(',')
     .map(normalized)
     .filter(Boolean);
@@ -226,7 +227,11 @@ function connect() {
     if (m.payloadType === PT.GET_ACCOUNTS_BY_TOKEN_RES) {
       const accounts = p.ctidTraderAccount || [];
       const preferred = accounts.find(a => a.isLive === true) || accounts[0];
-      if (!preferred?.ctidTraderAccountId) throw new Error('No cTrader account returned for access token');
+      if (!preferred?.ctidTraderAccountId) {
+        state.lastError = 'No cTrader account returned for this access token; confirm account authorization.';
+        state.status = 'account_not_found';
+        return;
+      }
       state.accountId = Number(preferred.ctidTraderAccountId);
       send(ws, PT.ACCOUNT_AUTH_REQ, {
         ctidTraderAccountId: state.accountId,
@@ -259,8 +264,10 @@ function connect() {
       return;
     }
 
-    if (p.errorCode || m.errorCode) {
-      state.lastError = p.description || p.errorCode || m.errorCode;
+    if (m.payloadType === PT.ERROR_RES || p.errorCode || m.errorCode) {
+      state.lastError = p.description || p.errorCode || m.errorCode || 'cTrader API error';
+      state.status = 'api_error';
+      return;
     }
   });
 
