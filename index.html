@@ -1774,7 +1774,7 @@ function render(){
  if($('e5State'))$('e5State').textContent=clean(state).toUpperCase();
  if($('e5Regime'))$('e5Regime').textContent=clean(regime);
  if($('e5Score'))$('e5Score').textContent=score==null?'—':fmt(score)+'%';
- if($('e5Decision'))$('e5Decision').textContent=clean(decision).toUpperCase();
+ if($('e5Decision')){const el=$('e5Decision');el.textContent=clean(decision).toUpperCase();const d=clean(decision).toUpperCase();el.style.color=d==='BUY'?'#00e39a':d==='SELL'?'#ff5c69':'#ffd34d';}
  const reason=master.reason||master.engine5?.reason||master.alignment?.status||'Awaiting fresh aligned reports; score is not a win probability.';
  if($('e5Reason'))$('e5Reason').textContent=clean(reason);
  if($('e5Meta'))$('e5Meta').textContent='Auto Trading: OFF · '+algoRows.length+' algorithm outputs reported · '+Object.keys(components).length+' indicator outputs reported · UI-only display';
@@ -1851,11 +1851,12 @@ window.addEventListener('rizvi:indicator-update',render);
       const active=d===valid;
       node.style.opacity=active?'1':'.48';
       node.style.fontWeight=active?'900':'700';
+      node.style.color=active?(valid==='BUY'?'#00e39a':valid==='SELL'?'#ff5c69':'#ffd34d'):'#d4e0e9';
       node.style.animation=active?'rizviSignalPulse 1.25s ease-in-out infinite':'none';
-      node.style.boxShadow=active?(valid==='BUY'?'0 0 0 1px #13a66c, 0 0 10px #13a66c55':valid==='SELL'?'0 0 0 1px #dc4554, 0 0 10px #dc455455':'0 0 0 1px #4d7ca5, 0 0 10px #4d7ca555'):'none';
+      node.style.boxShadow=active?(valid==='BUY'?'0 0 0 1px #13a66c, 0 0 10px #13a66c55':valid==='SELL'?'0 0 0 1px #dc4554, 0 0 10px #dc455455':'0 0 0 1px #e7bd32, 0 0 10px #e7bd3255'):'none';
       if(node.tagName==='I'){
-        node.style.borderColor=active?(valid==='BUY'?'#13a66c':valid==='SELL'?'#dc4554':'#4d7ca5'):'#344a5e';
-        node.style.background=active?(valid==='BUY'?'#075b3e':valid==='SELL'?'#70202b':'#173c75'):'#172636';
+        node.style.borderColor=active?(valid==='BUY'?'#13a66c':valid==='SELL'?'#dc4554':'#e7bd32'):'#344a5e';
+        node.style.background=active?(valid==='BUY'?'#075b3e':valid==='SELL'?'#70202b':'#5b480b'):'#172636';
       }
     });
     const q=quality();
