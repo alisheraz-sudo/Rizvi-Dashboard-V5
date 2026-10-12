@@ -60,6 +60,7 @@
     Object.assign(BASE_WEIGHTS,DEFAULT_ENGINE5_SETTINGS.baseWeights);
   }
   const ENGINE5_SETTINGS={...DEFAULT_ENGINE5_SETTINGS,...suppliedSettings,baseWeights:BASE_WEIGHTS};
+  state.outcomes=loadOutcomes();
   function recordOutcome(e){
     const d=e&&e.detail||e;
     if(!d||!['WIN','LOSS'].includes(String(d.outcome||'').toUpperCase())||!['BUY','SELL'].includes(String(d.direction||'').toUpperCase())||!d.indicatorSignals)return;
@@ -70,6 +71,7 @@
       const p=state.outcomes[k]||(state.outcomes[k]={n:0,correct:0});
       p.n++;if((win&&s===dir)||(!win&&s!==dir))p.correct++;
     });
+    saveOutcomes();
   }
   window.addEventListener('rizvi:trade-outcome',recordOutcome);
   window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;\n  window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
