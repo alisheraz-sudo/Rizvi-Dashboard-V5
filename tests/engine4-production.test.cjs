@@ -188,6 +188,29 @@ test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
   assert.equal(report.master.components['Candle Patterns / Price Action'].bias, 1);
 });
 
+
+test('Engine 4 end-to-end integration accepts all 20 outputs only when every feed is supplied', () => {
+  const context = {
+    dxy: { status: 'LIVE', correlation: -0.72, dxyDirection: 'SELL', signal: 'INVERSE_CONFIRMED', source: 'synthetic test fixture' },
+    usNews: { status: 'LIVE', blocked: true, activeEvent: { title: 'Test high-impact event' }, reason: 'synthetic test fixture' },
+    session: { status: 'LIVE', active: ['LONDON'], source: 'synthetic test fixture' },
+    dayHighLow: { status: 'LIVE', high: 2345, low: 2285, source: 'synthetic test fixture' }
+  };
+  const { report } = runProduction(fixtureBars(), {
+    RIZVI_ENGINE4_CONTEXT: context,
+    RIZVI_TRADE_DELTA: { buyVolume: 120, sellVolume: 80 },
+    RIZVI_ORDER_FLOW_DEPTH: [{ bid: 120, ask: 80 }],
+    RIZVI_ORDER_FLOW: { status: 'LIVE' }
+  });
+  assert.equal(Object.keys(report.tests).length, 20);
+  const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name);
+  assert.deepEqual(failed, [], 'all supplied synthetic feeds should produce valid outputs');
+  assert.match(report.master.components['High-Impact US News Filter'].value, /^BLOCK/);
+  assert.equal(report.master.components['Delta Buy/Sell'].status, 'LIVE');
+  assert.equal(report.master.components['Order Flow / Footprint'].status, 'LIVE');
+  assert.equal(report.numericalAccuracyVerified, false, 'synthetic integration is not live-market accuracy');
+});
+
 test('Engine 4 rejects malformed OHLC rows from its production input', () => {
   const bars = fixtureBars();
   bars.push({ time: 1799999999, open: 2300, high: 2200, low: 2301, close: 2302, volume: 100 });
