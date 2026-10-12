@@ -21,7 +21,7 @@ ENGINES = [
     },
     {
         "id": 2,
-        "name": "Market Structure & Price Action",
+        "name": "Structure & Liquidity",
         "indicators": [
             {"id": "market_structure", "name": "Market Structure", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
             {"id": "structure_prediction", "name": "Structure Prediction", "source": "ohlcv", "status": "DESCRIPTIVE_CANDIDATE_NOT_FORECAST"},
