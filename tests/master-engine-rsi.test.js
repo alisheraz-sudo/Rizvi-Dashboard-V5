@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function runWithBars(bars) {
+function runWithWindow(bars) {
   const events = [];
   const window = {
     RIZVI_CURRENT_SYMBOL: 'XAU/USD',
@@ -25,14 +25,14 @@ function runWithBars(bars) {
     setInterval: () => 1
   };
   vm.runInNewContext(fs.readFileSync('rizvi-master-engine.js', 'utf8'), context);
-  return window.RIZVI_MASTER_CONFIRMATION;
+  return window;
 }
 
 function runWithCloses(closes) {
-  return runWithBars(closes.map((c, i) => ({
+  return runWithWindow(closes.map((c, i) => ({
     t: 1_800_000_000 + i * 60,
     o: c, h: c + 1, l: c - 1, c, v: 10
-  })));
+  }))).RIZVI_MASTER_CONFIRMATION;
 }
 
 const flat = runWithCloses(Array(30).fill(2300));
@@ -53,3 +53,28 @@ assert.equal(divergence.engines.divergence.signal, 'SELL',
   'higher price high with lower RSI should detect bearish divergence');
 
 console.log('Master engine RSI/divergence tests: 4 cases passed.');
+
+const calibrationWindow = runWithWindow(Array.from({ length: 40 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 2300 + i, h: 2301 + i, l: 2299 + i, c: 2300 + i, v: 10
+})));
+const baseTrendWeight = calibrationWindow.RIZVI_MASTER_CONFIRMATION.algoRunReport.baseWeights.trend;
+for (let i = 0; i < 5; i++) {
+  calibrationWindow.RIZVI_RECORD_TRADE_OUTCOME({
+    outcome: 'LOSS',
+    direction: 'BUY',
+    indicatorSignals: { trend: 'BUY', structure: 'BUY', momentum: 'BUY' }
+  });
+}
+calibrationWindow.RIZVI_RUN_MASTER_CONFIRMATION();
+const calibratedReport = calibrationWindow.RIZVI_MASTER_CONFIRMATION.algoRunReport;
+assert.equal(calibratedReport.adaptiveCalibration.indicatorOutcomes.trend.n, 5,
+  'five recorded outcomes should be tracked for trend');
+assert.ok(calibratedReport.weights.trend < baseTrendWeight,
+  'trend weight should decrease after five losses aligned with its signal');
+assert.equal(Object.values(calibratedReport.weights).reduce((a, b) => a + b, 0), 100,
+  'adaptive weights must remain normalized to 100');
+assert.equal(calibratedReport.adaptiveCalibration.minSamplesPerIndicator, 5);
+
+console.log('Adaptive calibration tests: 4 assertions passed.');
+
