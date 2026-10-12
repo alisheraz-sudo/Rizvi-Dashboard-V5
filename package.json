@@ -10,7 +10,8 @@
     "android": "npx cap open android",
     "ios": "npx cap open ios",
     "start": "node server.js",
-    "test:gold-feed-alignment": "node tests/gold-feed-alignment.test.js"
+    "test:gold-feed-alignment": "node tests/gold-feed-alignment.test.js",
+    "test:master-engine-rsi": "node tests/master-engine-rsi.test.js"
   },
   "dependencies": {
     "@capacitor/core": "7.4.3",
