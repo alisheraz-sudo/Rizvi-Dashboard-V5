@@ -74,7 +74,8 @@
     saveOutcomes();
   }
   window.addEventListener('rizvi:trade-outcome',recordOutcome);
-  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;\n  window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
+  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;
+  window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
   function getWeights(){
     const raw={};
     Object.keys(BASE_WEIGHTS).forEach(k=>{
