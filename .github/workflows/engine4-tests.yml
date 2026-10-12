@@ -1,0 +1,27 @@
+name: Engine 4 Production Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'tests/engine4-production.test.cjs'
+      - '.github/workflows/engine4-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine4-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Engine 4 production tests
+        run: node --test tests/engine4-production.test.cjs
