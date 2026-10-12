@@ -1,0 +1,151 @@
+name: Live Gold Engine 3 validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/stage1-20-indicator-backend-alignment
+    paths:
+      - "python_engine/**"
+      - ".github/workflows/live-gold-engine3-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-gold-engine3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fetch fresh XAU candles and validate Engine 3 outputs
+        env:
+          MARKET_URL: https://rizvi-dashboard-production.up.railway.app/market/xau/intraday
+          ENGINE_URL: https://rizvi-dashboard-stability-update-production.up.railway.app/evaluate
+        run: |
+          python - <<'PY'
+          import json, os, sys, time, urllib.request
+          from datetime import datetime, timezone
+          from math import isfinite
+
+          def get_json(url):
+              req = urllib.request.Request(url, headers={"Accept":"application/json","User-Agent":"RizviDashboard-GoldEngine3Validation/1.0"})
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return json.loads(response.read().decode())
+
+          def seconds(value):
+              if isinstance(value, (int, float)) and not isinstance(value, bool):
+                  stamp = float(value)
+                  return stamp / 1000 if stamp > 100_000_000_000 else stamp
+              if isinstance(value, str):
+                  try:
+                      stamp = float(value)
+                      return stamp / 1000 if stamp > 100_000_000_000 else stamp
+                  except ValueError:
+                      dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                      if dt.tzinfo is None:
+                          dt = dt.replace(tzinfo=timezone.utc)
+                      return dt.timestamp()
+              raise ValueError("missing/invalid candle timestamp")
+
+          try:
+              market = get_json(os.environ["MARKET_URL"])
+              if market.get("ok") is not True:
+                  raise RuntimeError("Gold market endpoint unavailable: " + str(market.get("error", "ok=false")))
+              raw = market.get("bars")
+              if not isinstance(raw, list) or len(raw) < 60:
+                  raise RuntimeError("Need at least 60 Gold candles for Engine 3 validation")
+              bars = []
+              for item in raw:
+                  stamp = item.get("t", item.get("timestamp", item.get("time")))
+                  row = {
+                      "timestamp": seconds(stamp),
+                      "open": item.get("o", item.get("open")),
+                      "high": item.get("h", item.get("high")),
+                      "low": item.get("l", item.get("low")),
+                      "close": item.get("c", item.get("close")),
+                      "volume": item.get("v", item.get("volume", 0)),
+                  }
+                  fields = ("open", "high", "low", "close", "volume")
+                  if not all(isinstance(row[k], (int, float)) and isfinite(float(row[k])) for k in fields):
+                      continue
+                  if min(row[k] for k in ("open", "high", "low", "close")) <= 0 or row["volume"] < 0:
+                      continue
+                  if row["high"] < max(row["open"], row["close"], row["low"]) or row["low"] > min(row["open"], row["close"], row["high"]):
+                      continue
+                  bars.append(row)
+              bars.sort(key=lambda item: item["timestamp"])
+              if len(bars) < 60:
+                  raise RuntimeError("Fewer than 60 valid Gold OHLCV candles")
+              if any(bars[i]["timestamp"] >= bars[i+1]["timestamp"] for i in range(len(bars)-1)):
+                  raise RuntimeError("Gold candle timestamps are not strictly increasing")
+              age = time.time() - bars[-1]["timestamp"]
+              if age < -60 or age > 180:
+                  raise RuntimeError("Gold candle feed is stale/future-dated (age %.1fs); fail-closed gate retained" % age)
+
+              body = json.dumps({"symbol":"XAUUSD","timeframe":"1m","bars":bars}).encode()
+              req = urllib.request.Request(os.environ["ENGINE_URL"], data=body, headers={"Content-Type":"application/json","Accept":"application/json"}, method="POST")
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  result = json.loads(response.read().decode())
+              if result.get("ok") is not True:
+                  raise RuntimeError("Engine rejected Gold payload: " + str(result.get("reason", result.get("error", "unknown"))))
+              if result.get("autoTrading") is not False:
+                  raise RuntimeError("Safety gate failed: autoTrading must be false")
+
+              diagnostics = result.get("indicator_diagnostics")
+              roster = diagnostics.get("indicators") if isinstance(diagnostics, dict) else None
+              if not isinstance(roster, dict) or len(roster) != 20:
+                  raise RuntimeError("Locked 20-indicator diagnostic roster missing/incomplete")
+              ids = ("volume_profile", "liquidity_sweeps", "delta_buy_sell", "orderflow_footprint")
+              missing = [key for key in ids if key not in roster]
+              if missing:
+                  raise RuntimeError("Engine 3 outputs missing: " + ", ".join(missing))
+
+              vp = roster["volume_profile"]
+              if not isinstance(vp, dict) or vp.get("status") not in {"OHLCV_CLOSE_BIN_PROXY", "UNAVAILABLE_NO_VOLUME"}:
+                  raise RuntimeError("Volume Profile status unexpected; proxy must be explicit and zero-volume must fail closed")
+              if vp.get("status") == "UNAVAILABLE_NO_VOLUME" and vp.get("value") is not None:
+                  raise RuntimeError("Volume Profile zero-volume guard failed: unavailable status has non-null value")
+              if vp.get("status") == "OHLCV_CLOSE_BIN_PROXY" and not isinstance(vp.get("value"), dict):
+                  raise RuntimeError("Volume Profile proxy status requires a structured value")
+
+              sweep = roster["liquidity_sweeps"]
+              if not isinstance(sweep, dict) or sweep.get("status") != "CANDIDATE_REQUIRES_VALIDATION":
+                  raise RuntimeError("Liquidity Sweeps candidate status missing")
+              if sweep.get("value") not in {"none", "buy-side liquidity sweep candidate", "sell-side liquidity sweep candidate"}:
+                  raise RuntimeError("Liquidity Sweeps returned an unknown value")
+
+              for key in ("delta_buy_sell", "orderflow_footprint"):
+                  item = roster[key]
+                  if not isinstance(item, dict):
+                      raise RuntimeError(key + " output is not an object")
+                  # This validation run is XAUUSD: BTC exchange flow must never be presented as Gold data.
+                  if item.get("value") is not None:
+                      raise RuntimeError(key + " unexpectedly populated for XAU without a validated Gold trade-flow adapter")
+                  if item.get("status") != "UNAVAILABLE_UNLESS_VALIDATED_FEED":
+                      raise RuntimeError(key + " must fail closed without a validated Gold feed")
+
+              engines = result.get("engines")
+              engine3 = engines.get("engine_3") if isinstance(engines, dict) else None
+              if not isinstance(engine3, dict) or engine3.get("mapping_complete") is not True:
+                  raise RuntimeError("Engine 3 routing/mapping contract incomplete")
+              assigned = {item.get("id") for item in engine3.get("indicators", []) if isinstance(item, dict)}
+              if assigned != set(ids):
+                  raise RuntimeError("Engine 3 indicator assignment differs from locked four-indicator roster")
+              print(json.dumps({
+                  "status":"PASS",
+                  "market_source":market.get("source"),
+                  "symbol":"XAUUSD",
+                  "fresh_candles":len(bars),
+                  "latest_candle_age_seconds":round(age, 1),
+                  "engine3_mapping_complete":True,
+                  "volume_profile_status":vp["status"],
+                  "liquidity_sweeps_status":sweep["status"],
+                  "delta_buy_sell_status":roster["delta_buy_sell"]["status"],
+                  "orderflow_footprint_status":roster["orderflow_footprint"]["status"],
+                  "autoTrading":False,
+                  "note":"PASS verifies live XAU payload, indicator outputs, mapping and fail-closed safety; it does not certify delta/footprint as active Gold indicators."
+              }, indent=2))
+          except Exception as exc:
+              print("LIVE GOLD ENGINE 3 VALIDATION FAILED: " + str(exc), file=sys.stderr)
+              sys.exit(1)
+          PY

@@ -1,0 +1,47 @@
+name: Rizvi V5 Indicator Stage 1
+
+on:
+  pull_request:
+    paths:
+      - "python_engine/**"
+      - "indicator-proxy.js"
+      - "indicator-proxy.test.js"
+      - "indicator-diagnostics-bridge.js"
+      - "indicator-diagnostics-bridge.test.js"
+      - "server.js"
+      - ".github/workflows/indicator-stage1.yml"
+  push:
+    branches:
+      - "feat/stage1-20-indicator-backend-alignment"
+    paths:
+      - "python_engine/**"
+      - "indicator-proxy.js"
+      - "indicator-proxy.test.js"
+      - "indicator-diagnostics-bridge.js"
+      - "indicator-diagnostics-bridge.test.js"
+      - "server.js"
+      - ".github/workflows/indicator-stage1.yml"
+
+jobs:
+  indicator-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check server.js && node --check indicator-proxy.js && node --check indicator-diagnostics-bridge.js && node --check indicator-diagnostics-bridge.test.js && node --check indicator-proxy.test.js
+      - name: Run Node proxy tests
+        run: node --test indicator-proxy.test.js indicator-diagnostics-bridge.test.js
+      - name: Compile engine and registry
+        run: python -m py_compile python_engine/app.py python_engine/api_contract.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py python_engine/indicator_calculations.py python_engine/test_app_http.py python_engine/test_engine5_bridge_contract.py python_engine/test_engine2_numerical.py python_engine/test_engine3_numerical.py
+      - name: Run Stage 1 tests
+        working-directory: python_engine
+        run: python -m unittest -v test_indicator_registry.py test_indicator_calculations.py test_engine2_fvg_fill_semantics.py test_api_contract.py test_app_http.py test_engine5_bridge_contract.py test_engine2_numerical.py test_engine3_numerical.py

@@ -1,0 +1,82 @@
+name: Live Gold Engine 2 smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/stage1-20-indicator-backend-alignment
+
+permissions:
+  contents: read
+
+jobs:
+  live-gold-engine2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Fetch fresh XAU candles and verify Engine 2 diagnostics
+        env:
+          MARKET_URL: https://rizvi-dashboard-production.up.railway.app/market/xau/intraday
+          ENGINE_URL: https://rizvi-dashboard-stability-update-production.up.railway.app/evaluate
+        run: |
+          python - <<'PY'
+          import json, os, sys, time, urllib.request, urllib.error
+          from datetime import datetime, timezone
+          from math import isfinite
+
+          def get_json(url):
+              req = urllib.request.Request(url, headers={"Accept":"application/json","User-Agent":"RizviDashboard-GoldSmokeTest/1.0"})
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  return json.loads(r.read().decode())
+
+          def seconds(v):
+              if isinstance(v, (int,float)) and not isinstance(v,bool):
+                  x=float(v); return x/1000 if x>100_000_000_000 else x
+              if isinstance(v,str):
+                  try:
+                      x=float(v); return x/1000 if x>100_000_000_000 else x
+                  except ValueError:
+                      d=datetime.fromisoformat(v.replace("Z","+00:00"))
+                      if d.tzinfo is None: d=d.replace(tzinfo=timezone.utc)
+                      return d.timestamp()
+              raise ValueError("missing/invalid candle timestamp")
+
+          try:
+              market=get_json(os.environ["MARKET_URL"])
+              if market.get("ok") is not True:
+                  raise RuntimeError("Gold feed unavailable: "+str(market.get("error","ok=false")))
+              raw=market.get("bars")
+              if not isinstance(raw,list) or len(raw)<60:
+                  raise RuntimeError("Gold feed has fewer than 60 bars; cannot validate Engine 2")
+              bars=[]
+              for b in raw:
+                  t=b.get("t",b.get("timestamp",b.get("time")))
+                  row={"timestamp":t,"open":b.get("o",b.get("open")),"high":b.get("h",b.get("high")),"low":b.get("l",b.get("low")),"close":b.get("c",b.get("close")),"volume":b.get("v",b.get("volume",0))}
+                  if all(isinstance(row[k],(int,float)) and isfinite(float(row[k])) for k in ("open","high","low","close","volume")) and min(row["open"],row["high"],row["low"],row["close"])>0 and row["volume"]>=0 and row["high"]>=max(row["open"],row["close"],row["low"]) and row["low"]<=min(row["open"],row["close"],row["high"]):
+                      row["timestamp"]=seconds(t); bars.append(row)
+              bars.sort(key=lambda x:x["timestamp"])
+              if len(bars)<60: raise RuntimeError("Fewer than 60 valid Gold OHLCV bars")
+              if any(bars[i]["timestamp"]>=bars[i+1]["timestamp"] for i in range(len(bars)-1)):
+                  raise RuntimeError("Gold candle timestamps are not strictly increasing")
+              age=time.time()-bars[-1]["timestamp"]
+              if age < -60 or age > 180:
+                  raise RuntimeError(f"Gold candles stale/future-dated (age={age:.1f}s); freshness gate intentionally not bypassed")
+              payload=json.dumps({"symbol":"XAUUSD","timeframe":"1m","bars":bars}).encode()
+              req=urllib.request.Request(os.environ["ENGINE_URL"],data=payload,headers={"Content-Type":"application/json","Accept":"application/json"},method="POST")
+              with urllib.request.urlopen(req,timeout=20) as r: result=json.loads(r.read().decode())
+              if result.get("ok") is not True: raise RuntimeError("Python engine rejected Gold candles: "+str(result.get("reason",result.get("error","unknown"))))
+              if result.get("autoTrading") is not False: raise RuntimeError("Safety gate failed: autoTrading must be false")
+              diagnostics=result.get("indicator_diagnostics")
+              roster=diagnostics.get("indicators") if isinstance(diagnostics,dict) else None
+              if not isinstance(roster,dict) or len(roster)!=20: raise RuntimeError("Engine response does not expose the locked 20-indicator diagnostics")
+              engines=result.get("engines")
+              if not isinstance(engines,dict) or len(engines)!=4: raise RuntimeError("Expected Engine 1–4 diagnostics")
+              engine2=engines.get("engine_2",engines.get("2",engines.get("Engine 2")))
+              if not isinstance(engine2,dict): raise RuntimeError("Engine 2 diagnostic object missing")
+              names=("market_structure","structure_prediction","candle_patterns","fvg","support_resistance")
+              missing=[n for n in names if n not in roster]
+              if missing: raise RuntimeError("Approved Engine 2 indicators missing from roster: "+", ".join(missing))
+              print(json.dumps({"status":"PASS","market_source":market.get("source"),"bars":len(bars),"latest_candle_age_seconds":round(age,1),"diagnostics":len(roster),"engine2_indicators":list(names),"engine2_object_present":True,"signal":result.get("signal"),"autoTrading":result.get("autoTrading")},indent=2))
+          except Exception as e:
+              print("LIVE GOLD ENGINE 2 SMOKE TEST FAILED: "+str(e),file=sys.stderr); sys.exit(1)
+          PY
