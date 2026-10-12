@@ -146,12 +146,20 @@
       if([ah,al,bh,bl].every(Number.isFinite)){
         if(bl>ah){
           const top=bl,bottom=ah;
-          const filled=Number(last.l)<=bottom;
+          // Check every candle after formation: the latest candle alone cannot
+          // tell us whether an older gap was already fully mitigated.
+          let filled=false;
+          for(let j=i+1;j<bars.length;j++){
+            if(Number(bars[j].l)<=bottom){filled=true;break;}
+          }
           if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}
         }
         if(bh<al){
           const top=al,bottom=bh;
-          const filled=Number(last.h)>=top;
+          let filled=false;
+          for(let j=i+1;j<bars.length;j++){
+            if(Number(bars[j].h)>=top){filled=true;break;}
+          }
           if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}
         }
       }
