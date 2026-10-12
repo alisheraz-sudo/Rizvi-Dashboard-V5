@@ -255,7 +255,7 @@
   <div class="engine-data" id="engine1Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="2">
-  <div class="title">ENGINE 2 — <b>MOMENTUM & VOLATILITY</b></div>
+  <div class="title">ENGINE 2 — <b>MARKET STRUCTURE & PRICE ACTION</b></div>
   <div class="engine-status" id="engine2Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine2Data">No live indicator values reported yet.</div>
 </section>
@@ -1678,6 +1678,53 @@ window.addEventListener('rizvi:gold-engine-update',render);
 window.addEventListener('rizvi:indicator-update',render);
 })();
 </script>
+
+<script id="rizvi-engine2-dashboard-adapter-v1">
+(function(){
+'use strict';
+if(window.__RIZVI_ENGINE2_DASHBOARD_ADAPTER_V1)return;
+window.__RIZVI_ENGINE2_DASHBOARD_ADAPTER_V1=true;
+const ids=[
+ ['Market Structure','Market Structure'],
+ ['Structure Prediction','Structure Prediction'],
+ ['Candle Patterns / Price Action','Candle Patterns / Price Action'],
+ ['Fair Value Gap (FVG)','Fair Value Gap (FVG)'],
+ ['Support & Resistance','Support & Resistance']
+];
+function esc(v){return String(v==null?'—':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function paint(){
+ const box=document.getElementById('engine2Data'),status=document.getElementById('engine2Status');
+ if(!box||!status)return;
+ const report=window.RIZVI_INDICATOR_CONFLUENCE;
+ const comps=report&&report.components;
+ if(!comps||!report.timestamp){
+   status.textContent='WAIT — indicator report unavailable';
+   box.textContent='Engine 2 outputs not yet available from the dashboard calculation report.';
+   return;
+ }
+ const symbol=String(report.symbol||window.RIZVI_CURRENT_SYMBOL||'unknown');
+ const bars=Number(report.bars)||0;
+ const fresh=Number.isFinite(Number(report.timestamp))&&(Date.now()-Number(report.timestamp)<180000);
+ const rows=ids.map(([key,label])=>{
+   const v=comps[key];
+   if(!v)return '<div><b>'+esc(label)+'</b>: <span>UNAVAILABLE — output missing</span></div>';
+   const st=String(v.status||'UNAVAILABLE').toUpperCase();
+   const value=v.value==null?'—':v.value;
+   const sc=Number.isFinite(Number(v.score))?' · score '+Math.round(Number(v.score))+'/100':'';
+   const bias=Number(v.bias)>0?'BULLISH':Number(v.bias)<0?'BEARISH':'NEUTRAL';
+   const valid=fresh&&bars>=12&&['CALCULATED','LIVE'].includes(st);
+   return '<div><b>'+esc(label)+'</b>: '+esc(valid?st:(!fresh?'STALE REPORT':st))+' · '+esc(value)+' · '+esc(bias)+esc(sc)+'</div>';
+ });
+ const good=fresh&&bars>=12&&ids.every(([k])=>comps[k]&&['CALCULATED','LIVE'].includes(String(comps[k].status||'').toUpperCase()));
+ status.textContent=(good?'CALCULATION OUTPUTS PRESENT':'PARTIAL / NOT LIVE-VALIDATED')+' · '+esc(symbol)+' · '+bars+' bars';
+ box.innerHTML=rows.join('');
+}
+window.addEventListener('rizvi:indicator-confluence-update',paint);
+setInterval(paint,2000);
+paint();
+})();
+</script>
+
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
