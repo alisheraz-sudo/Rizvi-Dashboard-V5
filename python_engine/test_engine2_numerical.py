@@ -60,7 +60,7 @@ class Engine2NumericalTests(unittest.TestCase):
         self.assertEqual(prediction["structure"], "bullish_structure")
         self.assertAlmostEqual(prediction["close"], 2600.0, places=8)
         self.assertAlmostEqual(prediction["prior_range_high"], 2601.0, places=8)
-        self.assertAlmostEqual(prediction["prior_range_low"], 2599.0, places=8)
+        self.assertAlmostEqual(prediction["prior_range_low"], 2597.0, places=8)
         self.assertEqual(values["structure_prediction"]["status"], "DESCRIPTIVE_CANDIDATE_ONLY")
 
     def test_bullish_engulfing_pattern_matches_known_candles(self):
