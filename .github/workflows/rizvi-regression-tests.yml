@@ -1,0 +1,25 @@
+name: Rizvi Dashboard Regression Tests
+
+on:
+  push:
+    branches:
+      - fix/gold-feed-alignment-step1
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test Gold feed alignment
+        run: node tests/gold-feed-alignment.test.js
+      - name: Test Master Engine RSI
+        run: node tests/master-engine-rsi.test.js
