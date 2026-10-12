@@ -23,3 +23,5 @@ jobs:
         run: node tests/gold-feed-alignment.test.js
       - name: Test Master Engine RSI
         run: node tests/master-engine-rsi.test.js
+      - name: Test stable signal panel labels
+        run: node --test tests/signal-panel-labels.test.cjs
