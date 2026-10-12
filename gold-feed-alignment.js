@@ -52,7 +52,12 @@
     const stale = state.stale === true || chartStatus === 'STALE' || chartStatus === 'CACHED' ||
       chartStatus === 'MARKET_CLOSED_LAST_AVAILABLE' || chartStatus === 'UNAVAILABLE';
     const live = chartStatus === 'LIVE' && !stale && !locked && chartMatches;
-    const fresh = !!last && Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 180000;
+    // Match the chart bridge's timeframe-aware freshness rule: allow up to three bars,
+    // with a 3-minute minimum for 1m feeds. A fixed 3-minute limit incorrectly marked
+    // valid 5m/15m/30m/1h candles stale even when the chart was updating correctly.
+    const tfMs = ({'1M':60000,'3M':180000,'5M':300000,'15M':900000,'30M':1800000,'1H':3600000,'2H':7200000,'4H':14400000,'1D':86400000})[timeframe] || 60000;
+    const freshnessLimitMs = Math.max(180000, tfMs * 3);
+    const fresh = !!last && Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= freshnessLimitMs;
     const ok = symbol !== 'UNSUPPORTED' && chartMatches && live && fresh && validBars.length >= 21;
 
     return {
