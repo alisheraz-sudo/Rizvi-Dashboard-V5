@@ -132,3 +132,32 @@ assert.equal(settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({ unknownSetting: 1 }).ok
   'unknown Engine 5 settings must be rejected');
 
 console.log('Engine 5 settings tests: 6 assertions passed.');
+const trendingBars = Array.from({ length: 40 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 2300 + i, h: 2301 + i, l: 2299 + i, c: 2300 + i, v: 10
+}));
+const trendingResult = runWithWindow(trendingBars).RIZVI_MASTER_CONFIRMATION;
+assert.equal(trendingResult.algoRunReport.regime, 'TRENDING',
+  'directional price path should classify as trending');
+assert.notDeepEqual(trendingResult.algoRunReport.weights, trendingResult.algoRunReport.baseWeights,
+  'regime multipliers should adapt indicator weights in trending markets');
+assert.equal(Object.values(trendingResult.algoRunReport.weights).reduce((a, b) => a + b, 0), 100,
+  'regime-adapted weights must normalize to 100');
+
+const rangingBars = Array.from({ length: 40 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 2300 + (i % 2), h: 2302, l: 2298, c: 2300 + (i % 2), v: 10
+}));
+const rangingResult = runWithWindow(rangingBars).RIZVI_MASTER_CONFIRMATION;
+assert.equal(rangingResult.algoRunReport.regime, 'RANGING',
+  'low-efficiency sideways prices should classify as ranging');
+
+const volatileBars = Array.from({ length: 40 }, (_, i) => {
+  const c = 2300 + i * 0.1;
+  const wide = i >= 35 ? 8 : 1;
+  return { t: 1_800_000_000 + i * 60, o: c, h: c + wide, l: c - wide, c, v: 10 };
+});
+const volatileResult = runWithWindow(volatileBars).RIZVI_MASTER_CONFIRMATION;
+assert.equal(volatileResult.algoRunReport.regime, 'VOLATILE',
+  'sharp recent range expansion should classify as volatile');
+console.log('Engine 5 regime-adaptive tests: 5 assertions passed.');
