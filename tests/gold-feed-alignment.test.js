@@ -80,4 +80,24 @@ const insufficient = buildStatus({
 assert.equal(insufficient.ok, false);
 assert.match(insufficient.reason, /Insufficient/);
 
-console.log('Gold feed alignment tests: 7 groups passed.');
+// Malformed OHLC candles must not count toward the minimum valid-bar threshold.
+const malformedBars = bars.map((b, i) => i < 10 ? { ...b, h: b.o } : b);
+const malformed = buildStatus({
+  symbol: 'XAU/USD', timeframe: '1M', bars: malformedBars,
+  chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
+}, now);
+assert.equal(malformed.bars, 20);
+assert.equal(malformed.ok, false);
+assert.match(malformed.reason, /Insufficient/);
+
+// Invalid timestamps are excluded instead of becoming the "latest" bar.
+const invalidTimestampBars = [...bars, { ...bars[bars.length - 1], t: 0, c: 9999 }];
+const invalidTimestamp = buildStatus({
+  symbol: 'XAU/USD', timeframe: '1M', bars: invalidTimestampBars,
+  chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
+}, now);
+assert.equal(invalidTimestamp.bars, 30);
+assert.equal(invalidTimestamp.ok, true);
+assert.equal(invalidTimestamp.latestBarAt, now);
+
+console.log('Gold feed alignment tests: 9 groups passed.');
