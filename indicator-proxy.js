@@ -13,23 +13,43 @@ function normalizeSymbol(value) {
   return SYMBOLS.get(key) || null;
 }
 
+function epochSeconds(value) {
+  if (typeof value === 'string' && !/^\\d+(\\.\\d+)?$/.test(value.trim())) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed / 1000 : NaN;
+  }
+  let stamp = Number(value);
+  if (!Number.isFinite(stamp)) return NaN;
+  if (stamp > 100_000_000_000_000) stamp /= 1_000_000;
+  else if (stamp > 100_000_000_000) stamp /= 1000;
+  return stamp;
+}
+
 function normalizeBars(bars) {
-  return bars.map((bar) => {
+  if (!Array.isArray(bars)) return [];
+  const normalized = bars.map((bar) => {
     if (!bar || typeof bar !== 'object' || Array.isArray(bar)) return null;
-    return {
-      timestamp: bar.timestamp ?? bar.t ?? bar.time,
-      open: bar.open ?? bar.o,
-      high: bar.high ?? bar.h,
-      low: bar.low ?? bar.l,
-      close: bar.close ?? bar.c,
-      volume: bar.volume ?? bar.v ?? 0
-    };
-  }).filter((bar) => {
-    if (!bar) return false;
-    const { open, high, low, close, volume } = bar;
-    const o = Number(open), h = Number(high), l = Number(low), cl = Number(close), v = Number(volume);
-    return [o, h, l, cl, v].every(Number.isFinite) && Math.min(o, h, l, cl) > 0 && v >= 0 && h >= Math.max(o, cl, l) && l <= Math.min(o, cl, h);
-  });
+    const timestamp = epochSeconds(bar.timestamp ?? bar.t ?? bar.time);
+    const open = Number(bar.open ?? bar.o), high = Number(bar.high ?? bar.h);
+    const low = Number(bar.low ?? bar.l), close = Number(bar.close ?? bar.c);
+    const volume = Number(bar.volume ?? bar.v ?? 0);
+    if (![timestamp, open, high, low, close, volume].every(Number.isFinite)) return null;
+    if (Math.min(open, high, low, close) <= 0 || volume < 0 ||
+        high < Math.max(open, close, low) || low > Math.min(open, close, high)) return null;
+    return { timestamp, open, high, low, close, volume };
+  }).filter(Boolean).sort((a, b) => a.timestamp - b.timestamp);
+
+  // Providers may repeat the currently forming candle. Keep one valid bar per
+  // timestamp so the Python contract receives strictly increasing candle times.
+  const unique = [];
+  for (const bar of normalized) {
+    if (unique.length && unique[unique.length - 1].timestamp === bar.timestamp) {
+      unique[unique.length - 1] = bar;
+    } else {
+      unique.push(bar);
+    }
+  }
+  return unique;
 }
 
 function validateDashboardPayload(payload) {
