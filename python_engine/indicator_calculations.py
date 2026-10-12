@@ -316,15 +316,24 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
     # OHLCV volume-at-close-bin proxy only; never label this as exchange/tick-level profile.
     low30, high30 = min(lows[-30:]), max(highs[-30:])
     profile_bins = [0.0] * 12
-    if high30 > low30:
+    profile_volume_total = sum(volumes[-30:])
+    if profile_volume_total <= 0:
+        volume_profile_proxy = None
+        volume_profile_status = "UNAVAILABLE_NO_VOLUME"
+        volume_profile_note = "The last 30 bars contain no positive volume; a highest-volume bin cannot be identified."
+    elif high30 > low30:
         for b in bars[-30:]:
             idx = int((float(b["close"]) - low30) / (high30 - low30) * 12)
             profile_bins[min(11, max(0, idx))] += float(b["volume"])
         profile_idx = max(range(12), key=lambda i: profile_bins[i])
         volume_profile_proxy = {"highest_close_bin": profile_idx, "bin_low": low30 + (high30-low30)*profile_idx/12,
                                 "bin_high": low30 + (high30-low30)*(profile_idx+1)/12}
+        volume_profile_status = "OHLCV_CLOSE_BIN_PROXY"
+        volume_profile_note = "Not tick-level or exchange-native volume profile."
     else:
         volume_profile_proxy = {"highest_close_bin": 0, "bin_low": low30, "bin_high": high30}
+        volume_profile_status = "OHLCV_CLOSE_BIN_PROXY"
+        volume_profile_note = "Constant-price OHLCV close-bin proxy; not tick-level or exchange-native volume profile."
 
     # Basic divergence candidate requires local extrema and RSI history; never predicts outcomes.
     divergence = "unavailable: insufficient pivot/RSI history"
@@ -419,7 +428,7 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
                                      "support_basis": "nearest_confirmed_pivot_or_recent_extreme"},
                                     "CALCULATED_CANDIDATE" if recent_ph or recent_pl else "RECENT_RANGE_FALLBACK",
                                     "Levels are descriptive OHLC pivots/extremes, not guaranteed support or resistance."),
-        "volume_profile": _item(volume_profile_proxy, "OHLCV_CLOSE_BIN_PROXY", "Not tick-level or exchange-native volume profile."),
+        "volume_profile": _item(volume_profile_proxy, volume_profile_status, volume_profile_note),
         "liquidity_sweeps": _item(sweep, "CANDIDATE_REQUIRES_VALIDATION"),
         "delta_buy_sell": _item(flow_values, "CALCULATED_LIVE_PROXY" if flow_valid else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
                                "Live Delta Exchange BTCUSD public-trades feed; contract volume may differ from broker CFD volume." if flow_valid else "Requires a fresh, validated aggressor-volume feed."),
