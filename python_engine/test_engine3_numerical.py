@@ -115,6 +115,40 @@ class Engine3NumericalTests(unittest.TestCase):
         self.assertEqual(values["value"], "none")
         self.assertEqual(values["status"], "CANDIDATE_REQUIRES_VALIDATION")
 
+    def test_footprint_rejects_malformed_price_level_payload(self):
+        from datetime import datetime, timezone
+        flow = {
+            "status": "LIVE",
+            "source": "Delta Exchange public BTCUSD trades API",
+            "instrument": "BTCUSD",
+            "observed_at": datetime.now(timezone.utc).timestamp(),
+            "buy_volume": 120.0,
+            "sell_volume": 80.0,
+            "trade_count": 100,
+            "footprint": {"not-a-price": {"buy": 120.0, "sell": 80.0}},
+        }
+        values = self.calculate(flat_bars(), symbol="BTCUSD", trade_flow=flow)
+        self.assertEqual(values["delta_buy_sell"]["status"], "CALCULATED_LIVE_PROXY")
+        self.assertIsNone(values["orderflow_footprint"]["value"])
+        self.assertEqual(values["orderflow_footprint"]["status"], "UNAVAILABLE_INVALID_FOOTPRINT_PAYLOAD")
+
+    def test_footprint_rejects_negative_or_empty_level_volumes(self):
+        from datetime import datetime, timezone
+        for level in ({"buy": -1.0, "sell": 3.0}, {"buy": 0.0, "sell": 0.0}):
+            flow = {
+                "status": "LIVE",
+                "source": "Delta Exchange public BTCUSD trades API",
+                "instrument": "BTCUSD",
+                "observed_at": datetime.now(timezone.utc).timestamp(),
+                "buy_volume": 120.0,
+                "sell_volume": 80.0,
+                "trade_count": 100,
+                "footprint": {"2600.0": level},
+            }
+            values = self.calculate(flat_bars(), symbol="BTCUSD", trade_flow=flow)
+            self.assertIsNone(values["orderflow_footprint"]["value"])
+            self.assertEqual(values["orderflow_footprint"]["status"], "UNAVAILABLE_INVALID_FOOTPRINT_PAYLOAD")
+
     def test_delta_and_footprint_fail_closed_when_feed_is_missing(self):
         values = self.calculate(flat_bars())
         self.assertIsNone(values["delta_buy_sell"]["value"])
