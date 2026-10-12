@@ -1851,6 +1851,7 @@ window.addEventListener('rizvi:indicator-update',render);
   function paint(direction,confidence,qualified,detail){
     const dirs=directionNodes();
     const valid=['BUY','SELL','WAIT'].includes(direction)?direction:'WAIT';
+    const showHighQuality=qualified===true&&valid!=='WAIT'&&Number(confidence)>=80;
     dirs.forEach(node=>{
       const d=node.textContent.trim().toUpperCase();
       const active=d===valid;
@@ -1868,7 +1869,7 @@ window.addEventListener('rizvi:indicator-update',render);
     const b=badge();
     if(b){
       b.textContent='HIGH QUALITY SETUP';
-      b.style.display=qualified===true?'inline-block':'none';
+      b.style.display=showHighQuality?'inline-block':'none';
     }
     window.RIZVI_INDICATOR_ACTIVATION={
       state:'ACTIVE',
