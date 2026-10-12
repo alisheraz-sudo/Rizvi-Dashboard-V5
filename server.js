@@ -102,7 +102,7 @@ if(url.pathname==='/market/engine4-context'&&req.method==='GET'){
    if(!r.ok)throw new Error('Forex Factory calendar HTTP '+r.status);
    const p=await r.json();if(!Array.isArray(p))throw new Error('Forex Factory calendar returned invalid data');
    const events=p.map(e=>{const raw=e.date||e.datetime||e.timestamp||'',time=typeof raw==='number'?(raw<1e12?raw*1000:raw):Date.parse(raw);return {title:String(e.title||e.event||'Untitled event'),country:String(e.country||''),currency:String(e.currency||''),impact:String(e.impact||''),time:Number.isFinite(time)?time:null,timeMode:'unknown'};})
-    .filter(e=>e.time!==null&&(/USD|United States|US\\b/i.test(e.country)||e.currency.toUpperCase()==='USD')&&/high/i.test(e.impact))
+    .filter(e=>e.time!==null&&(/USD|United States|US\b/i.test(e.country)||e.currency.toUpperCase()==='USD')&&/high/i.test(e.impact))
     .sort((a,b)=>a.time-b.time);
    const active=events.find(e=>now>=e.time-30*60000&&now<=e.time+15*60000)||null,next=events.find(e=>e.time>now)||null;
    out.usNews={status:'LIVE',source:'Forex Factory public weekly calendar (fallback)',attribution:'https://www.forexfactory.com/calendar',events,blocked:!!active,activeEvent:active,nextEvent:next,windowBeforeMinutes:30,windowAfterMinutes:15,updatedAt:now,primarySourceError:String(primary.message||primary).slice(0,120)};
