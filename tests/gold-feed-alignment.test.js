@@ -40,8 +40,7 @@ const cached = buildStatus({
 assert.equal(cached.ok, false);
 assert.equal(cached.live, false);
 
-const staleBars = bars.map((b, i) => i === bars.length - 1
-  ? { ...b, t: Math.floor((now - 10 * 60_000) / 1000) } : b);
+const staleBars = bars.map(b => ({ ...b, t: b.t - 10 * 60 }));
 const stale = buildStatus({
   symbol: 'XAU/USD', timeframe: '1M', bars: staleBars,
   chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
