@@ -35,7 +35,7 @@ ENGINES = [
         "name": "Volume, Liquidity & Order Flow",
         "indicators": [
             {"id": "volume_profile", "name": "Volume Profile", "source": "ohlcv_volume", "status": "LEGACY_PROXY_NOT_TRUE_PROFILE"},
-            {"id": "liquidity_sweeps", "name": "Liquidity Pools / Sweeps", "source": "ohlcv", "status": "PENDING_IMPLEMENTATION"},
+            {"id": "liquidity_sweeps", "name": "Liquidity Pools / Sweeps", "source": "ohlcv", "status": "IMPLEMENTED_CANDIDATE_PENDING_LIVE_VALIDATION"},
             {"id": "delta_buy_sell", "name": "Delta Buy/Sell", "source": "bid_ask_trade_data", "status": "UNAVAILABLE_UNLESS_VALIDATED_FEED"},
             {"id": "orderflow_footprint", "name": "Order Flow / Footprint", "source": "granular_bid_ask_or_trade_data", "status": "UNAVAILABLE_UNLESS_VALIDATED_FEED"},
         ],
