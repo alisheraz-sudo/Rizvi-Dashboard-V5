@@ -168,15 +168,25 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
             "reason": "At least 30 validated bars are required for diagnostic calculations.",
             "indicators": {},
         }
+    timestamps = []
     for i, bar in enumerate(bars):
         if not isinstance(bar, dict):
             raise ValueError("bar %d must be an object" % i)
         if not all(_finite(bar.get(k)) for k in ("open", "high", "low", "close", "volume")):
             raise ValueError("bar %d has missing or non-numeric OHLCV" % i)
-        if float(bar["low"]) > min(float(bar["open"]), float(bar["close"])) or float(bar["high"]) < max(float(bar["open"]), float(bar["close"])):
+        open_, high, low, close_, volume = (float(bar[k]) for k in ("open", "high", "low", "close", "volume"))
+        if min(open_, high, low, close_) <= 0:
+            raise ValueError("bar %d has non-positive OHLC prices" % i)
+        if low > min(open_, close_) or high < max(open_, close_) or high < low:
             raise ValueError("bar %d has invalid high/low bounds" % i)
-        if float(bar["volume"]) < 0:
+        if volume < 0:
             raise ValueError("bar %d has negative volume" % i)
+        stamp = _stamp_seconds(bar.get("timestamp"))
+        if stamp is None:
+            raise ValueError("bar %d has missing or invalid timestamp" % i)
+        timestamps.append(stamp)
+    if any(timestamps[i] <= timestamps[i - 1] for i in range(1, len(timestamps))):
+        raise ValueError("bar timestamps must be strictly increasing")
 
     closes = [float(b["close"]) for b in bars]
     highs = [float(b["high"]) for b in bars]

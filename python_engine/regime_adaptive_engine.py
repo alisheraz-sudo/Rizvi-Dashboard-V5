@@ -362,6 +362,67 @@ def _adaptive_weights(regime: str) -> Dict[str, float]:
     return {k: v / total for k, v in weights.items()}
 
 
+
+def _evaluate_engine5_bridge(engines: Dict[str, Dict[str, Any]],
+                             status_counts: Dict[str, int],
+                             unverified_ids: List[str],
+                             symbol: str,
+                             timeframe: str) -> Dict[str, Any]:
+    """Master bridge: validate routing and fail closed until live indicators are proven."""
+    engine_keys = ["engine_1", "engine_2", "engine_3", "engine_4"]
+    inputs: Dict[str, Dict[str, Any]] = {}
+    for key in engine_keys:
+        report = engines.get(key)
+        if not isinstance(report, dict):
+            continue
+        indicators = report.get("indicators", [])
+        inputs[key] = {
+            "engine_id": report.get("id"),
+            "name": report.get("name"),
+            "indicator_ids": [item.get("id") for item in indicators if isinstance(item, dict)],
+            "mapping_complete": report.get("mapping_complete") is True,
+            "validated_calculations": report.get("validated_calculations", 0),
+            "data_validated": report.get("data_validated") is True,
+            "ready_for_signal": False,
+            "signal": "WAIT",
+            "score": None,
+        }
+    received_ids = [indicator_id for report in inputs.values() for indicator_id in report["indicator_ids"]]
+    bridge_ready = (
+        len(inputs) == 4
+        and all(report["mapping_complete"] for report in inputs.values())
+        and len(received_ids) == 20
+        and len(set(received_ids)) == 20
+    )
+    # This is a routing gate, not a live-data approval or scoring decision.
+    live_ready = (
+        bridge_ready
+        and not unverified_ids
+        and all(report["data_validated"] for report in inputs.values())
+    )
+    return {
+        "name": "Master Evaluation Engine",
+        "role": "Evaluate Engines 1–4 and gate the final signal",
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "input_engines": 4,
+        "received_engine_reports": len(inputs),
+        "engine_inputs": inputs,
+        "bridge_status": "LIVE_VALIDATED" if live_ready else "ROUTED_WAIT_GATED" if bridge_ready else "BLOCKED_ENGINE_MAPPING",
+        "bridge_ready": bridge_ready,
+        "expected_indicators": 20,
+        "received_indicators": len(received_ids),
+        "engine_mapping_aligned": bridge_ready,
+        "indicator_status_counts": status_counts,
+        "unverified_indicator_ids": list(unverified_ids),
+        "ready_for_signal": False,
+        "signal": "WAIT",
+        "confidence": None,
+        "status": "BLOCKED_PENDING_LIVE_VALIDATION",
+        "reason": "All four engine reports are routed, but Engine 5 remains WAIT until indicator and feed validation is explicitly proven.",
+    }
+
+
 def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timeframe: str = "1m",
              order_flow: Optional[Dict[str, Any]] = None,
              dxy_bars: Optional[Sequence[Dict[str, Any]]] = None,
@@ -406,21 +467,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         and all(engines.get("engine_%d" % i, {}).get("aligned") is True for i in range(1, 5))
         and sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)) == 20
     )
-    engine_5 = {
-        "name": "Master Evaluation Engine",
-        "role": "Evaluate Engines 1–4 and gate the final signal",
-        "input_engines": 4,
-        "expected_indicators": 20,
-        "received_indicators": sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)),
-        "engine_mapping_aligned": engines_aligned,
-        "indicator_status_counts": status_counts,
-        "unverified_indicator_ids": unverified_ids,
-        "ready_for_signal": False,
-        "signal": "WAIT",
-        "confidence": None,
-        "status": "BLOCKED_PENDING_LIVE_VALIDATION",
-        "reason": "Engine 5 has evaluated the roster and engine mapping, but live-source validation and end-to-end checks are not complete.",
-    }
+    engine_5 = _evaluate_engine5_bridge(engines, status_counts, unverified_ids, symbol, timeframe)
     return {
         "ok": True,
         "version": ENGINE_VERSION,

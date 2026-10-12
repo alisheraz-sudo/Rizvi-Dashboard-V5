@@ -108,6 +108,18 @@ class IndicatorCalculationsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_roster(bars, "XAUUSD", "1m")
 
+    def test_engine2_rejects_non_chronological_candles(self):
+        bars = sample_bars()
+        bars[-1]["timestamp"] = bars[-2]["timestamp"]
+        with self.assertRaisesRegex(ValueError, "strictly increasing"):
+            calculate_roster(bars, "XAUUSD", "1m")
+
+    def test_engine2_rejects_non_positive_prices(self):
+        bars = sample_bars()
+        bars[-1]["low"] = 0.0
+        with self.assertRaisesRegex(ValueError, "non-positive OHLC prices"):
+            calculate_roster(bars, "XAUUSD", "1m")
+
     def test_engine_exposes_diagnostics_but_never_emits_signal_yet(self):
         result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
         self.assertEqual(len(result["indicator_diagnostics"]["indicators"]), 20)
@@ -123,7 +135,7 @@ class IndicatorCalculationsTests(unittest.TestCase):
                          "high": 101.0, "low": 99.0, "close": 100.0, "volume": 100.0})
         bars[-3].update({"open": 100.2, "high": 101.0, "low": 99.8, "close": 100.8})
         bars[-2].update({"open": 102.55, "high": 102.8, "low": 102.5, "close": 102.6})
-        bars[-1].update({"open": 102.6, "high": 103.0, "low": 102.4, "close": 102.8})
+        bars[-1].update({"open": 102.8, "high": 103.0, "low": 102.7, "close": 102.8})
         result = calculate_roster(bars, "BTCUSD", "1m")
         fvg = result["indicators"]["fvg"]
         self.assertEqual(fvg["status"], "CALCULATED_CANDIDATE")
@@ -150,6 +162,45 @@ class IndicatorCalculationsTests(unittest.TestCase):
         self.assertIn("support", item["value"])
         self.assertIn("resistance", item["value"])
         self.assertIn("not guaranteed", item["note"])
+
+
+
+class Engine2GoldGateTests(unittest.TestCase):
+    """Regression checks: Engine 2 outputs must stay visible but unapproved for scoring."""
+
+    def test_engine2_has_exact_locked_five_indicator_mapping(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        engine2 = result["engines"]["engine_2"]
+        expected = {
+            "market_structure",
+            "structure_prediction",
+            "candle_patterns",
+            "fvg",
+            "support_resistance",
+        }
+        self.assertEqual({item["id"] for item in engine2["indicators"]}, expected)
+        self.assertEqual(engine2["expected_indicators"], 5)
+        self.assertEqual(engine2["returned_indicators"], 5)
+        self.assertTrue(engine2["mapping_complete"])
+        self.assertFalse(engine2["ready_for_signal"])
+
+    def test_engine2_candidates_are_not_misreported_as_validated_live(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        engine2 = result["engines"]["engine_2"]
+        self.assertTrue(all(item["status"] != "VALIDATED_LIVE" for item in engine2["indicators"]))
+        self.assertFalse(engine2["data_validated"])
+        self.assertEqual(result["signal"], "WAIT")
+        self.assertFalse(result["autoTrading"])
+
+    def test_engine5_lists_unverified_engine2_ids_until_live_validation(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        unverified = set(result["engine_5"]["unverified_indicator_ids"])
+        self.assertTrue({
+            "market_structure", "structure_prediction", "candle_patterns",
+            "fvg", "support_resistance",
+        }.issubset(unverified))
+        self.assertFalse(result["engine_5"]["ready_for_signal"])
+        self.assertEqual(result["engine_5"]["signal"], "WAIT")
 
 
 if __name__ == "__main__":
