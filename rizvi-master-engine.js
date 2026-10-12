@@ -7,7 +7,28 @@
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
+  const OUTCOME_STORAGE_KEY='rizvi.v5.engine5.outcomes.v1';
+  function loadOutcomes(){
+    try{
+      const raw=window.localStorage?.getItem(OUTCOME_STORAGE_KEY);
+      if(!raw)return {};
+      const parsed=JSON.parse(raw);
+      if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return {};
+      const clean={};
+      Object.keys(DEFAULT_ENGINE5_SETTINGS.baseWeights).forEach(k=>{
+        const p=parsed[k];
+        if(p&&Number.isFinite(Number(p.n))&&Number(p.n)>=0&&Number.isFinite(Number(p.correct))&&Number(p.correct)>=0){
+          clean[k]={n:Math.floor(Number(p.n)),correct:Math.min(Math.floor(Number(p.n)),Math.floor(Number(p.correct)))};
+        }
+      });
+      return clean;
+    }catch(_){return {};}
+  }
   const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50,outcomes:{}};
+  function saveOutcomes(){
+    try{window.localStorage?.setItem(OUTCOME_STORAGE_KEY,JSON.stringify(state.outcomes));return true;}
+    catch(_){return false;}
+  }
   const DEFAULT_ENGINE5_SETTINGS={
     baseWeights:{trend:17,structure:15,liquidity:13,momentum:10,rsi:8,divergence:7,vwap:7,volumeProfile:5,delta:4,candlePattern:4,candleBias:5,fvg:5},
     minOutcomeSamples:5,
@@ -51,7 +72,7 @@
     });
   }
   window.addEventListener('rizvi:trade-outcome',recordOutcome);
-  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;
+  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;\n  window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
   function getWeights(){
     const raw={};
     Object.keys(BASE_WEIGHTS).forEach(k=>{
