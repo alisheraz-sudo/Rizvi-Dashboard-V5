@@ -152,5 +152,44 @@ class IndicatorCalculationsTests(unittest.TestCase):
         self.assertIn("not guaranteed", item["note"])
 
 
+
+class Engine2GoldGateTests(unittest.TestCase):
+    """Regression checks: Engine 2 outputs must stay visible but unapproved for scoring."""
+
+    def test_engine2_has_exact_locked_five_indicator_mapping(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        engine2 = result["engines"]["engine_2"]
+        expected = {
+            "market_structure",
+            "structure_prediction",
+            "candle_patterns",
+            "fvg",
+            "support_resistance",
+        }
+        self.assertEqual({item["id"] for item in engine2["indicators"]}, expected)
+        self.assertEqual(engine2["expected_indicators"], 5)
+        self.assertEqual(engine2["returned_indicators"], 5)
+        self.assertTrue(engine2["mapping_complete"])
+        self.assertFalse(engine2["ready_for_signal"])
+
+    def test_engine2_candidates_are_not_misreported_as_validated_live(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        engine2 = result["engines"]["engine_2"]
+        self.assertTrue(all(item["status"] != "VALIDATED_LIVE" for item in engine2["indicators"]))
+        self.assertFalse(engine2["data_validated"])
+        self.assertEqual(result["signal"], "WAIT")
+        self.assertFalse(result["autoTrading"])
+
+    def test_engine5_lists_unverified_engine2_ids_until_live_validation(self):
+        result = evaluate(sample_bars(), symbol="XAUUSD", timeframe="1m")
+        unverified = set(result["engine_5"]["unverified_indicator_ids"])
+        self.assertTrue({
+            "market_structure", "structure_prediction", "candle_patterns",
+            "fvg", "support_resistance",
+        }.issubset(unverified))
+        self.assertFalse(result["engine_5"]["ready_for_signal"])
+        self.assertEqual(result["engine_5"]["signal"], "WAIT")
+
+
 if __name__ == "__main__":
     unittest.main()
