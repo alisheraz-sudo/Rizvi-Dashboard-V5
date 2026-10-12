@@ -8,6 +8,14 @@
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
   const OUTCOME_STORAGE_KEY='rizvi.v5.engine5.outcomes.v1';
+  const DEFAULT_ENGINE5_SETTINGS={
+    baseWeights:{trend:17,structure:15,liquidity:13,momentum:10,rsi:8,divergence:7,vwap:7,volumeProfile:5,delta:4,candlePattern:4,candleBias:5,fvg:5},
+    minOutcomeSamples:5,minConfirmations:7,minConfidence:80,weakSignalFloor:70,strongSignalFloor:80,
+    compatibilityThreshold:95,compatibilityMargin:70,compatibilityMinIndicators:8,compatibilityMinAligned:7,
+    qualifiedMinScore:80,qualifiedMinMargin:50,qualifiedMinActiveIndicators:8,qualifiedMinAlignedIndicators:6,
+    scoreAverageWindow:30,flipConfirm:6,waitConfirm:6,holdMs:30000,scoreAlpha:0.08,
+    orderFlowFreshnessMs:15000,orderFlowImbalanceThreshold:8
+  };
   function loadOutcomes(){
     try{
       const raw=window.localStorage?.getItem(OUTCOME_STORAGE_KEY);
@@ -29,38 +37,46 @@
     try{window.localStorage?.setItem(OUTCOME_STORAGE_KEY,JSON.stringify(state.outcomes));return true;}
     catch(_){return false;}
   }
-  const DEFAULT_ENGINE5_SETTINGS={
-    baseWeights:{trend:17,structure:15,liquidity:13,momentum:10,rsi:8,divergence:7,vwap:7,volumeProfile:5,delta:4,candlePattern:4,candleBias:5,fvg:5},
-    minOutcomeSamples:5,
-    minConfirmations:7,
-    minConfidence:80,
-    weakSignalFloor:70,
-    strongSignalFloor:80,
-    compatibilityThreshold:95,
-    compatibilityMargin:70,
-    compatibilityMinIndicators:8,
-    compatibilityMinAligned:7,
-    qualifiedMinScore:80,
-    qualifiedMinMargin:50,
-    qualifiedMinActiveIndicators:8,
-    qualifiedMinAlignedIndicators:6,
-    scoreAverageWindow:30,
-    flipConfirm:6,
-    waitConfirm:6,
-    holdMs:30000,
-    scoreAlpha:0.08,
-    orderFlowFreshnessMs:15000,
-    orderFlowImbalanceThreshold:8
-  };
   const suppliedSettings=window.RIZVI_ENGINE5_CONFIG&&typeof window.RIZVI_ENGINE5_CONFIG==='object'?window.RIZVI_ENGINE5_CONFIG:{};
   const suppliedWeights=suppliedSettings.baseWeights&&typeof suppliedSettings.baseWeights==='object'?suppliedSettings.baseWeights:{};
-  const BASE_WEIGHTS={...DEFAULT_ENGINE5_SETTINGS.baseWeights,...suppliedWeights};
-  const sumBaseWeights=Object.values(BASE_WEIGHTS).reduce((a,b)=>a+(Number(b)||0),0);
-  if(Object.values(BASE_WEIGHTS).some(v=>!Number.isFinite(Number(v))||Number(v)<0)||sumBaseWeights<=0){
-    Object.assign(BASE_WEIGHTS,DEFAULT_ENGINE5_SETTINGS.baseWeights);
-  }
-  const ENGINE5_SETTINGS={...DEFAULT_ENGINE5_SETTINGS,...suppliedSettings,baseWeights:BASE_WEIGHTS};
+  const weightKeys=Object.keys(DEFAULT_ENGINE5_SETTINGS.baseWeights);
+  const validInitialWeights=Object.keys(suppliedWeights).every(k=>weightKeys.includes(k))&&weightKeys.every(k=>suppliedWeights[k]===undefined||(Number.isFinite(Number(suppliedWeights[k]))&&Number(suppliedWeights[k])>=0));
+  const candidateWeights={...DEFAULT_ENGINE5_SETTINGS.baseWeights,...(validInitialWeights?suppliedWeights:{})};
+  const sumInitialWeights=Object.values(candidateWeights).reduce((a,b)=>a+Number(b),0);
+  const BASE_WEIGHTS=Math.abs(sumInitialWeights-100)<=0.001?Object.fromEntries(Object.entries(candidateWeights).map(([k,v])=>[k,Number(v)])):{...DEFAULT_ENGINE5_SETTINGS.baseWeights};
+  const ENGINE5_SETTINGS={...DEFAULT_ENGINE5_SETTINGS,...Object.fromEntries(Object.entries(suppliedSettings).filter(([k])=>k!=='baseWeights')),baseWeights:BASE_WEIGHTS};
   state.outcomes=loadOutcomes();
+  const REGIME_MULTIPLIERS={
+    TRENDING:{trend:1.35,structure:1.25,momentum:1.3,rsi:0.85,divergence:0.9,vwap:1.05,volumeProfile:0.85,candlePattern:1.05,candleBias:1.15,fvg:1.1,liquidity:1,delta:1},
+    RANGING:{trend:0.75,structure:0.85,momentum:0.75,rsi:1.25,divergence:1.2,vwap:1.1,volumeProfile:1.3,candlePattern:1,candleBias:0.85,fvg:0.8,liquidity:1.05,delta:1},
+    VOLATILE:{trend:0.9,structure:0.9,momentum:0.85,rsi:0.8,divergence:0.85,vwap:0.9,volumeProfile:1,candlePattern:1.2,candleBias:1,fvg:1.25,liquidity:1.15,delta:1.15}
+  };
+  function detectRegime(bars,closes,e9,e21){
+    if(bars.length<30)return {regime:'UNKNOWN',efficiency:0,rangeRatio:1,trendStrength:0};
+    const ranges=bars.slice(-30).map(x=>Math.max(0,Number(x.h)-Number(x.l))).filter(Number.isFinite);
+    const recent=ranges.slice(-5),base=ranges.slice(0,25);
+    const avgRecent=recent.reduce((a,b)=>a+b,0)/Math.max(1,recent.length);
+    const avgBase=base.reduce((a,b)=>a+b,0)/Math.max(1,base.length);
+    const rangeRatio=avgBase>0?avgRecent/avgBase:1;
+    const path=closes.slice(-21);
+    const travel=path.slice(1).reduce((a,c,i)=>a+Math.abs(c-path[i]),0);
+    const efficiency=travel>0?Math.abs(path[path.length-1]-path[0])/travel:0;
+    const trendStrength=Math.abs(e9-e21)/Math.max(avgBase,1e-9);
+    const regime=rangeRatio>=1.6?'VOLATILE':(efficiency>=0.38&&trendStrength>=0.35?'TRENDING':'RANGING');
+    return {regime,efficiency:Number(efficiency.toFixed(3)),rangeRatio:Number(rangeRatio.toFixed(3)),trendStrength:Number(trendStrength.toFixed(3))};
+  }
+  function getWeights(regime='UNKNOWN'){
+    const multipliers=REGIME_MULTIPLIERS[regime]||{};
+    const raw={};
+    Object.keys(BASE_WEIGHTS).forEach(k=>{
+      const p=state.outcomes[k];
+      const factor=p&&p.n>=ENGINE5_SETTINGS.minOutcomeSamples?Math.max(0.5,Math.min(1.5,0.5+(p.correct+1)/(p.n+2))):1;
+      raw[k]=BASE_WEIGHTS[k]*factor*(multipliers[k]||1);
+    });
+    const sum=Object.values(raw).reduce((a,b)=>a+b,0),out={};let assigned=0;const keys=Object.keys(raw);
+    keys.forEach((k,i)=>{out[k]=i===keys.length-1?100-assigned:Math.round(raw[k]/sum*100);assigned+=out[k];});
+    return out;
+  }
   function recordOutcome(e){
     const d=e&&e.detail||e;
     if(!d||!['WIN','LOSS'].includes(String(d.outcome||'').toUpperCase())||!['BUY','SELL'].includes(String(d.direction||'').toUpperCase())||!d.indicatorSignals)return;
@@ -173,6 +189,8 @@
     const structure=last.c>priorHi?'BUY':last.c<priorLo?'SELL':(last.c>=e21?'BUY':'SELL');
     const candleBias=last.c<Number(last.o||prev.c)?'SELL':last.c>Number(last.o||prev.c)?'BUY':'NEUTRAL';
     const of=orderFlow(symbol);
+    const regimeInfo=detectRegime(bars,closes,e9,e21);
+    state.regime=regimeInfo.regime;
     const engine4=window.RIZVI_ENGINE4_CONTEXT||{};
     const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
     const liqScore=clamp(liq.status?Number(liq.score||liq.liquidityScore||0):0);
@@ -247,7 +265,7 @@
 
     // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
-    const WEIGHTS=getWeights();
+    const WEIGHTS=getWeights(regimeInfo.regime);
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
       orderFlow:of.signal,momentum,rsi:(r===null?'WAIT':r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'),
@@ -300,7 +318,7 @@
       threshold:ENGINE5_SETTINGS.compatibilityThreshold,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
       direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
       directionalMargin:Math.round(directionalMargin),compatibility95,
-      weights:WEIGHTS,baseWeights:BASE_WEIGHTS,contributions:contribution,adaptiveCalibration:{indicatorOutcomes:state.outcomes,minSamplesPerIndicator:5},
+      regime:regimeInfo.regime,regimeMetrics:regimeInfo,weights:WEIGHTS,baseWeights:BASE_WEIGHTS,contributions:contribution,adaptiveCalibration:{indicatorOutcomes:state.outcomes,minSamplesPerIndicator:ENGINE5_SETTINGS.minOutcomeSamples,regimeAdaptive:true,regime:regimeInfo.regime},
       note:'95 is confluence compatibility, not win probability.'
     };
 
@@ -374,6 +392,7 @@
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
       settings:{...ENGINE5_SETTINGS,emaFast:9,emaSlow:21,rsi:14,weightsTotal:100,weights:WEIGHTS},
+      regimeAdaptive:{...regimeInfo,weightMultipliers:REGIME_MULTIPLIERS[regimeInfo.regime]||{}},
       contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL',dxyInverseCorrelation:engine4.dxy?.signal||'UNAVAILABLE',highImpactUSNews:engine4.usNews?.blocked?'BLOCK':'CLEAR',tradingSessions:engine4.session?.active||[],dayHighLow:engine4.dayHighLow?.status==='LIVE'?'LIVE':'UNAVAILABLE'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,dxyInverseCorrelation:engine4.dxy?.status==='LIVE',highImpactUSNews:engine4.usNews?.status==='LIVE',tradingSessions:engine4.session?.status==='LIVE',dayHighLow:engine4.dayHighLow?.status==='LIVE'},
       algoRunReport
