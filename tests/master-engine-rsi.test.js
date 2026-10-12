@@ -78,3 +78,18 @@ assert.equal(calibratedReport.adaptiveCalibration.minSamplesPerIndicator, 5);
 
 console.log('Adaptive calibration tests: 4 assertions passed.');
 
+
+const fvgBars = Array.from({ length: 30 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 100, h: 101, l: 99, c: 100, v: 10
+}));
+fvgBars[21] = { ...fvgBars[21], o: 102, h: 104, l: 102, c: 103 };
+fvgBars[22] = { ...fvgBars[22], o: 103, h: 107, l: 105, c: 106 };
+fvgBars[23] = { ...fvgBars[23], o: 104, h: 105, l: 102, c: 104 };
+fvgBars[24] = { ...fvgBars[24], o: 101, h: 102, l: 100, c: 101 };
+fvgBars[25] = { ...fvgBars[25], o: 103, h: 106, l: 102, c: 103 };
+const fvgResult = runWithWindow(fvgBars).RIZVI_MASTER_CONFIRMATION;
+assert.ok(!(fvgResult.engines.fvg.type === 'BULLISH' &&
+  fvgResult.engines.fvg.top === 105 && fvgResult.engines.fvg.bottom === 101),
+  'a bullish FVG fully mitigated by a later candle must not remain active');
+console.log('FVG mitigation regression test: passed.');
