@@ -14,7 +14,7 @@ function normalizeSymbol(value) {
 }
 
 function epochSeconds(value) {
-  if (typeof value === 'string' && !/^\\d+(\\.\\d+)?$/.test(value.trim())) {
+  if (typeof value === 'string' && !/^\d+(\.\d+)?$/.test(value.trim())) {
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? parsed / 1000 : NaN;
   }
