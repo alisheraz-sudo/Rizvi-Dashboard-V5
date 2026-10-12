@@ -41,7 +41,7 @@ jobs:
       - name: Run Node proxy tests
         run: node --test indicator-proxy.test.js indicator-diagnostics-bridge.test.js
       - name: Compile engine and registry
-        run: python -m py_compile python_engine/app.py python_engine/api_contract.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py python_engine/indicator_calculations.py python_engine/test_app_http.py python_engine/test_engine5_bridge_contract.py python_engine/test_engine2_numerical.py
+        run: python -m py_compile python_engine/app.py python_engine/api_contract.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py python_engine/indicator_calculations.py python_engine/test_app_http.py python_engine/test_engine5_bridge_contract.py python_engine/test_engine2_numerical.py python_engine/test_engine3_numerical.py
       - name: Run Stage 1 tests
         working-directory: python_engine
-        run: python -m unittest -v test_indicator_registry.py test_indicator_calculations.py test_engine2_fvg_fill_semantics.py test_api_contract.py test_app_http.py test_engine5_bridge_contract.py test_engine2_numerical.py
+        run: python -m unittest -v test_indicator_registry.py test_indicator_calculations.py test_engine2_fvg_fill_semantics.py test_api_contract.py test_app_http.py test_engine5_bridge_contract.py test_engine2_numerical.py test_engine3_numerical.py
