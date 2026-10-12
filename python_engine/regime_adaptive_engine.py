@@ -232,55 +232,6 @@ def _indicator_values(bars: Sequence[Bar]) -> Dict[str, Optional[float]]:
     }
 
 
-def _compute_engines(x: Dict[str, Optional[float]]) -> Dict[str, Dict[str, Any]]:
-    """Four agreed specialist engines; 18 primary indicators are assigned once."""
-    close = x["LAST_CLOSE"]
-
-    def d(name: str, deadband: float = 0.0) -> Optional[float]:
-        val = x.get(name)
-        return _direction(val, deadband)
-
-    trend = _vote([
-        (1.0 if close > x["EMA"] else -1.0 if close < x["EMA"] else 0.0) if x["EMA"] is not None and close is not None else None,
-        (1.0 if close > x["SMA"] else -1.0 if close < x["SMA"] else 0.0) if x["SMA"] is not None and close is not None else None,
-        (1.0 if x["MACD"] > x["MACD_SIGNAL"] else -1.0 if x["MACD"] < x["MACD_SIGNAL"] else 0.0) if x["MACD"] is not None and x["MACD_SIGNAL"] is not None else None,
-        (1.0 if x["DI_PLUS"] > x["DI_MINUS"] else -1.0 if x["DI_PLUS"] < x["DI_MINUS"] else 0.0) if x["DI_PLUS"] is not None and x["DI_MINUS"] is not None else None,
-        (1.0 if x["ICHIMOKU_TENKAN"] > x["ICHIMOKU_KIJUN"] else -1.0 if x["ICHIMOKU_TENKAN"] < x["ICHIMOKU_KIJUN"] else 0.0) if x["ICHIMOKU_TENKAN"] is not None and x["ICHIMOKU_KIJUN"] is not None else None,
-    ])
-    momentum = _vote([
-        (1.0 if x["RSI"] > 55 else -1.0 if x["RSI"] < 45 else 0.0) if x["RSI"] is not None else None,
-        (1.0 if x["STOCHASTIC"] > 60 else -1.0 if x["STOCHASTIC"] < 40 else 0.0) if x["STOCHASTIC"] is not None else None,
-        (1.0 if x["CCI"] > 50 else -1.0 if x["CCI"] < -50 else 0.0) if x["CCI"] is not None else None,
-        (1.0 if x["MFI"] > 55 else -1.0 if x["MFI"] < 45 else 0.0) if x["MFI"] is not None else None,
-        d("ROC", 0.01),
-        (1.0 if x["WILLIAMS_R"] > -40 else -1.0 if x["WILLIAMS_R"] < -60 else 0.0) if x["WILLIAMS_R"] is not None else None,
-    ])
-    structure = _vote([
-        (1.0 if close > x["VWAP"] else -1.0 if close < x["VWAP"] else 0.0) if x["VWAP"] is not None else None,
-        d("OBV_CHANGE", 1e-9),
-        (1.0 if x["CMF"] > 0.05 else -1.0 if x["CMF"] < -0.05 else 0.0) if x["CMF"] is not None else None,
-        d("VOLUME_PROFILE_BIAS", 0.05),
-        x["CANDLE_PATTERN"],
-    ])
-    volatility = _vote([
-        (1.0 if close > x["BOLLINGER_UPPER"] else -1.0 if close < x["BOLLINGER_LOWER"] else 0.0) if x["BOLLINGER_UPPER"] is not None and x["BOLLINGER_LOWER"] is not None else None,
-        # ATR is a magnitude, not a direction; directional vote is intentionally omitted.
-        # It remains a volatility/risk feature in diagnostics and regime classification.
-    ])
-    # The 18 primary indicator families are assigned to one group each:
-    # Trend (EMA, SMA, MACD, DI+/DI-, Ichimoku);
-    # Momentum (RSI, Stochastic, CCI, MFI, ROC, Williams %R);
-    # Structure (VWAP, OBV, CMF, Volume Profile proxy, Candle Pattern);
-    # Volatility (Bollinger Bands, ATR). ADX/ATR% are regime/risk context,
-    # EMA slope and OBV change are derived features, not additional primary indicators.
-    return {
-        "engine_1_trend": {"score": trend, "inputs": ["EMA", "SMA", "MACD", "DI+/DI-", "Ichimoku"], "derived_context": ["EMA slope"]},
-        "engine_2_momentum": {"score": momentum, "inputs": ["RSI", "Stochastic", "CCI", "MFI", "ROC", "Williams %R"]},
-        "engine_3_structure": {"score": structure, "inputs": ["VWAP", "OBV", "CMF", "Volume Profile proxy", "Candle pattern"], "derived_context": ["OBV change"]},
-        "engine_4_volatility": {"score": volatility, "inputs": ["Bollinger Bands", "ATR"], "regime_context": ["ATR%", "ADX"]},
-    }
-
-
 def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """Route the canonical 20-item registry into the four locked specialist engines.
 
