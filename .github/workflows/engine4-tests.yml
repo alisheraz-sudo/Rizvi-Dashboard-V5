@@ -24,4 +24,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run Engine 4 production tests
-        run: node --test tests/engine4-production.test.cjs
+        run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs
