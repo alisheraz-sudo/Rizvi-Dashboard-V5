@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
-const match = html.match(/<script id="rizvi-v5-indicator-confluence-v1">([\\s\\S]*?)<\\/script>/);
+const match = html.match(/<script id="rizvi-v5-indicator-confluence-v1">([\s\S]*?)<\/script>/);
 assert.ok(match, 'production Engine 4 indicator script must exist in index.html');
 const productionScript = match[1];
 
