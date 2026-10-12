@@ -44,4 +44,4 @@ jobs:
         run: python -m py_compile python_engine/app.py python_engine/api_contract.py python_engine/regime_adaptive_engine.py python_engine/indicator_registry.py python_engine/indicator_calculations.py python_engine/test_app_http.py
       - name: Run Stage 1 tests
         working-directory: python_engine
-        run: python -m unittest -v test_indicator_registry.py test_indicator_calculations.py test_api_contract.py test_app_http.py
+        run: python -m unittest -v test_indicator_registry.py test_indicator_calculations.py test_engine2_fvg_fill_semantics.py test_api_contract.py test_app_http.py
