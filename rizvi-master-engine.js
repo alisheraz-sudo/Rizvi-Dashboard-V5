@@ -173,8 +173,9 @@
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const engine4NewsBlocked=engine4.usNews?.status==='LIVE'&&engine4.usNews.blocked===true;
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
-    const weightedScore=activeWeight?clamp((lead/activeWeight)*100):0;
-    const directionalMargin=activeWeight?clamp(((lead-conflict)/activeWeight)*100):0;
+    // Use the full 100-point model as the denominator. Missing indicators must not inflate scores.
+    const weightedScore=clamp(lead);
+    const directionalMargin=clamp(lead-conflict);
     // V129: rolling score average over the latest 30 engine runs smooths noisy candle-to-candle swings.
     state.scoreSamples.push(weightedScore);
     if(state.scoreSamples.length>30)state.scoreSamples.shift();
