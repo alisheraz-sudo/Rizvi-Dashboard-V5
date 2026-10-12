@@ -130,8 +130,12 @@ assert.equal(settingsWindow.RIZVI_ENGINE5_SETTINGS.minConfidence, 82,
   'Engine 5 settings API should apply valid changes');
 assert.equal(settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({ unknownSetting: 1 }).ok, false,
   'unknown Engine 5 settings must be rejected');
+assert.equal(settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({ scoreAlpha: 1.5 }).ok, false,
+  'scoreAlpha above 1 must be rejected');
+assert.equal(settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({ minConfirmations: 13 }).ok, false,
+  'minimum confirmations above core indicator count must be rejected');
 
-console.log('Engine 5 settings tests: 6 assertions passed.');
+console.log('Engine 5 settings tests: 5 assertions passed.');
 const trendingBars = Array.from({ length: 40 }, (_, i) => ({
   t: 1_800_000_000 + i * 60,
   o: 2300 + i, h: 2301 + i, l: 2299 + i, c: 2300 + i, v: 10
