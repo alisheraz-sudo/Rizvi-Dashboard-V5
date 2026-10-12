@@ -25,3 +25,7 @@ jobs:
         run: node tests/master-engine-rsi.test.js
       - name: Test stable signal panel labels
         run: node --test tests/signal-panel-labels.test.cjs
+      - name: Check dashboard server syntax
+        run: node --check server.js
+      - name: Test Engine 4 production and context filters
+        run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs
