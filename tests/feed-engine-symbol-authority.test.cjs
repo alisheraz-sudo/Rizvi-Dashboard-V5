@@ -12,7 +12,7 @@ const selectorAt = symbolFn[1].indexOf("document.getElementById('symbolSelect')"
 assert.ok(currentAt >= 0 && directAt > currentAt && selectorAt > directAt,
   'OHLC bridge must prefer runtime current symbol, then direct symbol, then UI selector');
 
-const engineAt = engine.indexOf('function symbolNow()');
+const engineAt = engine.indexOf('const symbolNow=');
 assert.ok(engineAt >= 0, 'Engine 5 symbol resolver must exist');
 const engineSymbolFn = engine.slice(engineAt, engineAt + 600);
 const eCurrentAt = engineSymbolFn.indexOf('W.RIZVI_CURRENT_SYMBOL');
