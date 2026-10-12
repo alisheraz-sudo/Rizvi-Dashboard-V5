@@ -6,20 +6,30 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync('rizvi-engine4-filters.js', 'utf8');
 
+function makePriceSeries(endSec, dayStart) {
+  const count = Math.floor((endSec - dayStart) / 300) + 2;
+  const gold = [2300], dxy = [100];
+  for (let j = 1; j < count; j++) {
+    const r = 0.0001 + (j % 7) * 0.00003;
+    gold.push(gold[j - 1] * (1 + r));
+    dxy.push(dxy[j - 1] * (1 - r));
+  }
+  return { gold, dxy };
+}
 function makeMinuteBars(dayStart, endSec) {
-  const out = [];
+  const out = [], prices = makePriceSeries(endSec, dayStart).gold;
   for (let t = dayStart; t <= endSec; t += 60) {
     const j = Math.floor((t - dayStart) / 300);
-    const c = 2300 + j * 0.05;
+    const c = prices[j];
     out.push({ t, o: c - 0.01, h: c + 0.12, l: c - 0.12, c, v: 100 + (j % 9) });
   }
   return out;
 }
 function makeDxyBars(dayStart, endSec) {
-  const out = [];
+  const out = [], prices = makePriceSeries(endSec, dayStart).dxy;
   for (let t = dayStart; t <= endSec; t += 300) {
     const j = Math.floor((t - dayStart) / 300);
-    const c = 100 - j * 0.01;
+    const c = prices[j];
     out.push({ t, o: c + 0.001, h: c + 0.02, l: c - 0.02, c, v: 1 });
   }
   return out;
