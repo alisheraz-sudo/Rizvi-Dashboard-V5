@@ -33,6 +33,12 @@
     if(inFlight||document.visibilityState==='hidden')return;
     const symbol=normSymbol(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value);
     if(!symbol){publish('WAITING_FOR_SUPPORTED_SYMBOL');return;}
+    // Respect the user's Gold market-closed lock: do not send historical candles
+    // to Python as if they were live diagnostics.
+    if(symbol==='XAUUSD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){
+      publish('MARKET_CLOSED_WAIT',{symbol,reason:'Gold market closed; live-only diagnostics paused',autoTrading:false});
+      return;
+    }
     const chartSymbol=normSymbol(W.RIZVI_CHART_STATUS?.symbol||W.RIZVI_DIRECT_TV?.symbol);
     if(!chartSymbol){publish('WAITING_FOR_CHART_SYMBOL',{symbol,chartStatus:W.RIZVI_CHART_STATUS?.status||W.RIZVI_DIRECT_TV?.status||null});return;}
     if(chartSymbol!==symbol){publish('WAITING_FOR_SYMBOL_MATCH',{symbol,chartSymbol});return;}
@@ -42,6 +48,17 @@
     if(bars.length<60){publish('WAITING_FOR_60_BARS',{symbol,timeframe,bars:bars.length});return;}
     const recent=bars.slice(-500);
     const last=recent[recent.length-1];
+    // Browser chart timestamps can be seconds or milliseconds; compare in seconds,
+    // using the same timeframe freshness limit as the Python API contract.
+    const lastSeconds=last.timestamp>100000000000?last.timestamp/1000:last.timestamp;
+    const timeframeSeconds={ '1m':60,'5m':300,'15m':900,'30m':1800,'1h':3600 }[timeframe];
+    const maxAgeSeconds=Math.max(180,timeframeSeconds*3);
+    const ageSeconds=Date.now()/1000-lastSeconds;
+    if(!Number.isFinite(ageSeconds)||ageSeconds < -60 || ageSeconds > maxAgeSeconds){
+      publish('STALE_FEED_WAIT',{symbol,timeframe,bars:recent.length,lastBarTime:last.timestamp,
+        latestAgeSeconds:Math.round(ageSeconds),maxAgeSeconds,reason:'Latest candle is outside the live freshness window; diagnostics request skipped',autoTrading:false});
+      return;
+    }
     const key=[symbol,timeframe,recent.length,last.timestamp,last.close].join(':');
     if(!force&&key===lastKey&&Date.now()-lastAttempt<60000)return;
     if(Date.now()-lastAttempt<10000&&!force)return;
