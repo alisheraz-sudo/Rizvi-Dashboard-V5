@@ -7,6 +7,7 @@ No order execution. Configure DASHBOARD_ORIGIN if a browser client will call thi
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit
 
 from api_contract import validate_evaluation_request
 from regime_adaptive_engine import evaluate, health
@@ -48,13 +49,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(403, {"ok": False, "error": "Origin not allowed"})
 
     def do_GET(self):
-        if self.path.rstrip("/") == "/health":
+        # Query parameters must not turn the health route into a 404.
+        if urlsplit(self.path).path.rstrip("/") == "/health":
             self._send(200, health())
         else:
             self._send(404, {"ok": False, "error": "Not found"})
 
     def do_POST(self):
-        if self.path.rstrip("/") != "/evaluate":
+        if urlsplit(self.path).path.rstrip("/") != "/evaluate":
             self._send(404, {"ok": False, "error": "Not found"})
             return
         content_type = self.headers.get("Content-Type", "").split(";")[0].strip().lower()
@@ -75,6 +77,7 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("JSON body must contain a bars array")
             contract_error = validate_evaluation_request(data)
             if contract_error:
+                print("EVALUATION_REJECTED: %s" % contract_error, flush=True)
                 self._send(422, {"ok": False, "signal": "WAIT", "confidence": None,
                                  "reason": contract_error, "autoTrading": False})
                 return
