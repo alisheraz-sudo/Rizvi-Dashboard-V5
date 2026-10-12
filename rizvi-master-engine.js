@@ -7,9 +7,93 @@
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
-  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50};
+  const OUTCOME_STORAGE_KEY='rizvi.v5.engine5.outcomes.v1';
+  const DEFAULT_ENGINE5_SETTINGS={
+    baseWeights:{trend:17,structure:15,liquidity:13,momentum:10,rsi:8,divergence:7,vwap:7,volumeProfile:5,delta:4,candlePattern:4,candleBias:5,fvg:5},
+    minOutcomeSamples:5,minConfirmations:7,minConfidence:80,weakSignalFloor:70,strongSignalFloor:80,
+    compatibilityThreshold:95,compatibilityMargin:70,compatibilityMinIndicators:8,compatibilityMinAligned:7,
+    qualifiedMinScore:80,qualifiedMinMargin:50,qualifiedMinActiveIndicators:8,qualifiedMinAlignedIndicators:6,
+    scoreAverageWindow:30,flipConfirm:6,waitConfirm:6,holdMs:30000,scoreAlpha:0.08,
+    orderFlowFreshnessMs:15000,orderFlowImbalanceThreshold:8
+  };
+  function loadOutcomes(){
+    try{
+      const raw=window.localStorage?.getItem(OUTCOME_STORAGE_KEY);
+      if(!raw)return {};
+      const parsed=JSON.parse(raw);
+      if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return {};
+      const clean={};
+      Object.keys(DEFAULT_ENGINE5_SETTINGS.baseWeights).forEach(k=>{
+        const p=parsed[k];
+        if(p&&Number.isFinite(Number(p.n))&&Number(p.n)>=0&&Number.isFinite(Number(p.correct))&&Number(p.correct)>=0){
+          clean[k]={n:Math.floor(Number(p.n)),correct:Math.min(Math.floor(Number(p.n)),Math.floor(Number(p.correct)))};
+        }
+      });
+      return clean;
+    }catch(_){return {};}
+  }
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50,outcomes:{}};
+  function saveOutcomes(){
+    try{window.localStorage?.setItem(OUTCOME_STORAGE_KEY,JSON.stringify(state.outcomes));return true;}
+    catch(_){return false;}
+  }
+  const suppliedSettings=window.RIZVI_ENGINE5_CONFIG&&typeof window.RIZVI_ENGINE5_CONFIG==='object'?window.RIZVI_ENGINE5_CONFIG:{};
+  const suppliedWeights=suppliedSettings.baseWeights&&typeof suppliedSettings.baseWeights==='object'?suppliedSettings.baseWeights:{};
+  const weightKeys=Object.keys(DEFAULT_ENGINE5_SETTINGS.baseWeights);
+  const validInitialWeights=Object.keys(suppliedWeights).every(k=>weightKeys.includes(k))&&weightKeys.every(k=>suppliedWeights[k]===undefined||(Number.isFinite(Number(suppliedWeights[k]))&&Number(suppliedWeights[k])>=0));
+  const candidateWeights={...DEFAULT_ENGINE5_SETTINGS.baseWeights,...(validInitialWeights?suppliedWeights:{})};
+  const sumInitialWeights=Object.values(candidateWeights).reduce((a,b)=>a+Number(b),0);
+  const BASE_WEIGHTS=Math.abs(sumInitialWeights-100)<=0.001?Object.fromEntries(Object.entries(candidateWeights).map(([k,v])=>[k,Number(v)])):{...DEFAULT_ENGINE5_SETTINGS.baseWeights};
+  const ENGINE5_SETTINGS={...DEFAULT_ENGINE5_SETTINGS,...Object.fromEntries(Object.entries(suppliedSettings).filter(([k])=>k!=='baseWeights')),baseWeights:BASE_WEIGHTS};
+  state.outcomes=loadOutcomes();
+  const REGIME_MULTIPLIERS={
+    TRENDING:{trend:1.35,structure:1.25,momentum:1.3,rsi:0.85,divergence:0.9,vwap:1.05,volumeProfile:0.85,candlePattern:1.05,candleBias:1.15,fvg:1.1,liquidity:1,delta:1},
+    RANGING:{trend:0.75,structure:0.85,momentum:0.75,rsi:1.25,divergence:1.2,vwap:1.1,volumeProfile:1.3,candlePattern:1,candleBias:0.85,fvg:0.8,liquidity:1.05,delta:1},
+    VOLATILE:{trend:0.9,structure:0.9,momentum:0.85,rsi:0.8,divergence:0.85,vwap:0.9,volumeProfile:1,candlePattern:1.2,candleBias:1,fvg:1.25,liquidity:1.15,delta:1.15}
+  };
+  function detectRegime(bars,closes,e9,e21){
+    if(bars.length<30)return {regime:'UNKNOWN',efficiency:0,rangeRatio:1,trendStrength:0};
+    const ranges=bars.slice(-30).map(x=>Math.max(0,Number(x.h)-Number(x.l))).filter(Number.isFinite);
+    const recent=ranges.slice(-5),base=ranges.slice(0,25);
+    const avgRecent=recent.reduce((a,b)=>a+b,0)/Math.max(1,recent.length);
+    const avgBase=base.reduce((a,b)=>a+b,0)/Math.max(1,base.length);
+    const rangeRatio=avgBase>0?avgRecent/avgBase:1;
+    const path=closes.slice(-21);
+    const travel=path.slice(1).reduce((a,c,i)=>a+Math.abs(c-path[i]),0);
+    const efficiency=travel>0?Math.abs(path[path.length-1]-path[0])/travel:0;
+    const trendStrength=Math.abs(e9-e21)/Math.max(avgBase,1e-9);
+    const regime=rangeRatio>=1.6?'VOLATILE':(efficiency>=0.38&&trendStrength>=0.35?'TRENDING':'RANGING');
+    return {regime,efficiency:Number(efficiency.toFixed(3)),rangeRatio:Number(rangeRatio.toFixed(3)),trendStrength:Number(trendStrength.toFixed(3))};
+  }
+  function getWeights(regime='UNKNOWN'){
+    const multipliers=REGIME_MULTIPLIERS[regime]||{};
+    const raw={};
+    Object.keys(BASE_WEIGHTS).forEach(k=>{
+      const p=state.outcomes[k];
+      const factor=p&&p.n>=ENGINE5_SETTINGS.minOutcomeSamples?Math.max(0.5,Math.min(1.5,0.5+(p.correct+1)/(p.n+2))):1;
+      raw[k]=BASE_WEIGHTS[k]*factor*(multipliers[k]||1);
+    });
+    const sum=Object.values(raw).reduce((a,b)=>a+b,0),out={};let assigned=0;const keys=Object.keys(raw);
+    keys.forEach((k,i)=>{out[k]=i===keys.length-1?100-assigned:Math.round(raw[k]/sum*100);assigned+=out[k];});
+    return out;
+  }
+  function recordOutcome(e){
+    const d=e&&e.detail||e;
+    if(!d||!['WIN','LOSS'].includes(String(d.outcome||'').toUpperCase())||!['BUY','SELL'].includes(String(d.direction||'').toUpperCase())||!d.indicatorSignals)return;
+    const dir=String(d.direction).toUpperCase(),win=String(d.outcome).toUpperCase()==='WIN';
+    Object.keys(BASE_WEIGHTS).forEach(k=>{
+      const s=String(d.indicatorSignals[k]||'').toUpperCase();
+      if(!['BUY','SELL'].includes(s))return;
+      const p=state.outcomes[k]||(state.outcomes[k]={n:0,correct:0});
+      p.n++;if((win&&s===dir)||(!win&&s!==dir))p.correct++;
+    });
+    saveOutcomes();
+  }
+  window.addEventListener('rizvi:trade-outcome',recordOutcome);
+  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;
+  window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
-  function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}return d===0?100:100-(100/(1+u/d));}
+  function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}if(u===0&&d===0)return 50;return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
     // Consume the actual cTrader Level-2 payload; never synthesize depth from OHLC.
     const wanted=String(symbol||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -20,7 +104,7 @@
     if(!((wanted==='XAUUSD'&&got==='XAUUSD')||(wanted==='BTCUSD'&&(got==='BTCUSD'||got==='BTCUSDT'))))
       return {signal:null,confidence:null,reason:'cTrader depth symbol mismatch'};
     const age=Date.now()-Number(b.updatedAt||0);
-    if(!Number.isFinite(age)||age<0||age>15000)
+    if(!Number.isFinite(age)||age<0||age>ENGINE5_SETTINGS.orderFlowFreshnessMs)
       return {signal:null,confidence:null,reason:'cTrader depth is stale'};
     let bid=0,ask=0;
     for(const level of b.levels){
@@ -37,8 +121,34 @@
     state.orderFlowSamples.push({t:now,im});
     state.orderFlowSamples=state.orderFlowSamples.filter(x=>now-x.t<=15000);
     const avg=state.orderFlowSamples.length?state.orderFlowSamples.reduce((sum,x)=>sum+x.im,0)/state.orderFlowSamples.length:im;
-    return {signal:avg>8?'BUY':avg<-8?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s cTrader depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:'LIVE',source:'CTRADER_LEVEL2',symbol:got};
+    return {signal:avg>ENGINE5_SETTINGS.orderFlowImbalanceThreshold?'BUY':avg<-ENGINE5_SETTINGS.orderFlowImbalanceThreshold?'SELL':'NEUTRAL',confidence:clamp(50+Math.abs(avg)*2),reason:'15s cTrader depth imbalance avg '+avg.toFixed(1)+'%',imbalance:avg,status:'LIVE',source:'CTRADER_LEVEL2',symbol:got};
   }
+  window.RIZVI_ENGINE5_SETTINGS=ENGINE5_SETTINGS;
+  window.RIZVI_SET_ENGINE5_SETTINGS=function(patch){
+    if(!patch||typeof patch!=='object'||Array.isArray(patch))return {ok:false,reason:'Settings patch must be an object'};
+    const allowed=['minOutcomeSamples','minConfirmations','minConfidence','weakSignalFloor','strongSignalFloor','compatibilityThreshold','compatibilityMargin','compatibilityMinIndicators','compatibilityMinAligned','qualifiedMinScore','qualifiedMinMargin','qualifiedMinActiveIndicators','qualifiedMinAlignedIndicators','scoreAverageWindow','flipConfirm','waitConfirm','holdMs','scoreAlpha','orderFlowFreshnessMs','orderFlowImbalanceThreshold'];
+    for(const key of Object.keys(patch)){
+      if(key==='baseWeights'){
+        const weights=patch.baseWeights;
+        if(!weights||typeof weights!=='object'||Object.keys(BASE_WEIGHTS).some(k=>!Number.isFinite(Number(weights[k]))||Number(weights[k])<0)||Object.keys(weights).some(k=>!(k in BASE_WEIGHTS))){
+          return {ok:false,reason:'baseWeights must contain every known indicator with non-negative numeric weights'};
+        }
+        const sum=Object.values(weights).reduce((a,b)=>a+Number(b),0);
+        if(Math.abs(sum-100)>0.001)return {ok:false,reason:'baseWeights must sum to 100'};
+      }else if(!allowed.includes(key))return {ok:false,reason:'Unknown Engine 5 setting: '+key};
+      else if(!Number.isFinite(Number(patch[key])))return {ok:false,reason:'Setting must be numeric: '+key};
+    }
+    if(patch.minConfidence!==undefined&&(patch.minConfidence<0||patch.minConfidence>100))return {ok:false,reason:'minConfidence must be 0–100'};
+    if(patch.weakSignalFloor!==undefined&&patch.strongSignalFloor!==undefined&&patch.weakSignalFloor>patch.strongSignalFloor)return {ok:false,reason:'weakSignalFloor cannot exceed strongSignalFloor'};
+    if(patch.scoreAlpha!==undefined&&(patch.scoreAlpha<=0||patch.scoreAlpha>1))return {ok:false,reason:'scoreAlpha must be >0 and <=1'};
+    if(patch.minConfirmations!==undefined&&(!Number.isInteger(Number(patch.minConfirmations))||Number(patch.minConfirmations)<1||Number(patch.minConfirmations)>Object.keys(BASE_WEIGHTS).length))return {ok:false,reason:'minConfirmations must be an integer from 1 to 12'};
+    if(patch.baseWeights)Object.assign(BASE_WEIGHTS,Object.fromEntries(Object.entries(patch.baseWeights).map(([k,v])=>[k,Number(v)])));
+    Object.keys(patch).filter(k=>k!=='baseWeights').forEach(k=>ENGINE5_SETTINGS[k]=Number(patch[k]));
+    ENGINE5_SETTINGS.baseWeights=BASE_WEIGHTS;
+    window.RIZVI_ENGINE5_SETTINGS=ENGINE5_SETTINGS;
+    run();
+    return {ok:true,settings:ENGINE5_SETTINGS};
+  };
   function run(){
     /* Engine 5 is the sole final signal writer once the symbol-alignment bridge is loaded. */
     if(window.__RIZVI_V132_SYMBOL_BRIDGE)return;
@@ -69,6 +179,8 @@
     const structure=last.c>priorHi?'BUY':last.c<priorLo?'SELL':(last.c>=e21?'BUY':'SELL');
     const candleBias=last.c<Number(last.o||prev.c)?'SELL':last.c>Number(last.o||prev.c)?'BUY':'NEUTRAL';
     const of=orderFlow(symbol);
+    const regimeInfo=detectRegime(bars,closes,e9,e21);
+    state.regime=regimeInfo.regime;
     const engine4=window.RIZVI_ENGINE4_CONTEXT||{};
     const liq=window.RIZVI_LIQUIDITY_ENGINE||{};
     const liqScore=clamp(liq.status?Number(liq.score||liq.liquidityScore||0):0);
@@ -93,12 +205,11 @@
     const vwapSignal=vwap===null?'WAIT':last.c>vwap?'BUY':last.c<vwap?'SELL':'NEUTRAL';
     const vpSignal=volumeProfile===null?'WAIT':last.c>=volumeProfile.poc?'BUY':'SELL';
     const delta=of.status==='LIVE'?of.imbalance:null;
-    const deltaSignal=delta===null?'WAIT':delta>8?'BUY':delta<-8?'SELL':'NEUTRAL';
+    const deltaSignal=delta===null?'WAIT':delta>ENGINE5_SETTINGS.orderFlowImbalanceThreshold?'BUY':delta<-ENGINE5_SETTINGS.orderFlowImbalanceThreshold?'SELL':'NEUTRAL';
     const prev8=bars.slice(-16,-8),last8=bars.slice(-8);
     const prevHigh=prev8.length?Math.max(...prev8.map(x=>Number(x.h))):null,lastHigh=last8.length?Math.max(...last8.map(x=>Number(x.h))):null;
     const prevLow=prev8.length?Math.min(...prev8.map(x=>Number(x.l))):null,lastLow=last8.length?Math.min(...last8.map(x=>Number(x.l))):null;
-    const prevCloses=prev8.map(x=>Number(x.c)),lastCloses=last8.map(x=>Number(x.c));
-    const prevRsi=prevCloses.length>=2?rsi(prevCloses):null,lastRsi=r;
+    const prevRsi=rsi(closes.slice(0,-8)),lastRsi=r;
     const bearishDiv=prevHigh!==null&&lastHigh!==null&&lastHigh>prevHigh&&prevRsi!==null&&lastRsi!==null&&lastRsi<prevRsi;
     const bullishDiv=prevLow!==null&&lastLow!==null&&lastLow<prevLow&&prevRsi!==null&&lastRsi!==null&&lastRsi>prevRsi;
     const divergence=bullishDiv?'BUY':bearishDiv?'SELL':'NEUTRAL';
@@ -122,12 +233,20 @@
       if([ah,al,bh,bl].every(Number.isFinite)){
         if(bl>ah){
           const top=bl,bottom=ah;
-          const filled=Number(last.l)<=bottom;
+          // Check every candle after formation: the latest candle alone cannot
+          // tell us whether an older gap was already fully mitigated.
+          let filled=false;
+          for(let j=i+1;j<bars.length;j++){
+            if(Number(bars[j].l)<=bottom){filled=true;break;}
+          }
           if(!filled){fvg={signal:'BUY',confidence:76,type:'BULLISH',top,bottom,filled:false,reason:'Bullish 3-candle imbalance'};break;}
         }
         if(bh<al){
           const top=al,bottom=bh;
-          const filled=Number(last.h)>=top;
+          let filled=false;
+          for(let j=i+1;j<bars.length;j++){
+            if(Number(bars[j].h)>=top){filled=true;break;}
+          }
           if(!filled){fvg={signal:'SELL',confidence:76,type:'BEARISH',top,bottom,filled:false,reason:'Bearish 3-candle imbalance'};break;}
         }
       }
@@ -136,11 +255,7 @@
 
     // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
-    const WEIGHTS={
-      trend:17, structure:15, liquidity:13, momentum:10,
-      rsi:8, divergence:7, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:5, fvg:5
-    };
+    const WEIGHTS=getWeights(regimeInfo.regime);
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
       orderFlow:of.signal,momentum,rsi:(r===null?'WAIT':r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'),
@@ -174,11 +289,12 @@
     const rawDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
     const engine4NewsBlocked=engine4.usNews?.status==='LIVE'&&engine4.usNews.blocked===true;
     const lead=Math.max(buy,sell),conflict=Math.min(buy,sell),total=buy+sell;
-    const weightedScore=activeWeight?clamp((lead/activeWeight)*100):0;
-    const directionalMargin=activeWeight?clamp(((lead-conflict)/activeWeight)*100):0;
+    // Use the full 100-point model as the denominator. Missing indicators must not inflate scores.
+    const weightedScore=clamp(lead);
+    const directionalMargin=clamp(lead-conflict);
     // V129: rolling score average over the latest 30 engine runs smooths noisy candle-to-candle swings.
     state.scoreSamples.push(weightedScore);
-    if(state.scoreSamples.length>30)state.scoreSamples.shift();
+    if(state.scoreSamples.length>ENGINE5_SETTINGS.scoreAverageWindow)state.scoreSamples.shift();
     state.scoreAverage=state.scoreSamples.length?state.scoreSamples.reduce((a,b)=>a+b,0)/state.scoreSamples.length:weightedScore;
     const settledScore=state.scoreAverage;
     // 95 = strict confluence/compatibility quality, NOT 95% probability of profit.
@@ -186,13 +302,13 @@
       clamp(Math.round(45+settledScore*0.38+directionalMargin*0.32+(total>=activeWeight*0.75?8:0)));
     const activeIndicators=Object.keys(contribution).length;
     const alignedIndicators=Object.values(contribution).filter(x=>x.signal===rawDirection).length;
-    const compatibility95=rawDirection!=='WAIT'&&weightedScore>=95&&directionalMargin>=70&&activeIndicators>=8&&alignedIndicators>=7;
+    const compatibility95=rawDirection!=='WAIT'&&weightedScore>=95&&directionalMargin>=ENGINE5_SETTINGS.compatibilityMargin&&activeIndicators>=ENGINE5_SETTINGS.compatibilityMinIndicators&&alignedIndicators>=ENGINE5_SETTINGS.compatibilityMinAligned;
     const algoRunReport={
       timestamp:Date.now(),symbol,
-      threshold:95,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
+      threshold:ENGINE5_SETTINGS.compatibilityThreshold,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
       direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
       directionalMargin:Math.round(directionalMargin),compatibility95,
-      weights:WEIGHTS,contributions:contribution,
+      regime:regimeInfo.regime,regimeMetrics:regimeInfo,weights:WEIGHTS,baseWeights:BASE_WEIGHTS,contributions:contribution,adaptiveCalibration:{indicatorOutcomes:state.outcomes,minSamplesPerIndicator:ENGINE5_SETTINGS.minOutcomeSamples,regimeAdaptive:true,regime:regimeInfo.regime},
       note:'95 is confluence compatibility, not win probability.'
     };
 
@@ -200,10 +316,10 @@
     // visible/master direction only changes after persistence; WAIT is also held
     // so transient indicator disagreement cannot create BUY/SELL/WAIT flicker.
     const now=Date.now();
-    const FLIP_CONFIRM=6;
-    const WAIT_CONFIRM=6;
-    const HOLD_MS=30000;
-    const SCORE_ALPHA=0.08;
+    const FLIP_CONFIRM=ENGINE5_SETTINGS.flipConfirm;
+    const WAIT_CONFIRM=ENGINE5_SETTINGS.waitConfirm;
+    const HOLD_MS=ENGINE5_SETTINGS.holdMs;
+    const SCORE_ALPHA=ENGINE5_SETTINGS.scoreAlpha;
     if(rawDirection===state.pendingDirection)state.pendingCount++;
     else{state.pendingDirection=rawDirection;state.pendingCount=1;}
 
@@ -233,10 +349,10 @@
     const confidence=Math.round(clamp(Math.round(state.stableConfidence/2)*2));
     // Respect the requested thresholds: below 70 = WAIT, 70–79 = weak, 80+ = strong only with confirmation.
     const engine4DxyConflict=engine4.dxy?.status==='LIVE'&&engine4.dxy.correlation<=-0.25&&engine4.dxy.dxyDirection===state.stableDirection;
-    const direction=confidence<70||engine4NewsBlocked||engine4DxyConflict?'WAIT':state.stableDirection;
+    const direction=confidence<ENGINE5_SETTINGS.weakSignalFloor||engine4NewsBlocked||engine4DxyConflict?'WAIT':state.stableDirection;
     const confirmations=Object.values(contribution).filter(x=>x.signal===direction).length;
     // Keep the 95-point compatibility metric as a stricter research flag, not a blocker for every 80+ confirmed setup.
-    const qualified=direction!=='WAIT'&&confirmations>=7&&confidence>=80&&weightedScore>=80&&directionalMargin>=50&&activeIndicators>=8&&alignedIndicators>=6;
+    const qualified=direction!=='WAIT'&&confirmations>=ENGINE5_SETTINGS.minConfirmations&&confidence>=ENGINE5_SETTINGS.minConfidence&&weightedScore>=ENGINE5_SETTINGS.qualifiedMinScore&&directionalMargin>=ENGINE5_SETTINGS.qualifiedMinMargin&&activeIndicators>=ENGINE5_SETTINGS.qualifiedMinActiveIndicators&&alignedIndicators>=ENGINE5_SETTINGS.qualifiedMinAlignedIndicators;
     const visibleSignal=direction!=='WAIT'?direction:'WAIT';
 
     const engines={
@@ -265,7 +381,8 @@
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
-      settings:{emaFast:9,emaSlow:21,rsi:14,minConfirmations:7,minConfidence:80,compatibilityThreshold:95,scoreAverageWindow:30,weightsTotal:100,weights:WEIGHTS},
+      settings:{...ENGINE5_SETTINGS,emaFast:9,emaSlow:21,rsi:14,weightsTotal:100,weights:WEIGHTS},
+      regimeAdaptive:{...regimeInfo,weightMultipliers:REGIME_MULTIPLIERS[regimeInfo.regime]||{}},
       contributions:{trend:trend,structure:structure,momentum:momentum,fvg:fvgSignal,rsi:r!==null?(r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'):'WAIT',vwap:vwapSignal,volumeProfile:vpSignal,delta:deltaSignal,divergence,candlePattern,liquidity:liq.direction||'NEUTRAL',rangeLevels:liq.direction||'NEUTRAL',dxyInverseCorrelation:engine4.dxy?.signal||'UNAVAILABLE',highImpactUSNews:engine4.usNews?.blocked?'BLOCK':'CLEAR',tradingSessions:engine4.session?.active||[],dayHighLow:engine4.dayHighLow?.status==='LIVE'?'LIVE':'UNAVAILABLE'},
       indicatorStatus:{ema:true,fvg:true,rsi:r!==null,vwap:vwap!==null,volumeProfile:volumeProfile!==null,delta:delta!==null,divergence:true,candlePattern:true,orderFlow:false,liquidity:!!liq.status,rangeLevels:Object.keys(rangeLevels).length>=4,dxyInverseCorrelation:engine4.dxy?.status==='LIVE',highImpactUSNews:engine4.usNews?.status==='LIVE',tradingSessions:engine4.session?.status==='LIVE',dayHighLow:engine4.dayHighLow?.status==='LIVE'},
       algoRunReport

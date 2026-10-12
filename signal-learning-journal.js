@@ -130,7 +130,20 @@
     const d=load(),t=d.trades.find(x=>x.id===id);if(!t)return;
     t.outcome=outcome;t.resolvedAt=Date.now();
     Object.keys(t.engines||{}).forEach(k=>{const e=t.engines[k];if(!e)return;if(typeof e.signal==='string'&&/^(BUY|SELL)$/.test(e.signal))e.correct=e.signal===t.direction;else e.correct=null;});
-    save(d);render();
+    save(d);
+    // Feed confirmed manual WIN/LOSS labels into Engine 5 calibration.
+    // Only genuine BUY/SELL evidence is forwarded; unavailable indicators stay absent.
+    if((outcome==='WIN'||outcome==='LOSS')&&typeof window.RIZVI_RECORD_TRADE_OUTCOME==='function'){
+      const indicatorSignals={};
+      Object.keys(t.engines||{}).forEach(k=>{
+        const signal=String(t.engines[k]?.signal||'').toUpperCase();
+        if(['BUY','SELL'].includes(signal))indicatorSignals[k]=signal;
+      });
+      window.dispatchEvent(new CustomEvent('rizvi:trade-outcome',{detail:{
+        outcome,direction:t.direction,indicatorSignals,symbol:t.symbol,tradeId:t.id,source:'manual-learning-journal'
+      }}));
+    }
+    render();
   }
   function capture(){
     const q=window.RIZVI_SIGNAL_QUALIFICATION||{},v=window.RIZVI_VISIBLE_SIGNAL_STATE||{};

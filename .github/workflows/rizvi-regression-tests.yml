@@ -1,0 +1,33 @@
+name: Rizvi Dashboard Regression Tests
+
+on:
+  push:
+    branches:
+      - fix/gold-feed-alignment-step1
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test Gold feed alignment
+        run: node tests/gold-feed-alignment.test.js
+      - name: Test Master Engine RSI
+        run: node tests/master-engine-rsi.test.js
+      - name: Test stable signal panel labels
+        run: node --test tests/signal-panel-labels.test.cjs
+      - name: Test feed and Engine 5 symbol authority
+        run: node --test tests/feed-engine-symbol-authority.test.cjs
+      - name: Check dashboard server syntax
+        run: node --check server.js
+      - name: Test Engine 4 production and context filters
+        run: node --test tests/engine4-production.test.cjs tests/engine4-context.test.cjs
