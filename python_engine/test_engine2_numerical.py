@@ -96,5 +96,44 @@ class Engine2NumericalTests(unittest.TestCase):
         self.assertAlmostEqual(levels["value"]["support"], 2599.0, places=8)
 
 
+    def test_bearish_structure_uses_confirmed_lower_highs_and_lows(self):
+        bars = flat_bars()
+        bars[10]["high"] = 2607.0
+        bars[20]["high"] = 2605.0
+        bars[30]["low"] = 2597.0
+        bars[40]["low"] = 2595.0
+        bars[-1].update({"open": 2600.2, "high": 2601.0, "low": 2598.8, "close": 2600.0})
+        structure = self.calculate(bars)["market_structure"]["value"]
+        self.assertEqual(structure["trend"], "bearish_structure")
+        self.assertIs(structure["higher_high"], False)
+        self.assertIs(structure["higher_low"], False)
+        self.assertAlmostEqual(structure["latest_swing_high"], 2605.0, places=8)
+        self.assertAlmostEqual(structure["latest_swing_low"], 2595.0, places=8)
+
+    def test_bearish_engulfing_pattern_matches_known_candles(self):
+        bars = flat_bars()
+        bars[-2].update({"open": 2600.0, "high": 2603.0, "low": 2599.5, "close": 2602.0})
+        bars[-1].update({"open": 2602.5, "high": 2603.0, "low": 2598.5, "close": 2599.0})
+        values = self.calculate(bars)
+        self.assertEqual(values["candle_patterns"]["value"], "bearish engulfing candidate")
+
+    def test_bearish_fvg_returns_exact_gap_boundaries(self):
+        bars = flat_bars()
+        bars[-3].update({"open": 2600.0, "high": 2601.0, "low": 2599.0, "close": 2600.0})
+        bars[-2].update({"open": 2600.0, "high": 2601.0, "low": 2597.0, "close": 2598.0})
+        bars[-1].update({"open": 2598.0, "high": 2598.0, "low": 2596.5, "close": 2597.0})
+        fvg = self.calculate(bars)["fvg"]
+        self.assertEqual(fvg["value"]["type"], "bearish")
+        self.assertAlmostEqual(fvg["value"]["lower"], 2598.0, places=8)
+        self.assertAlmostEqual(fvg["value"]["upper"], 2599.0, places=8)
+        self.assertEqual(fvg["value"]["fill_status"], "unfilled")
+
+    def test_invalid_ohlc_is_rejected_instead_of_scored(self):
+        bars = flat_bars()
+        bars[-1].update({"high": 2598.0, "close": 2600.0})
+        with self.assertRaises(ValueError):
+            self.calculate(bars)
+
+
 if __name__ == "__main__":
     unittest.main()
