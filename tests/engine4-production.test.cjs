@@ -144,6 +144,50 @@ test('Engine 4 does not pass full combinations with insufficient history', () =>
   assert.equal(report.combinations.C6.action, 'WAIT');
 });
 
+
+test('Engine 4 VWAP, Stochastic and Bollinger Bands match independent calculations', () => {
+  const bars = fixtureBars();
+  const { report } = runProduction(bars);
+  const window = bars.slice(-100);
+  const totalVolume = window.reduce((sum, b) => sum + b.volume, 0);
+  const expectedVwap = window.reduce((sum, b) => sum + ((b.high + b.low + b.close) / 3) * b.volume, 0) / totalVolume;
+  assert.ok(Math.abs(report.master.raw.vwap - expectedVwap) < 1e-8, 'VWAP');
+  const closes = bars.map(b => b.close), last20 = closes.slice(-20);
+  const mean = last20.reduce((sum, x) => sum + x, 0) / 20;
+  const sd = Math.sqrt(last20.reduce((sum, x) => sum + (x - mean) ** 2, 0) / 20);
+  assert.ok(Math.abs(report.master.raw.bollinger.mid - mean) < 1e-8, 'Bollinger mid');
+  assert.ok(Math.abs(report.master.raw.bollinger.sd - sd) < 1e-8, 'Bollinger standard deviation');
+  const kValues = [];
+  for (let end = Math.max(13, bars.length - 5); end < bars.length; end++) {
+    const slice = bars.slice(end - 13, end + 1);
+    const high = Math.max(...slice.map(b => b.high)), low = Math.min(...slice.map(b => b.low));
+    kValues.push(high === low ? 50 : 100 * (bars[end].close - low) / (high - low));
+  }
+  const expectedK = kValues.at(-1), expectedD = kValues.slice(-3).reduce((sum, x) => sum + x, 0) / Math.min(3, kValues.length);
+  assert.ok(Math.abs(report.master.raw.stochastic.k - expectedK) < 1e-8, 'Stochastic %K');
+  assert.ok(Math.abs(report.master.raw.stochastic.d - expectedD) < 1e-8, 'Stochastic %D');
+});
+
+test('Engine 4 identifies a known bullish FVG fixture without fabricating order flow', () => {
+  const bars = fixtureBars();
+  bars[bars.length - 3] = { ...bars[bars.length - 3], open: 2300, high: 2300.2, low: 2299.8, close: 2300.05, volume: 100 };
+  bars[bars.length - 2] = { ...bars[bars.length - 2], open: 2300.7, high: 2301.1, low: 2300.6, close: 2301, volume: 100 };
+  bars[bars.length - 1] = { ...bars[bars.length - 1], open: 2301.1, high: 2301.5, low: 2300.8, close: 2301.3, volume: 100 };
+  const { report } = runProduction(bars);
+  assert.match(report.tests['Fair Value Gap (FVG)'].status, /CALCULATED/);
+  assert.match(report.tests['Fair Value Gap (FVG)'].hasValue ? report.tests['Fair Value Gap (FVG)'].status : '', /CALCULATED/);
+  assert.match(report.master.components['Fair Value Gap (FVG)'].value, /BULLISH FVG/);
+  assert.equal(report.tests['Order Flow / Footprint'].pass, false);
+});
+
+test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
+  const bars = fixtureBars();
+  bars[bars.length - 1] = { ...bars[bars.length - 1], open: 2300.5, high: 2300.62, low: 2300.05, close: 2300.6, volume: 100 };
+  const { report } = runProduction(bars);
+  assert.equal(report.master.components['Candle Patterns / Price Action'].value, 'HAMMER');
+  assert.equal(report.master.components['Candle Patterns / Price Action'].bias, 1);
+});
+
 test('Engine 4 rejects malformed OHLC rows from its production input', () => {
   const bars = fixtureBars();
   bars.push({ time: 1799999999, open: 2300, high: 2200, low: 2301, close: 2302, volume: 100 });
