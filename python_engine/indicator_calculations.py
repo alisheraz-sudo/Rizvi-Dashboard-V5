@@ -104,6 +104,27 @@ def _valid_aux_bars(raw: Sequence[Dict[str, Any]], minimum: int = 20) -> Optiona
     return result
 
 
+
+def _valid_footprint(raw: Any) -> bool:
+    """Require a non-empty price-level map with finite, non-negative two-sided volume."""
+    if not isinstance(raw, dict) or not raw:
+        return False
+    for price, level in raw.items():
+        try:
+            price_value = float(price)
+        except (TypeError, ValueError):
+            return False
+        if not isfinite(price_value) or price_value <= 0 or not isinstance(level, dict):
+            return False
+        buy = level.get("buy", level.get("buy_volume"))
+        sell = level.get("sell", level.get("sell_volume"))
+        if not _finite(buy) or not _finite(sell) or float(buy) < 0 or float(sell) < 0:
+            return False
+        if float(buy) + float(sell) <= 0:
+            return False
+    return True
+
+
 def _pearson(xs: Sequence[float], ys: Sequence[float]) -> Optional[float]:
     """Pearson correlation with a strict zero-variance guard."""
     if len(xs) != len(ys) or len(xs) < 20:
@@ -433,8 +454,8 @@ def calculate_roster(raw_bars: Sequence[Dict[str, Any]], symbol: str, timeframe:
         "delta_buy_sell": _item(flow_values, "CALCULATED_LIVE_PROXY" if flow_valid else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
                                "Live Delta Exchange BTCUSD public-trades feed; contract volume may differ from broker CFD volume." if flow_valid else "Requires a fresh, validated aggressor-volume feed."),
         "orderflow_footprint": _item({"source": flow_values["source"], "instrument_note": flow_values["instrument_note"],
-                                      "levels": trade_flow.get("footprint", {})} if flow_valid else None,
-                                     "CALCULATED_LIVE_PROXY" if flow_valid and isinstance(trade_flow.get("footprint"), dict) else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
+                                      "levels": trade_flow.get("footprint", {})} if flow_valid and _valid_footprint(trade_flow.get("footprint")) else None,
+                                     "CALCULATED_LIVE_PROXY" if flow_valid and _valid_footprint(trade_flow.get("footprint")) else "UNAVAILABLE_INVALID_FOOTPRINT_PAYLOAD" if flow_valid else "UNAVAILABLE_UNLESS_VALIDATED_FEED",
                                      "Trade-level price buckets from Delta Exchange public BTCUSD trades; not a broker-specific CFD footprint." if flow_valid else "Requires granular trade/price-level bid-ask data."),
         "divergence": _item(divergence, "CANDIDATE_REQUIRES_VALIDATION"),
         "trading_sessions": _item(session, "UTC_TIME_BUCKET_ONLY", "UTC bucket, not broker/exchange session calendar."),
