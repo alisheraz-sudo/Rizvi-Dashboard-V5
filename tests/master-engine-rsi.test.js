@@ -3,12 +3,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
+const testStorage = new Map();
+
 function runWithWindow(bars) {
   const events = [];
   const window = {
     RIZVI_CURRENT_SYMBOL: 'XAU/USD',
     RIZVI_FEED_STATUS: { ok: true, symbol: 'XAU/USD' },
     RIZVI_AGG_BARS: bars,
+    localStorage: { getItem: key => testStorage.has(key) ? testStorage.get(key) : null, setItem: (key, value) => testStorage.set(key, String(value)) },
     dispatchEvent: event => events.push(event),
     addEventListener: () => {}
   };
@@ -75,6 +78,14 @@ assert.ok(calibratedReport.weights.trend < baseTrendWeight,
 assert.equal(Object.values(calibratedReport.weights).reduce((a, b) => a + b, 0), 100,
   'adaptive weights must remain normalized to 100');
 assert.equal(calibratedReport.adaptiveCalibration.minSamplesPerIndicator, 5);
+assert.ok(testStorage.has('rizvi.v5.engine5.outcomes.v1'),
+  'recorded outcomes should persist in local storage');
+const reloadedCalibration = runWithWindow(Array.from({ length: 40 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 2300 + i, h: 2301 + i, l: 2299 + i, c: 2300 + i, v: 10
+})));
+assert.equal(reloadedCalibration.RIZVI_MASTER_CONFIRMATION.algoRunReport.adaptiveCalibration.indicatorOutcomes.trend.n, 5,
+  'calibration outcomes should survive engine reinitialization');
 
 console.log('Adaptive calibration tests: 4 assertions passed.');
 
