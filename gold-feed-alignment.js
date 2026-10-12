@@ -37,8 +37,15 @@
     const symbol = canonicalSymbol(state.symbol);
     const timeframe = canonicalTimeframe(state.timeframe);
     const bars = Array.isArray(state.bars) ? state.bars : [];
-    const validBars = bars.filter(b => b && [b.t ?? b.time ?? b.timestamp, b.o ?? b.open, b.h ?? b.high, b.l ?? b.low, b.c ?? b.close]
-      .every(v => Number.isFinite(Number(v))));
+    const validBars = bars.filter(b => {
+      if (!b) return false;
+      const timestamp = b.t ?? b.time ?? b.timestamp;
+      const o = Number(b.o ?? b.open), h = Number(b.h ?? b.high);
+      const l = Number(b.l ?? b.low), c = Number(b.c ?? b.close);
+      return Number.isFinite(timestampMs(timestamp)) &&
+        [o, h, l, c].every(Number.isFinite) &&
+        h >= l && h >= o && h >= c && l <= o && l <= c;
+    });
     const last = validBars.length ? validBars.reduce((latest, b) => {
       const t = timestampMs(b.t ?? b.time ?? b.timestamp);
       return !latest || t > latest.ms ? { bar: b, ms: t } : latest;
