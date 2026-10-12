@@ -92,17 +92,6 @@
   window.addEventListener('rizvi:trade-outcome',recordOutcome);
   window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;
   window.RIZVI_ENGINE5_OUTCOME_STORAGE={key:OUTCOME_STORAGE_KEY,save:saveOutcomes,load:loadOutcomes};
-  function getWeights(){
-    const raw={};
-    Object.keys(BASE_WEIGHTS).forEach(k=>{
-      const p=state.outcomes[k];
-      const factor=p&&p.n>=ENGINE5_SETTINGS.minOutcomeSamples?Math.max(0.5,Math.min(1.5,0.5+(p.correct+1)/(p.n+2))):1;
-      raw[k]=BASE_WEIGHTS[k]*factor;
-    });
-    const sum=Object.values(raw).reduce((a,b)=>a+b,0),out={};let assigned=0;const keys=Object.keys(raw);
-    keys.forEach((k,i)=>{out[k]=i===keys.length-1?100-assigned:Math.round(raw[k]/sum*100);assigned+=out[k];});
-    return out;
-  }
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}if(u===0&&d===0)return 50;return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
