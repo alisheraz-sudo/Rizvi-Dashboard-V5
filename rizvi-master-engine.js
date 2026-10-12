@@ -97,8 +97,7 @@
     const prev8=bars.slice(-16,-8),last8=bars.slice(-8);
     const prevHigh=prev8.length?Math.max(...prev8.map(x=>Number(x.h))):null,lastHigh=last8.length?Math.max(...last8.map(x=>Number(x.h))):null;
     const prevLow=prev8.length?Math.min(...prev8.map(x=>Number(x.l))):null,lastLow=last8.length?Math.min(...last8.map(x=>Number(x.l))):null;
-    const prevCloses=prev8.map(x=>Number(x.c)),lastCloses=last8.map(x=>Number(x.c));
-    const prevRsi=prevCloses.length>=2?rsi(prevCloses):null,lastRsi=r;
+    const prevRsi=rsi(closes.slice(0,-8)),lastRsi=r;
     const bearishDiv=prevHigh!==null&&lastHigh!==null&&lastHigh>prevHigh&&prevRsi!==null&&lastRsi!==null&&lastRsi<prevRsi;
     const bullishDiv=prevLow!==null&&lastLow!==null&&lastLow<prevLow&&prevRsi!==null&&lastRsi!==null&&lastRsi>prevRsi;
     const divergence=bullishDiv?'BUY':bearishDiv?'SELL':'NEUTRAL';
