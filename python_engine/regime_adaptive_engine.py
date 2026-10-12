@@ -353,11 +353,11 @@ def _regime(x: Dict[str, Optional[float]]) -> str:
 
 def _adaptive_weights(regime: str) -> Dict[str, float]:
     presets = {
-        "TRENDING": {"engine_1_trend": .34, "engine_2_momentum": .24, "engine_3_structure": .20, "engine_4_volatility": .22},
-        "RANGING": {"engine_1_trend": .18, "engine_2_momentum": .28, "engine_3_structure": .22, "engine_4_volatility": .32},
-        "HIGH_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .20, "engine_3_structure": .23, "engine_4_volatility": .35},
-        "LOW_VOLATILITY": {"engine_1_trend": .22, "engine_2_momentum": .25, "engine_3_structure": .23, "engine_4_volatility": .30},
-        "UNKNOWN": {"engine_1_trend": .25, "engine_2_momentum": .25, "engine_3_structure": .25, "engine_4_volatility": .25},
+        "TRENDING": {"engine_1": .34, "engine_2": .24, "engine_3": .20, "engine_4": .22},
+        "RANGING": {"engine_1": .18, "engine_2": .28, "engine_3": .22, "engine_4": .32},
+        "HIGH_VOLATILITY": {"engine_1": .22, "engine_2": .20, "engine_3": .23, "engine_4": .35},
+        "LOW_VOLATILITY": {"engine_1": .22, "engine_2": .25, "engine_3": .23, "engine_4": .30},
+        "UNKNOWN": {"engine_1": .25, "engine_2": .25, "engine_3": .25, "engine_4": .25},
     }
     weights = presets.get(regime, presets["UNKNOWN"]).copy()
     # Hard cap each group; normalize after capping.
