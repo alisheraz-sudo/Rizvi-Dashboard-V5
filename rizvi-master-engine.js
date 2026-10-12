@@ -7,7 +7,32 @@
   'use strict';
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const num=v=>Number.isFinite(Number(v))?Number(v):null;
-  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50};
+  const state={pendingDirection:null,pendingCount:0,stableDirection:'WAIT',stableConfidence:50,lastDirectionChange:0,waitCount:0,orderFlowSamples:[],confidenceSamples:[],scoreSamples:[],scoreAverage:50,outcomes:{}};
+  const BASE_WEIGHTS={trend:17,structure:15,liquidity:13,momentum:10,rsi:8,divergence:7,vwap:7,volumeProfile:5,delta:4,candlePattern:4,candleBias:5,fvg:5};
+  function recordOutcome(e){
+    const d=e&&e.detail||e;
+    if(!d||!['WIN','LOSS'].includes(String(d.outcome||'').toUpperCase())||!['BUY','SELL'].includes(String(d.direction||'').toUpperCase())||!d.indicatorSignals)return;
+    const dir=String(d.direction).toUpperCase(),win=String(d.outcome).toUpperCase()==='WIN';
+    Object.keys(BASE_WEIGHTS).forEach(k=>{
+      const s=String(d.indicatorSignals[k]||'').toUpperCase();
+      if(!['BUY','SELL'].includes(s))return;
+      const p=state.outcomes[k]||(state.outcomes[k]={n:0,correct:0});
+      p.n++;if((win&&s===dir)||(!win&&s!==dir))p.correct++;
+    });
+  }
+  window.addEventListener('rizvi:trade-outcome',recordOutcome);
+  window.RIZVI_RECORD_TRADE_OUTCOME=recordOutcome;
+  function getWeights(){
+    const raw={};
+    Object.keys(BASE_WEIGHTS).forEach(k=>{
+      const p=state.outcomes[k];
+      const factor=p&&p.n>=5?Math.max(0.5,Math.min(1.5,0.5+(p.correct+1)/(p.n+2))):1;
+      raw[k]=BASE_WEIGHTS[k]*factor;
+    });
+    const sum=Object.values(raw).reduce((a,b)=>a+b,0),out={};let assigned=0;const keys=Object.keys(raw);
+    keys.forEach((k,i)=>{out[k]=i===keys.length-1?100-assigned:Math.round(raw[k]/sum*100);assigned+=out[k];});
+    return out;
+  }
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}if(u===0&&d===0)return 50;return d===0?100:100-(100/(1+u/d));}
   function orderFlow(symbol){
@@ -135,11 +160,7 @@
 
     // Prop-style weighted confirmation: avoid double-counting correlated evidence.
     // Total active weight = 100. Price Action/Volatility remain context engines, not extra votes.
-    const WEIGHTS={
-      trend:17, structure:15, liquidity:13, momentum:10,
-      rsi:8, divergence:7, vwap:7, volumeProfile:5, delta:4,
-      candlePattern:4, candleBias:5, fvg:5
-    };
+    const WEIGHTS=getWeights();
     const votes={
       trend,structure,liquidity:(liq.status&&liqScore>=70)?(liq.direction||'NEUTRAL'):'WAIT',
       orderFlow:of.signal,momentum,rsi:(r===null?'WAIT':r>=55&&r<72?'BUY':r<=45&&r>28?'SELL':'NEUTRAL'),
@@ -192,7 +213,7 @@
       threshold:95,score:Math.round(weightedScore),scoreAverage:Math.round(settledScore),confidence:Math.round(rawConfidence),
       direction:rawDirection,activeWeight,activeIndicators,alignedIndicators,
       directionalMargin:Math.round(directionalMargin),compatibility95,
-      weights:WEIGHTS,contributions:contribution,
+      weights:WEIGHTS,baseWeights:BASE_WEIGHTS,contributions:contribution,adaptiveCalibration:{indicatorOutcomes:state.outcomes,minSamplesPerIndicator:5},
       note:'95 is confluence compatibility, not win probability.'
     };
 
