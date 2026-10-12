@@ -307,7 +307,9 @@ def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, A
             })
         statuses = [str(item["status"]) for item in assigned]
         unavailable = sum(1 for status in statuses if "UNAVAILABLE" in status or status.startswith("MISSING"))
-        validated = sum(1 for status in statuses if status == "CALCULATED" or status.startswith("CALCULATED_"))
+        # Candidate/calculated values are not reference-validated live values.
+        calculated_candidates = sum(1 for status in statuses if status.startswith("CALCULATED") or status == "CANDIDATE_REQUIRES_VALIDATION")
+        validated_live = sum(1 for status in statuses if status == "VALIDATED_LIVE")
         mapping_complete = (
             len(assigned) == int(group["indicator_count"])
             and all(item["id"] for item in assigned)
@@ -318,12 +320,14 @@ def _locked_engine_reports(diagnostics: Dict[str, Any]) -> Dict[str, Dict[str, A
             "name": group["name"],
             "expected_indicators": int(group["indicator_count"]),
             "returned_indicators": len(assigned),
-            "validated_calculations": validated,
+            "indicator_ids": [item["id"] for item in assigned],
+            "calculated_candidates": calculated_candidates,
+            "validated_calculations": validated_live,
             "unavailable_indicators": unavailable,
             "indicators": assigned,
             "mapping_complete": mapping_complete,
             "aligned": mapping_complete,
-            "data_validated": mapping_complete and validated == int(group["indicator_count"]),
+            "data_validated": mapping_complete and validated_live == int(group["indicator_count"]),
             "ready_for_signal": False,
             "signal": "WAIT",
             "score": None,
