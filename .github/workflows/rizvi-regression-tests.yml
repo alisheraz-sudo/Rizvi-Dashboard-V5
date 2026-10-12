@@ -25,6 +25,8 @@ jobs:
         run: node tests/master-engine-rsi.test.js
       - name: Test stable signal panel labels
         run: node --test tests/signal-panel-labels.test.cjs
+      - name: Test feed and Engine 5 symbol authority
+        run: node --test tests/feed-engine-symbol-authority.test.cjs
       - name: Check dashboard server syntax
         run: node --check server.js
       - name: Test Engine 4 production and context filters
