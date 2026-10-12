@@ -92,6 +92,29 @@ class Engine3NumericalTests(unittest.TestCase):
         self.assertIsNone(values["orderflow_footprint"]["value"])
         self.assertEqual(values["orderflow_footprint"]["status"], "UNAVAILABLE_UNLESS_VALIDATED_FEED")
 
+    def test_unapproved_gold_flow_source_cannot_activate_delta_or_footprint(self):
+        flow = {
+            "status": "LIVE",
+            "source": "Unverified Gold CFD trades API",
+            "instrument": "XAUUSD",
+            "observed_at": "2026-10-12T10:00:00Z",
+            "buy_volume": 120.0,
+            "sell_volume": 80.0,
+            "trade_count": 100,
+            "footprint": {"2600.00": {"buy_volume": 120.0, "sell_volume": 80.0, "trades": 100}},
+        }
+        values = self.calculate(flat_bars(), symbol="XAUUSD", trade_flow=flow)
+        for indicator_id in ("delta_buy_sell", "orderflow_footprint"):
+            self.assertIsNone(values[indicator_id]["value"])
+            self.assertEqual(values[indicator_id]["status"], "UNAVAILABLE_UNLESS_VALIDATED_FEED")
+
+    def test_equal_prior_high_or_low_is_not_a_liquidity_sweep(self):
+        bars = flat_bars()
+        bars[-1].update({"open": 2600.0, "high": 2601.0, "low": 2599.0, "close": 2600.0})
+        values = self.calculate(bars)["liquidity_sweeps"]
+        self.assertEqual(values["value"], "none")
+        self.assertEqual(values["status"], "CANDIDATE_REQUIRES_VALIDATION")
+
     def test_delta_and_footprint_fail_closed_when_feed_is_missing(self):
         values = self.calculate(flat_bars())
         self.assertIsNone(values["delta_buy_sell"]["value"])
