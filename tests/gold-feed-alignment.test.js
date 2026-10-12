@@ -27,7 +27,10 @@ assert.equal(good.timeframe, '1M');
 assert.equal(good.bars, 30);
 
 // Timeframe-aware freshness: a current 15m candle must not be rejected by a fixed 3m limit.
-const fifteenMinuteBars = bars.map(b => ({ ...b, t: Math.floor((now - 60_000) / 1000) }));
+const fifteenMinuteBars = Array.from({ length: 30 }, (_, i) => ({
+  t: Math.floor((now - 60_000 - (29 - i) * 15 * 60_000) / 1000),
+  o: 2300 + i, h: 2302 + i, l: 2299 + i, c: 2301 + i, v: 1
+}));
 const fifteenMinute = buildStatus({
   symbol: 'XAU/USD', timeframe: '15M', bars: fifteenMinuteBars,
   chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
