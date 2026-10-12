@@ -67,23 +67,47 @@ if(url.pathname==='/market/btc/intraday'&&req.method==='GET'){
 if(url.pathname==='/market/engine4-context'&&req.method==='GET'){
  const now=Date.now(),out={ok:true,updatedAt:now,dxy:{status:'UNAVAILABLE',reason:'DXY feed not yet validated'},usNews:{status:'UNAVAILABLE',reason:'US calendar feed not yet validated'}};
  const tasks=[
+  (async()=>{const candidates=[
+    {ticker:'DX-Y.NYB',source:'Yahoo Finance DX-Y.NYB'},
+    {ticker:'DX=F',source:'Yahoo Finance DX=F futures proxy'}
+   ];
+   const errors=[];
+   for(const candidate of candidates){try{
+    const u='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(candidate.ticker)+'?range=1d&interval=5m&_='+now;
+    const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+    if(!r.ok)throw new Error('Yahoo '+candidate.ticker+' HTTP '+r.status);
+    const p=await r.json(),z=p?.chart?.result?.[0],ts=z?.timestamp||[],q=z?.indicators?.quote?.[0],bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),c:Number(q.close?.[i])})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)&&x.c>0):[],age=bars.length?Math.max(0,Math.floor(now/1000)-bars[bars.length-1].t):Infinity;
+    if(p?.chart?.error)throw new Error(p.chart.error.description||'Yahoo chart error');
+    if(bars.length<12||age>1800)throw new Error('DXY history insufficient or stale');
+    out.dxy={status:'LIVE',source:candidate.source,bars,updatedAt:now,latestAgeSeconds:age};
+    return;
+   }catch(e){errors.push(candidate.ticker+': '+String(e.message||e).slice(0,100));}}
+   out.dxy={status:'UNAVAILABLE',reason:errors.join(' | ').slice(0,240)||'DXY sources unavailable',updatedAt:now};
+  })(),
   (async()=>{try{
-   const u='https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?range=1d&interval=5m&_='+now;
+   const from=new Date(now-86400000).toISOString().slice(0,10),to=new Date(now+7*86400000).toISOString().slice(0,10);
+   const u='https://biquote.io/api/calendar?countries=US&importance=high&limit=500&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to)+'&_='+now;
    const r=await fetch(u,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
-   if(!r.ok)throw new Error('Yahoo DXY HTTP '+r.status);
-   const p=await r.json(),z=p?.chart?.result?.[0],ts=z?.timestamp||[],q=z?.indicators?.quote?.[0],bars=Array.isArray(ts)&&q?ts.map((t,i)=>({t:Number(t),c:Number(q.close?.[i])})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)):[],age=bars.length?Math.max(0,Math.floor(now/1000)-bars[bars.length-1].t):Infinity;
-   if(bars.length<12||age>1800)throw new Error('DXY history insufficient or stale');
-   out.dxy={status:'LIVE',source:'Yahoo Finance DX-Y.NYB',bars,updatedAt:now,latestAgeSeconds:age};
-  }catch(e){out.dxy={status:'UNAVAILABLE',reason:String(e.message||e).slice(0,160),updatedAt:now};}})(),
-  (async()=>{try{
-   const r=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json?_'+now,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
-   if(!r.ok)throw new Error('US calendar HTTP '+r.status);
-   const p=await r.json();if(!Array.isArray(p))throw new Error('Calendar returned invalid data');
-   const events=p.map(e=>{const time=Date.parse(e.date||e.datetime||e.timestamp||'');return {title:String(e.title||e.event||'Untitled event'),country:String(e.country||''),impact:String(e.impact||''),time:Number.isFinite(time)?time:null};}).filter(e=>e.time!==null&&/USD|United States|US\b/i.test(e.country)&&/high/i.test(e.impact)).sort((a,b)=>a.time-b.time);
-   const active=events.find(e=>now>=e.time-30*60000&&now<=e.time+15*60000)||null;
+   if(!r.ok)throw new Error('BiQuote calendar HTTP '+r.status);
+   const p=await r.json();if(!Array.isArray(p))throw new Error('BiQuote calendar returned invalid data');
+   const events=p.map(e=>{const raw=e.time||e.datetime||e.scheduledAt||e.date||'',time=typeof raw==='number'?(raw<1e12?raw*1000:raw):Date.parse(raw);return {title:String(e.name||e.title||e.event||'Untitled event'),country:String(e.countryCode||e.country||''),currency:String(e.currency||''),impact:String(e.importance||e.impact||''),time:Number.isFinite(time)?time:null,timeMode:String(e.timeMode||'unknown'),sourceUrl:e.sourceUrl||null};})
+    .filter(e=>e.time!==null&&(/US|UNITED STATES/i.test(e.country)||e.currency.toUpperCase()==='USD')&&/high/i.test(e.impact))
+    .sort((a,b)=>a.time-b.time);
+   if(!events.length&&p.length)throw new Error('BiQuote returned no parseable high-impact US events');
+   const active=events.find(e=>(e.timeMode==='unknown'||e.timeMode==='exact')&&now>=e.time-30*60000&&now<=e.time+15*60000)||null;
    const next=events.find(e=>e.time>now)||null;
-   out.usNews={status:'LIVE',source:'Forex Factory public weekly calendar feed',events,blocked:!!active,activeEvent:active,nextEvent:next,windowBeforeMinutes:30,windowAfterMinutes:15,updatedAt:now};
-  }catch(e){out.usNews={status:'UNAVAILABLE',reason:String(e.message||e).slice(0,160),updatedAt:now};}})()
+   out.usNews={status:'LIVE',source:'BiQuote public economic calendar',attribution:'https://biquote.io/docs/',events,blocked:!!active,activeEvent:active,nextEvent:next,windowBeforeMinutes:30,windowAfterMinutes:15,updatedAt:now};
+  }catch(primary){try{
+   const r=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json?_'+now,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   if(!r.ok)throw new Error('Forex Factory calendar HTTP '+r.status);
+   const p=await r.json();if(!Array.isArray(p))throw new Error('Forex Factory calendar returned invalid data');
+   const events=p.map(e=>{const raw=e.date||e.datetime||e.timestamp||'',time=typeof raw==='number'?(raw<1e12?raw*1000:raw):Date.parse(raw);return {title:String(e.title||e.event||'Untitled event'),country:String(e.country||''),currency:String(e.currency||''),impact:String(e.impact||''),time:Number.isFinite(time)?time:null,timeMode:'unknown'};})
+    .filter(e=>e.time!==null&&(/USD|United States|US\\b/i.test(e.country)||e.currency.toUpperCase()==='USD')&&/high/i.test(e.impact))
+    .sort((a,b)=>a.time-b.time);
+   const active=events.find(e=>now>=e.time-30*60000&&now<=e.time+15*60000)||null,next=events.find(e=>e.time>now)||null;
+   out.usNews={status:'LIVE',source:'Forex Factory public weekly calendar (fallback)',attribution:'https://www.forexfactory.com/calendar',events,blocked:!!active,activeEvent:active,nextEvent:next,windowBeforeMinutes:30,windowAfterMinutes:15,updatedAt:now,primarySourceError:String(primary.message||primary).slice(0,120)};
+  }catch(fallback){out.usNews={status:'UNAVAILABLE',reason:'BiQuote: '+String(primary.message||primary).slice(0,90)+'; fallback: '+String(fallback.message||fallback).slice(0,120),updatedAt:now};}}
+  })()
  ];
  await Promise.all(tasks);
  return ofReply(res,200,out);
