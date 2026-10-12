@@ -26,6 +26,21 @@ assert.equal(good.symbol, 'XAU/USD');
 assert.equal(good.timeframe, '1M');
 assert.equal(good.bars, 30);
 
+// Timeframe-aware freshness: a current 15m candle must not be rejected by a fixed 3m limit.
+const fifteenMinuteBars = bars.map(b => ({ ...b, t: Math.floor((now - 60_000) / 1000) }));
+const fifteenMinute = buildStatus({
+  symbol: 'XAU/USD', timeframe: '15M', bars: fifteenMinuteBars,
+  chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
+}, now);
+assert.equal(fifteenMinute.ok, true);
+
+// 1m bars still reject stale data beyond the 3-minute minimum window.
+const staleOneMinute = buildStatus({
+  symbol: 'XAU/USD', timeframe: '1M', bars: bars.map(b => ({ ...b, t: b.t - 10 * 60 })),
+  chartStatus: 'LIVE', chartSymbol: 'XAU/USD'
+}, now);
+assert.equal(staleOneMinute.ok, false);
+
 const mismatch = buildStatus({
   symbol: 'XAU/USD', timeframe: '1M', bars,
   chartStatus: 'LIVE', chartSymbol: 'BTCUSD'
