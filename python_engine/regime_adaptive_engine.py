@@ -406,12 +406,39 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         and all(engines.get("engine_%d" % i, {}).get("aligned") is True for i in range(1, 5))
         and sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)) == 20
     )
+    # Explicit Engine 1–4 -> Engine 5 bridge contract. Pass the specialist
+    # reports themselves (not just aggregate counts) to the master evaluator.
+    # Reports remain WAIT-only until every assigned indicator is live-validated;
+    # this does not change scoring weights or enable trading.
+    engine_5_inputs = {
+        "engine_%d" % i: {
+            "engine_id": engines["engine_%d" % i]["id"],
+            "name": engines["engine_%d" % i]["name"],
+            "indicator_ids": [item["id"] for item in engines["engine_%d" % i]["indicators"]],
+            "mapping_complete": engines["engine_%d" % i]["mapping_complete"],
+            "validated_calculations": engines["engine_%d" % i]["validated_calculations"],
+            "data_validated": engines["engine_%d" % i]["data_validated"],
+            "ready_for_signal": engines["engine_%d" % i]["ready_for_signal"],
+            "signal": engines["engine_%d" % i]["signal"],
+            "score": engines["engine_%d" % i]["score"],
+        }
+        for i in range(1, 5)
+    }
+    bridge_ready = (
+        len(engine_5_inputs) == 4
+        and all(item["mapping_complete"] for item in engine_5_inputs.values())
+        and sum(len(item["indicator_ids"]) for item in engine_5_inputs.values()) == 20
+    )
     engine_5 = {
         "name": "Master Evaluation Engine",
         "role": "Evaluate Engines 1–4 and gate the final signal",
         "input_engines": 4,
+        "received_engine_reports": len(engine_5_inputs),
+        "engine_inputs": engine_5_inputs,
+        "bridge_status": "ROUTED_WAIT_GATED" if bridge_ready else "BLOCKED_ENGINE_MAPPING",
+        "bridge_ready": bridge_ready,
         "expected_indicators": 20,
-        "received_indicators": sum(len(engines.get("engine_%d" % i, {}).get("indicators", [])) for i in range(1, 5)),
+        "received_indicators": sum(len(item["indicator_ids"]) for item in engine_5_inputs.values()),
         "engine_mapping_aligned": engines_aligned,
         "indicator_status_counts": status_counts,
         "unverified_indicator_ids": unverified_ids,
@@ -419,7 +446,7 @@ def evaluate(raw_bars: Sequence[Dict[str, Any]], symbol: str = "BTCUSD", timefra
         "signal": "WAIT",
         "confidence": None,
         "status": "BLOCKED_PENDING_LIVE_VALIDATION",
-        "reason": "Engine 5 has evaluated the roster and engine mapping, but live-source validation and end-to-end checks are not complete.",
+        "reason": "Engine 5 receives all four specialist reports, but final signals remain WAIT until every required indicator and feed is live-validated.",
     }
     return {
         "ok": True,
