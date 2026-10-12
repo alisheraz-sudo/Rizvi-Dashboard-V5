@@ -93,3 +93,31 @@ assert.ok(!(fvgResult.engines.fvg.type === 'BULLISH' &&
   fvgResult.engines.fvg.top === 105 && fvgResult.engines.fvg.bottom === 101),
   'a bullish FVG fully mitigated by a later candle must not remain active');
 console.log('FVG mitigation regression test: passed.');
+
+const settingsWindow = runWithWindow(Array.from({ length: 40 }, (_, i) => ({
+  t: 1_800_000_000 + i * 60,
+  o: 2300 + i, h: 2301 + i, l: 2299 + i, c: 2300 + i, v: 10
+})));
+assert.equal(settingsWindow.RIZVI_ENGINE5_SETTINGS.minConfidence, 80,
+  'Engine 5 default strong qualification confidence should be 80');
+assert.equal(settingsWindow.RIZVI_ENGINE5_SETTINGS.weakSignalFloor, 70,
+  'Engine 5 should preserve the requested 70 weak-signal floor');
+const invalidWeights = settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({
+  baseWeights: { trend: 10 }
+});
+assert.equal(invalidWeights.ok, false, 'partial base weights must be rejected');
+const validSettings = settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({
+  minConfidence: 82,
+  baseWeights: {
+    trend: 17, structure: 15, liquidity: 13, momentum: 10, rsi: 8,
+    divergence: 7, vwap: 7, volumeProfile: 5, delta: 4,
+    candlePattern: 4, candleBias: 5, fvg: 5
+  }
+});
+assert.equal(validSettings.ok, true, 'valid Engine 5 settings should be accepted');
+assert.equal(settingsWindow.RIZVI_ENGINE5_SETTINGS.minConfidence, 82,
+  'Engine 5 settings API should apply valid changes');
+assert.equal(settingsWindow.RIZVI_SET_ENGINE5_SETTINGS({ unknownSetting: 1 }).ok, false,
+  'unknown Engine 5 settings must be rejected');
+
+console.log('Engine 5 settings tests: 6 assertions passed.');
