@@ -1,6 +1,15 @@
 name: Engine 4 Production Tests
 
 on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'server.js'
+      - 'indicator-diagnostics-bridge.js'
+      - 'indicator-diagnostics-bridge.test.js'
+      - 'tests/engine4-production.test.cjs'
+      - 'tests/engine4-context.test.cjs'
+      - '.github/workflows/engine4-tests.yml'
   push:
     branches:
       - main
