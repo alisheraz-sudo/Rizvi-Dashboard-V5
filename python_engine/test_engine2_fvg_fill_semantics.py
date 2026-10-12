@@ -45,11 +45,7 @@ class Engine2FvgFillSemanticsTests(unittest.TestCase):
 
     def test_bullish_gap_is_fully_filled_when_price_reaches_lower_edge(self):
         result = calculate_roster(bars_with_bullish_gap(101.0), "XAUUSD", "1m")
-        fvg = result["indicators"]["fvg"]["value"]
-        self.assertEqual(fvg["type"], "bullish")
-        self.assertEqual(fvg["fill_status"], "unfilled") if fvg["formed_at"] != 1_800_000_000 + 77 * 60 else self.fail(
-            "Expected the fully-filled newest gap to be excluded; a different older active gap may be returned."
-        )
+        self.assertIsNone(result["indicators"]["fvg"]["value"])
 
 
 if __name__ == "__main__":
