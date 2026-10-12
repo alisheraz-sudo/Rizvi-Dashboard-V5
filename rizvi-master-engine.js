@@ -141,6 +141,7 @@
     if(patch.minConfidence!==undefined&&(patch.minConfidence<0||patch.minConfidence>100))return {ok:false,reason:'minConfidence must be 0–100'};
     if(patch.weakSignalFloor!==undefined&&patch.strongSignalFloor!==undefined&&patch.weakSignalFloor>patch.strongSignalFloor)return {ok:false,reason:'weakSignalFloor cannot exceed strongSignalFloor'};
     if(patch.scoreAlpha!==undefined&&(patch.scoreAlpha<=0||patch.scoreAlpha>1))return {ok:false,reason:'scoreAlpha must be >0 and <=1'};
+    if(patch.minConfirmations!==undefined&&(!Number.isInteger(Number(patch.minConfirmations))||Number(patch.minConfirmations)<1||Number(patch.minConfirmations)>Object.keys(BASE_WEIGHTS).length))return {ok:false,reason:'minConfirmations must be an integer from 1 to 12'};
     if(patch.baseWeights)Object.assign(BASE_WEIGHTS,Object.fromEntries(Object.entries(patch.baseWeights).map(([k,v])=>[k,Number(v)])));
     Object.keys(patch).filter(k=>k!=='baseWeights').forEach(k=>ENGINE5_SETTINGS[k]=Number(patch[k]));
     ENGINE5_SETTINGS.baseWeights=BASE_WEIGHTS;
