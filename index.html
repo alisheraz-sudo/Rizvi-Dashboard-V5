@@ -392,42 +392,60 @@
     return c;
   }
 
-  function levels(p,dir){
-    // V110 RR floor: for XAUUSD a qualified setup must start at
-    // >=1.33R on TP1. 30-pip risk -> 40-pip TP1, then 70/100 pips
-    // cumulative to TP2/TP3. Do not let the visual range collapse
-    // to the old percentage-based 0.25% / 0.15% levels.
+  function levels(p,dir,score){
+    // Display-layer TP tiers only; Engine 5 scoring/qualification remains unchanged.
     const sym=String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase();
     const isXAU=sym==='XAU/USD'||sym==='XAUUSD'||sym==='GOLD';
     const pip=isXAU?0.01:1;
     const riskPips=isXAU?30:Math.max(1,Math.round(p*0.0015/pip));
-    const tp1Pips=isXAU?40:Math.max(riskPips+1,Math.round(riskPips*1.33));
-    const tp2Pips=isXAU?70:Math.max(tp1Pips+1,Math.round(riskPips*2));
-    const tp3Pips=isXAU?100:Math.max(tp2Pips+1,Math.round(riskPips*3));
-    const risk=riskPips*pip, tp1=tp1Pips*pip, tp2=tp2Pips*pip, tp3=tp3Pips*pip;
+    const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
+    const xauTargets=band==='WEAK'?[40,55,70]:band==='STRONG'?[70,85,100]:[100,110,120];
+    const ratios=band==='WEAK'?[1.33,1.83,2.33]:band==='STRONG'?[2.33,2.83,3.33]:[3.33,3.67,4];
+    const targets=isXAU?xauTargets:ratios.map(r=>Math.max(riskPips+1,Math.round(riskPips*r)));
+    const [tp1Pips,tp2Pips,tp3Pips]=targets;
+    const risk=riskPips*pip,tp1=tp1Pips*pip,tp2=tp2Pips*pip,tp3=tp3Pips*pip;
     if(dir==='SELL') return {symbol:sym,direction:dir,entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
-      riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
+      score,band,riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
     return {symbol:sym,direction:dir,entry:p,sl:p-risk,tp1:p+tp1,tp2:p+tp2,tp3:p+tp3,
-      riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
+      score,band,riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
   }
 
-  let frozen=null, frozenDirection=null;
-  window.RIZVI_SIGNAL_LEVELS=function(price,direction){
-    const p=Number(price), dir=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
-    if(!Number.isFinite(p)||!dir)return frozen||null;
-    if(frozen && frozenDirection===dir){
-      window.RIZVI_TRADE_RANGE=frozen;
+  function displayDecision(m){
+    if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
+    const score=Number(m.confidence)||0;
+    if(m.qualified===true&&['BUY','SELL'].includes(m.direction)){
+      return {direction:m.direction,score,band:score>=90?'HIGH':score>=80?'STRONG':'WEAK'};
+    }
+    const e=m.engine5||{},weakDir=e.indicatorAction,alignment=m.alignment||{};
+    if(e.state==='EVALUATED'&&score>=70&&score<80&&['BUY','SELL'].includes(weakDir)&&
+       alignment.algorithmMajority===weakDir&&Number(e.algorithmsAligned)>=3&&
+       Number(e.indicatorAgreement)>=60&&!m.reason){
+      return {direction:weakDir,score,band:'WEAK'};
+    }
+    return {direction:'WAIT',score,band:'WAIT'};
+  }
+  window.RIZVI_DISPLAY_DECISION=displayDecision;
+
+  let frozen=null, frozenDirection=null, frozenBand=null;
+  window.RIZVI_SIGNAL_LEVELS=function(price,direction,scoreOverride){
+    const p=Number(price),requested=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
+    const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{});
+    const dir=requested||decision.direction;
+    const score=Number.isFinite(Number(scoreOverride))?Number(scoreOverride):decision.score;
+    if(!Number.isFinite(p)||!dir||decision.direction!==dir||score<70){
+      if(!dir||decision.direction==='WAIT'){window.RIZVI_TRADE_RANGE=null;frozen=null;frozenDirection=null;frozenBand=null;}
+      return null;
+    }
+    const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
+    if(frozen&&frozenDirection===dir){
+      if(frozenBand!==band)frozen=levels(frozen.entry,dir,score);
+      else frozen.score=score;
+      frozenDirection=dir;frozenBand=band;window.RIZVI_TRADE_RANGE=frozen;
       return frozen;
     }
-    const qualified=!!window.RIZVI_MASTER_CONFIRMATION?.qualified;
-    if(qualified){
-      frozen=levels(p,dir);frozenDirection=dir;
-      window.RIZVI_TRADE_RANGE=frozen;
-      return frozen;
-    }
-    const v=levels(p,dir);
-    window.RIZVI_TRADE_RANGE=v;
-    return v;
+    frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;
+    window.RIZVI_TRADE_RANGE=frozen;
+    return frozen;
   };
 
   function draw(){
@@ -436,11 +454,9 @@
     const raw=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
     ctx.clearRect(0,0,c.width,c.height);
     if(!lv||!raw.length)return;
-    const sig=window.RIZVI_FINAL_SIGNAL||window.RIZVI_MASTER_SIGNAL||{};
-    const direction=sig.direction;
-    const qualified=window.RIZVI_MASTER_CONFIRMATION?.qualified===true ||
-      ((direction==='BUY'||direction==='SELL')&&Number(sig.quality)>=80);
-    if(!qualified||!['BUY','SELL'].includes(direction))return;
+    const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
+    if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
+    if(!lv||lv.direction!==direction||lv.band!==decision.band)return;
     const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     const rangeSymbol=String(lv.symbol||window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     if(active!==rangeSymbol||lv.direction!==direction)return;
@@ -472,13 +488,12 @@
   }
   window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
   window.addEventListener('rizvi:master-confirmation-update',e=>{
-    const m=e.detail||{};
-    if(m.qualified && (m.direction==='BUY'||m.direction==='SELL')){
-      const p=Number(window.RIZVI_LIVE_PRICE||window.RIZVI_LIVE_PRICES?.[m.symbol]);
-      if(Number.isFinite(p)){
-        frozen=levels(p,m.direction);frozenDirection=m.direction;
-        window.RIZVI_TRADE_RANGE=frozen;
-      }
+    const m=e.detail||{},decision=displayDecision(m);
+    const p=Number(window.RIZVI_LIVE_PRICE||window.RIZVI_LIVE_PRICES?.[m.symbol]);
+    if(decision.direction==='WAIT'||decision.score<70){
+      frozen=null;frozenDirection=null;frozenBand=null;window.RIZVI_TRADE_RANGE=null;
+    }else if(Number.isFinite(p)){
+      window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
     }
     draw();
   });
@@ -495,7 +510,7 @@
   USOIL:{decimals:2,source:'ctrader'}
  };
  window.RIZVI_SYMBOLS=symbols;
- window.RIZVI_CURRENT_SYMBOL='XAU/USD';
+ try{const saved=localStorage.getItem('rizvi.selectedSymbol.v3');window.RIZVI_CURRENT_SYMBOL=(saved==='BTCUSD'||saved==='XAU/USD')?saved:'XAU/USD'}catch(e){window.RIZVI_CURRENT_SYMBOL='XAU/USD';}
  window.RIZVI_SET_SYMBOL=function(sym){
   if(!symbols[sym])return false;
   window.RIZVI_CURRENT_SYMBOL=sym;
@@ -1895,7 +1910,8 @@ window.addEventListener('rizvi:indicator-update',render);
   let lastUpdate=0;
   function paint(direction,confidence,qualified,detail){
     const dirs=directionNodes();
-    const valid=['BUY','SELL','WAIT'].includes(direction)?direction:'WAIT';
+    const decision=window.RIZVI_DISPLAY_DECISION?window.RIZVI_DISPLAY_DECISION(detail||window.RIZVI_MASTER_CONFIRMATION||{}):{direction:['BUY','SELL','WAIT'].includes(direction)?direction:'WAIT',score:Number(confidence)||0,band:qualified?'HIGH':'WAIT'};
+    const valid=decision.direction;
     dirs.forEach(node=>{
       node.textContent=valid;
       const d=valid;
@@ -1913,7 +1929,7 @@ window.addEventListener('rizvi:indicator-update',render);
     const head=signalHead();
     if(head)head.dataset.direction=valid;
     const rawSetupScore=detail?.engine5?.indicatorScore;
-    const rawCombinedScore=confidence;
+    const rawCombinedScore=decision.score;
     const setupScore=rawSetupScore===null||rawSetupScore===undefined||rawSetupScore===''?NaN:Number(rawSetupScore);
     const combinedScore=rawCombinedScore===null||rawCombinedScore===undefined||rawCombinedScore===''?NaN:Number(rawCombinedScore);
     const q=quality();
@@ -1922,9 +1938,10 @@ window.addEventListener('rizvi:indicator-update',render);
     if(hq)hq.textContent=Number.isFinite(combinedScore)?Math.round(combinedScore)+'%':'—';
     const b=badge();
     if(b){
-      b.textContent=qualified===true?'QUALIFIED':'NOT QUALIFIED';
+      b.textContent=decision.band==='WEAK'?'WEAK SETUP':decision.band==='STRONG'?'STRONG SETUP':decision.band==='HIGH'?'HIGH QUALITY SETUP':'WAIT';
       b.style.display='inline-block';
-      b.dataset.qualified=qualified===true?'true':'false';
+      b.dataset.qualified=decision.band==='HIGH'?'true':'false';
+      b.dataset.band=decision.band;
     }
     window.RIZVI_INDICATOR_ACTIVATION={
       state:'ACTIVE',
