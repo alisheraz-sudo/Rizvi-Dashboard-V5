@@ -567,12 +567,23 @@ window.RIZVI_CHART_DATA=window.RIZVI_CHART_DATA||{};
 const cache=window.__RIZVI_CHART_CACHE=window.__RIZVI_CHART_CACHE||{};
 let timer=null,generation=0,inFlight=null;
 
+function epochMs(value){
+ let n=Number(value);
+ if(!Number.isFinite(n)&&typeof value==='string')n=Date.parse(value);
+ if(!Number.isFinite(n)||n<=0)return NaN;
+ if(n<1e12)n*=1000;
+ return Math.floor(n);
+}
 function normalizeBars(a){
+ const now=Date.now();
  return (Array.isArray(a)?a:[]).map(x=>({
-   t:+x.t,l:+x.l,h:+x.h,o:+x.o,c:+x.c,
+   t:epochMs(x.t??x.time??x.timestamp??x.date),l:Number(x.l??x.low),h:Number(x.h??x.high),
+   o:Number(x.o??x.open),c:Number(x.c??x.close),
    v:Number.isFinite(Number(x.v??x.volume))?Number(x.v??x.volume):0
  }))
-  .filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite))
+  // One canonical unit (epoch milliseconds) for aggregation and live-candle anchoring.
+  // Reject future-dated bars rather than letting them outrank the actual current candle.
+  .filter(x=>Number.isFinite(x.t)&&x.t>0&&x.t<=now+5000&&[x.l,x.h,x.o,x.c].every(Number.isFinite))
   .sort((a,b)=>a.t-b.t);
 }
 async function json(url,ms=12000){
@@ -592,15 +603,14 @@ async function gold(){
  window.RIZVI_XAU_DATA_STALE=!!d?.stale||d?.live===false;
  const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||d?.points||[]));
  const ohlc=a.map(x=>Array.isArray(x)
-   ? {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}
-   : {t:+(x.timestamp??x.time??x.t),o:+(x.open??x.o),h:+(x.high??x.h),l:+(x.low??x.l),c:+(x.close??x.c)})
-   .filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite))
-   .sort((x,y)=>x.t-y.t);
+   ? {t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}
+   : {t:(x.timestamp??x.time??x.t??x.date),o:+(x.open??x.o),h:+(x.high??x.h),l:+(x.low??x.l),c:+(x.close??x.c)})
+   .filter(x=>[x.o,x.h,x.l,x.c].every(Number.isFinite));
  let bars=normalizeBars(ohlc);
  if(!bars.length){
    const pts=a.map(x=>Array.isArray(x)
-     ?{t:+x[0],p:+x[1]}
-     :{t:+(x.timestamp??x.time??x.t),p:+(x.p??x.price??x.close??x.c)})
+     ?{t:epochMs(x[0]),p:+x[1]}
+     :{t:epochMs(x.timestamp??x.time??x.t??x.date),p:+(x.p??x.price??x.close??x.c)})
      .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.p)).sort((x,y)=>x.t-y.t);
    const out=[];
    for(const x of pts){

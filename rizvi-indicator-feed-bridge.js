@@ -11,11 +11,17 @@ function symbol(){
 }
 function timeframe(){const t=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();return TF_SECONDS[t]?t:'1M';}
 function normalize(rows){
+ const now=Math.floor(Date.now()/1000);
  return (Array.isArray(rows)?rows:[]).map(x=>{
-  let t=Number(x.t??x.time??x.timestamp);
-  if(t>1e12)t=Math.floor(t/1000);
+  const raw=x.t??x.time??x.timestamp??x.date;
+  let t=Number(raw);
+  if(!Number.isFinite(t)&&typeof raw==='string')t=Date.parse(raw)/1000;
+  else if(t>1e12)t=Math.floor(t/1000);
   return {t,o:Number(x.o??x.open),h:Number(x.h??x.high),l:Number(x.l??x.low),c:Number(x.c??x.close),v:Number(x.v??x.volume??0)};
- }).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
+ })
+ // The bridge uses epoch seconds internally; discard invalid/future bars before sorting or age checks.
+ .filter(x=>Number.isFinite(x.t)&&x.t>0&&x.t<=now+5&&[x.o,x.h,x.l,x.c].every(Number.isFinite))
+ .sort((a,b)=>a.t-b.t);
 }
 function aggregate(rows,seconds){
  const out=[];
