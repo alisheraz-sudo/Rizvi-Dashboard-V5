@@ -1636,12 +1636,16 @@ function sync(){
  }
  const labels=document.querySelectorAll('.right .card:nth-child(3) .rangeRow');
  const lv=window.RIZVI_TRADE_RANGE;
- if(labels.length>=5&&lv){
-   const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3];
-   ['Entry','SL','TP1','TP2','TP3'].forEach((name,i)=>{
-     const row=labels[i], el=row?.querySelector('b');
-     if(el&&Number.isFinite(Number(vals[i])))el.textContent=s+' '+fmt(vals[i]);
-   });
+ if(labels.length>=5){
+   if(lv){
+     const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3];
+     ['Entry','SL','TP1','TP2','TP3'].forEach((name,i)=>{
+       const row=labels[i], el=row?.querySelector('b');
+       if(el&&Number.isFinite(Number(vals[i])))el.textContent=s+' '+fmt(vals[i]);
+     });
+   }else{
+     labels.forEach(row=>{const el=row?.querySelector('b');if(el)el.textContent='—';});
+   }
  }
 }
 window.addEventListener('rizvi:symbol-change',sync);
