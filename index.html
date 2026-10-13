@@ -227,11 +227,28 @@
  .engine5-foot{font-size:8px!important}
 }
 @media(max-width:360px){.right .engine-card{height:215px!important;min-height:215px!important;max-height:215px!important}.right .engine-card .title{font-size:9px!important}}
+
+/* Market trend is a separate directional-bias readout, independent of trade qualification. */
+.market-trend-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:7px 12px 0;padding:8px 12px;border:1px solid #29445b;border-radius:8px;background:#0b1927;color:#dce9f2;font:700 11px/1.25 Arial,sans-serif}
+.market-trend-row .mt-label{color:#9fb5c6;letter-spacing:.06em}
+.market-trend-row .mt-value{display:flex;align-items:center;gap:8px;font-weight:900;font-size:13px}
+.market-trend-row .mt-value[data-direction="BUY"]{color:#16c784}
+.market-trend-row .mt-value[data-direction="SELL"]{color:#ff5364}
+.market-trend-row .mt-value[data-direction="NEUTRAL"]{color:#aab8c5}
+.market-trend-row .mt-meter{width:72px;height:5px;border-radius:99px;background:#243747;overflow:hidden}
+.market-trend-row .mt-meter i{display:block;height:100%;width:0;background:#aab8c5;border-radius:99px}
+.market-trend-row .mt-value[data-direction="BUY"] .mt-meter i{background:#16c784}
+.market-trend-row .mt-value[data-direction="SELL"] .mt-meter i{background:#ff5364}
+@media(max-width:420px){.market-trend-row{margin-left:7px;margin-right:7px;padding:7px 9px}.market-trend-row .mt-meter{width:46px}}
 </style>
 </head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
 <section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b id="rizviSignalCurrent" aria-live="polite">WAIT</b></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
+<section class="market-trend-row" id="rizviMarketTrend" aria-live="polite" aria-label="Market trend direction and strength">
+  <span class="mt-label">MARKET TREND</span>
+  <span class="mt-value" id="rizviMarketTrendValue" data-direction="NEUTRAL"><span id="rizviMarketTrendDirection">NEUTRAL</span><span id="rizviMarketTrendPercent">50%</span><span class="mt-meter" aria-hidden="true"><i id="rizviMarketTrendMeter"></i></span></span>
+</section>
 <div class="main"><main>
 <section class="chart"><div class="grid"></div><div class="candles">
 <i class="c g" style="left:2%;top:78%;height:12%"></i><i class="c g" style="left:6%;top:68%;height:13%"></i><i class="c r" style="left:10%;top:63%;height:10%"></i><i class="c g" style="left:14%;top:57%;height:13%"></i><i class="c g" style="left:18%;top:53%;height:12%"></i><i class="c r" style="left:22%;top:55%;height:10%"></i><i class="c g" style="left:26%;top:45%;height:16%"></i><i class="c g" style="left:30%;top:40%;height:15%"></i><i class="c r" style="left:34%;top:43%;height:9%"></i><i class="c g" style="left:38%;top:35%;height:15%"></i><i class="c g" style="left:42%;top:30%;height:16%"></i><i class="c r" style="left:46%;top:35%;height:10%"></i><i class="c g" style="left:50%;top:28%;height:16%"></i><i class="c g" style="left:54%;top:22%;height:14%"></i><i class="c r" style="left:58%;top:27%;height:10%"></i><i class="c g" style="left:62%;top:18%;height:15%"></i><i class="c g" style="left:66%;top:13%;height:14%"></i><i class="c r" style="left:70%;top:19%;height:9%"></i><i class="c g" style="left:74%;top:12%;height:13%"></i><i class="c r" style="left:78%;top:16%;height:9%"></i></div>
@@ -1988,5 +2005,32 @@ setInterval(render,1000);
 window.addEventListener('rizvi:indicator-confluence-update',render);
 window.addEventListener('rizvi:indicator-update',render);
 window.addEventListener('rizvi:master-confirmation-update',render);
+})();
+</script>
+
+<script id="rizvi-market-trend-direction-score">
+(function(){
+ 'use strict';
+ if(window.__RIZVI_MARKET_TREND_DISPLAY)return;window.__RIZVI_MARKET_TREND_DISPLAY=true;
+ const $=id=>document.getElementById(id);let lastUpdate=0;
+ function paint(detail){
+  const row=$('rizviMarketTrend'),value=$('rizviMarketTrendValue'),dir=$('rizviMarketTrendDirection'),pct=$('rizviMarketTrendPercent'),meter=$('rizviMarketTrendMeter');
+  if(!row||!value||!dir||!pct||!meter)return;
+  const master=detail||window.RIZVI_MASTER_CONFIRMATION||{};
+  const trend=master.marketTrend||master.engines?.trend||master.trend||{};
+  const raw=String(trend.direction||trend.signal||'NEUTRAL').toUpperCase();
+  const direction=raw==='BUY'||raw==='BULLISH'?'BUY':raw==='SELL'||raw==='BEARISH'?'SELL':'NEUTRAL';
+  const n=Number(trend.confidence);
+  const confidence=Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):50;
+  value.dataset.direction=direction;
+  dir.textContent=direction==='BUY'?'BULLISH':direction==='SELL'?'BEARISH':'NEUTRAL';
+  pct.textContent=confidence+'%';meter.style.width=confidence+'%';
+  row.title='Market direction from EMA 9/21; strength score is separate from trade-entry qualification.';
+  lastUpdate=Date.now();row.dataset.updatedAt=String(master.updatedAt||lastUpdate);
+ }
+ function onMaster(e){paint(e&&e.detail||window.RIZVI_MASTER_CONFIRMATION);}
+ window.addEventListener('rizvi:master-confirmation-update',onMaster);
+ if(window.RIZVI_MASTER_CONFIRMATION)paint(window.RIZVI_MASTER_CONFIRMATION);
+ setInterval(()=>{if(!lastUpdate||Date.now()-lastUpdate>15000){const row=$('rizviMarketTrend');if(row)row.title='Waiting for fresh master-engine trend data; displayed value is not a fresh signal.';}},3000);
 })();
 </script>
