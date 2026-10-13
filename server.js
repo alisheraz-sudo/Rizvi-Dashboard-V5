@@ -114,8 +114,8 @@ if(url.pathname==='/market/engine4-context'&&req.method==='GET'){
 }
 if(url.pathname==='/market/xau/spot'&&req.method==='GET'){try{const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data});}catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}}
 if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
- const normalizeBars=rows=>rows.map(x=>{const raw=x.openTime??x.t??x.timestamp??x.time;const parsed=typeof raw==='string'&&!/^\d+(\.\d+)?$/.test(raw)?Date.parse(raw):Number(raw);return {t:Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN,o:Number(x.open??x.o),h:Number(x.high??x.h),l:Number(x.low??x.l),c:Number(x.close??x.c),v:Number(x.tickVolume??x.volume??x.v??0)};}).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);
- const fresh=bars=>bars.length&&Math.max(0,Math.floor(Date.now()/1000)-bars[bars.length-1].t)<=180;
+ const normalizeBars=rows=>{const now=Math.floor(Date.now()/1000);return rows.map(x=>{const raw=x.openTime??x.t??x.timestamp??x.time;const parsed=typeof raw==='string'&&!/^\d+(\.\d+)?$/.test(raw)?Date.parse(raw):Number(raw);return {t:Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN,o:Number(x.open??x.o),h:Number(x.high??x.h),l:Number(x.low??x.l),c:Number(x.close??x.c),v:Number(x.tickVolume??x.volume??x.v??0)};}).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)&&x.t<=now+5).sort((a,b)=>a.t-b.t);};
+ const fresh=bars=>{const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;return bars.length>0&&age>=0&&age<=180;};
  let primaryError='XAUS unavailable',staleFallback=null;
  try{
   const data=await fetchXauJson('/api/v1/chart?symbol=xau&range=1d&interval=1m&fresh='+Date.now()),rows=Array.isArray(data)?data:(data?.data||data?.bars||data?.points||[]),bars=normalizeBars(rows);
