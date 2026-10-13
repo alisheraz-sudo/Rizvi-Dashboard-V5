@@ -1679,6 +1679,8 @@ sync();
  window.__RIZVI_V132_SYMBOL_BRIDGE=true;
  const W=window, clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
  let lastDiagAt=0;
+ let qualifiedCandidateKey='',qualifiedCandidateCount=0;
+ const QUALIFIED_CONFIRM_RUNS=3;
  function diag(symbol,tf,reason){if(Date.now()-lastDiagAt<15000)return;lastDiagAt=Date.now();try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol,timeframe:tf,reason:String(reason||'').slice(0,600)})}).catch(()=>{});}catch(_){}}
  const canonicalSymbol=value=>{const s=String(value||'').toUpperCase().replace(/\s/g,'');return /^(XAU\/?USD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';};
   const canonicalTf=value=>{const t=String(value||'1M').toUpperCase().replace(/\s/g,'');const aliases={'1':'1M','1MIN':'1M','1MINUTE':'1M','5':'5M','5MIN':'5M','15':'15M','15MIN':'15M','30':'30M','30MIN':'30M','60':'1H','60M':'1H','1HR':'1H','H1':'1H','D':'1D','D1':'1D'};return aliases[t]||t;};
@@ -1727,16 +1729,20 @@ sync();
   const aligned=indicatorAction!=='WAIT'&&majority===indicatorAction;
   const confidence=Math.round((indicatorScore+algoMean)/2);
   const dxyConflict=engine4.dxy?.status==='LIVE'&&Number(engine4.dxy.correlation)<=-0.25&&engine4.dxy.dxyDirection===indicatorAction;
-  const qualified=aligned&&alignedCount>=4&&rows.length>=5&&confidence>=80&&agreement>=70&&active.length>=6&&!newsBlocked&&!dxyConflict;
+  const rawQualified=aligned&&alignedCount>=4&&rows.length>=5&&confidence>=80&&agreement>=70&&active.length>=6&&!newsBlocked&&!dxyConflict;
+  const candidateKey=rawQualified?`${symbol}|${tf}|${indicatorAction}`:'';
+  if(candidateKey&&candidateKey===qualifiedCandidateKey)qualifiedCandidateCount++;
+  else{qualifiedCandidateKey=candidateKey;qualifiedCandidateCount=candidateKey?1:0;}
+  const qualified=rawQualified&&qualifiedCandidateCount>=QUALIFIED_CONFIRM_RUNS;
   const direction=qualified?indicatorAction:'WAIT';
   const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',engine4Context:engine4,
-   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
+   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
    alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsEvaluated:rows.length},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-  const blockers=[];if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(majority!==indicatorAction)blockers.push('majority-mismatch');if(alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
+  const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(majority!==indicatorAction)blockers.push('majority-mismatch');if(alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
   const voteSummary=rows.map(x=>String(x.name||'?').replace(/[^A-Z0-9_]/gi,'').slice(0,10)+':'+(x.action||'?')+'/'+Math.round(clamp(x.confidence))).join(',');
   diag(symbol,tf,'E5 '+direction+' s='+result.confidence+' ind='+indicatorAction+'/'+Math.round(indicatorScore)+' agree='+Math.round(agreement)+' maj='+majority+' aligned='+alignedCount+'/'+rows.length+' active='+active.length+' bars='+bs.length+' blockers='+(blockers.join(',')||'none')+' votes='+voteSummary);
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:result}));
