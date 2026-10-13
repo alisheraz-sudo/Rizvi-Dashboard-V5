@@ -78,6 +78,10 @@
         (p.newQuotes||[]).forEach(q=>{const price=Number(q.bid!=null?q.bid:q.ask)/priceScale(id),size=Number(q.size||0)/100,key=String(q.id||price.toFixed(5));if(!Number.isFinite(price))return;(q.bid!=null?d.bids:d.asks)[key]={id:key,price,size}});
         (p.deletedQuotes||[]).forEach(qid=>{delete d.bids[String(qid)];delete d.asks[String(qid)]});
         d.updatedAt=Date.now();S.depth=d;const bv=Object.values(d.bids).reduce((a,x)=>a+Number(x.size||0),0),av=Object.values(d.asks).reduce((a,x)=>a+Number(x.size||0),0),imb=(bv+av)>0?(bv-av)/(bv+av):0;window.RIZVI_L2_STATUS={status:'LIVE',symbolId:id,updatedAt:d.updatedAt,events:Number((window.RIZVI_L2_STATUS||{}).events||0)+1,bidLevels:Object.keys(d.bids).length,askLevels:Object.keys(d.asks).length,bidSize:bv,askSize:av,imbalance:imb};emit('depth',{symbolId:id,depth:d,imbalance:imb,bidSize:bv,askSize:av});window.RIZVI_ORDER_FLOW={status:'CONNECTED',updatedAt:d.updatedAt,bids:d.bids,asks:d.asks,imbalance:imb};
+        /* Stage 2 fix: bridge cTrader's native bid/ask maps into the normalized levels contract consumed by the Order Flow engine. */
+        const levels=[...Object.values(d.bids).map(x=>({price:Number(x.price),bid:Number(x.size||0),ask:0,time:d.updatedAt})),...Object.values(d.asks).map(x=>({price:Number(x.price),bid:0,ask:Number(x.size||0),time:d.updatedAt}))].filter(x=>Number.isFinite(x.price)&&x.price>0&&Number.isFinite(x.bid)&&Number.isFinite(x.ask));
+        if(typeof window.RIZVI_SET_ORDER_FLOW_DEPTH==='function')window.RIZVI_SET_ORDER_FLOW_DEPTH(levels,'CTRADER_LEVEL2');
+        else window.RIZVI_ORDER_FLOW_DEPTH=levels;
       }
     }
     if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(b=>decodeBar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
