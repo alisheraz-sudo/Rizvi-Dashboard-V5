@@ -1946,6 +1946,33 @@ window.addEventListener('rizvi:indicator-update',render);
 }
 </style>
 
+
+<!-- RIZVI V136: keep Engine 5 panel and main header on the same master decision; TRB settings untouched -->
+<script id="rizvi-master-decision-panel-sync-v136">
+(function(){
+ 'use strict';
+ if(window.__RIZVI_MASTER_DECISION_PANEL_SYNC_V136)return;
+ window.__RIZVI_MASTER_DECISION_PANEL_SYNC_V136=true;
+ function sync(event){
+   const m=event&&event.detail||window.RIZVI_MASTER_CONFIRMATION||{};
+   if(!m.updatedAt||typeof window.RIZVI_DISPLAY_DECISION!=='function')return;
+   const d=window.RIZVI_DISPLAY_DECISION(m);
+   const node=document.getElementById('e5Decision');
+   if(node){
+     node.textContent=d.direction;
+     node.style.color=d.direction==='BUY'?'#16c784':d.direction==='SELL'?'#ff5364':'#ffd34d';
+     node.dataset.direction=d.direction;
+   }
+   const head=document.querySelector('.signalHead');
+   if(head)head.dataset.direction=d.direction;
+   const signal=document.getElementById('rizviSignalCurrent');
+   if(signal&&signal.textContent.trim()!==d.direction)signal.textContent=d.direction;
+ }
+ window.addEventListener('rizvi:master-confirmation-update',sync);
+ if(window.RIZVI_MASTER_CONFIRMATION)sync({detail:window.RIZVI_MASTER_CONFIRMATION});
+})();
+</script>
+
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
