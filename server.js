@@ -112,7 +112,33 @@ if(url.pathname==='/market/engine4-context'&&req.method==='GET'){
  await Promise.all(tasks);
  return ofReply(res,200,out);
 }
-if(url.pathname==='/market/xau/spot'&&req.method==='GET'){try{const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data});}catch(e){return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS',error:e.message});}}
+if(url.pathname==='/market/xau/spot'&&req.method==='GET'){
+ try{
+  const data=await fetchXauJson('/api/v1/spot?compact=1&fresh='+Date.now());
+  const price=Number(data?.spot_usd_oz??data?.data?.spot_usd_oz);
+  if(!Number.isFinite(price)||price<=0)throw new Error('XAUS spot response missing a valid price');
+  return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS',data,updated_at:data?.updated_at||data?.price_as_of||Date.now()});
+ }catch(primary){
+  // If the spot quote endpoint is down, accept only a fresh, validated 1m OHLC close as a temporary quote fallback.
+  // Keep the fallback source explicit; never present stale candles as live spot.
+  try{
+   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
+   const payload=await r.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.bars)?payload.bars:[]);
+   const bars=rows.map(x=>{
+    const raw=x.openTime??x.t??x.timestamp??x.time;
+    const parsed=typeof raw==='string'&&!/^\\d+(\\.\\d+)?$/.test(raw)?Date.parse(raw):Number(raw);
+    const t=Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN;
+    return {t,c:Number(x.close??x.c)};
+   }).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)&&x.c>0&&x.t<=Math.floor(Date.now()/1000)+5).sort((a,b)=>a.t-b.t);
+   const last=bars.at(-1),age=last?Math.floor(Date.now()/1000)-last.t:Infinity;
+   if(!last||age<0||age>180)throw new Error('BiQuote last candle missing or stale ('+age+'s)');
+   return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'BIQUOTE-MT5-OHLC fallback',data:{spot_usd_oz:last.c},data_state:{status:'fallback-fresh-ohlc'},price_source:'BIQUOTE-MT5-OHLC',price_as_of:last.t,updated_at:Date.now(),fallbackUsed:true,primaryError:String(primary.message||primary).slice(0,140),latestAgeSeconds:age});
+  }catch(fallback){
+   return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'XAUS + BiQuote fallback',error:'XAUS: '+String(primary.message||primary).slice(0,100)+'; fallback: '+String(fallback.message||fallback).slice(0,120)});
+  }
+ }
+}
 if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
  const normalizeBars=rows=>{const now=Math.floor(Date.now()/1000);return rows.map(x=>{const raw=x.openTime??x.t??x.timestamp??x.time;const parsed=typeof raw==='string'&&!/^\d+(\.\d+)?$/.test(raw)?Date.parse(raw):Number(raw);return {t:Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN,o:Number(x.open??x.o),h:Number(x.high??x.h),l:Number(x.low??x.l),c:Number(x.close??x.c),v:Number(x.tickVolume??x.volume??x.v??0)};}).filter(x=>[x.t,x.o,x.h,x.l,x.c].every(Number.isFinite)&&x.t<=now+5).sort((a,b)=>a.t-b.t);};
  const fresh=bars=>{const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;return bars.length>0&&age>=0&&age<=180;};
