@@ -1699,7 +1699,7 @@ sync();
  function stampTime(value){let n=Number(value);if(!Number.isFinite(n)&&typeof value==='string')n=Date.parse(value);return Number.isFinite(n)&&n>0?n:NaN;}
  function barsNow(){const a=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[];return a.map(b=>({t:stampTime(b.t??b.time??b.timestamp??b.date),o:Number(b.o??b.open),h:Number(b.h??b.high),l:Number(b.l??b.low),c:Number(b.c??b.close),v:Number(b.v??b.volume??0)})).filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)).sort((a,b)=>a.t-b.t);}
  function wait(symbol,reason,extra={}){
-  const out={symbol,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'WAIT',engine5:{state:'WAIT',reason,...extra},feedStatus:W.RIZVI_FEED_STATUS||null,alignment:{status:'WAIT',reason}};
+  const out={symbol,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'WAIT',engine5:{state:'WAIT',reason,...extra},feedStatus:W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||null,alignment:{status:'WAIT',reason}};
   W.RIZVI_MASTER_CONFIRMATION=out;W.RIZVI_SIGNAL_DIRECTION='WAIT';
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:reason==='Gold market closed — feed polling paused'?'PAUSED_MARKET_CLOSED':'WAITING_FOR_VALIDATED_FEED',symbol,reason,updatedAt:out.updatedAt};
   diag(symbol,tfNow(),'ENGINE5 WAIT: '+reason+' details='+JSON.stringify(extra));
@@ -1710,8 +1710,10 @@ sync();
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
-  const feed=W.RIZVI_FEED_STATUS||{},bs=barsNow(),last=bs.at(-1);
-  if(feed.ok!==true||canonicalSymbol(feed.symbol)!==symbol||canonicalTf(feed.timeframe)!==tf){wait(symbol,'Chart/feed symbol or timeframe not aligned',{feedSymbol:feed.symbol||null,canonicalFeedSymbol:canonicalSymbol(feed.symbol),feedTimeframe:feed.timeframe||null,canonicalFeedTimeframe:canonicalTf(feed.timeframe),selectedTimeframe:tf});return;}
+  const feed=W.RIZVI_CANONICAL_FEED_STATUS||{},canonicalBars=Array.isArray(W.RIZVI_CANONICAL_RAW_BARS)?W.RIZVI_CANONICAL_RAW_BARS:null,bs=canonicalBars&&canonicalBars.length?canonicalBars:barsNow(),last=bs.at(-1);
+  if(feed.ok!==true){wait(symbol,'Canonical OHLC feed invalid or stale',{feedOk:feed.ok??null,feedReason:feed.reason||'Canonical feed status not initialized',feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
+  if(canonicalSymbol(feed.symbol)!==symbol){wait(symbol,'Feed symbol mismatch',{feedSymbol:feed.symbol||null,expectedSymbol:symbol});return;}
+  if(canonicalTf(feed.timeframe)!==tf){wait(symbol,'Feed timeframe mismatch',{feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
   const age=last?Date.now()-msTime(last.t):Infinity;
   if(bs.length<21||!last||!Number.isFinite(age)||age<0||age>180000){wait(symbol,'OHLC missing, insufficient, or stale',{bars:bs.length,barAgeMs:Number.isFinite(age)?age:null});return;}
   /* Stamp the active symbol onto the exact canonical snapshot consumed by both test suites. */
@@ -1790,7 +1792,7 @@ function render(){
  'RIZVI DASHBOARD — LIVE ENGINE DIAGNOSTICS (read-only)',
  'Symbol: '+(W.RIZVI_CURRENT_SYMBOL||W.state?.symbol||'unknown')+' | Auto trading: OFF',
  'Gold bridge: '+(eng.state||'NOT REPORTED')+' | bridge age: '+age(eng.updatedAt),
- 'Feed status: '+JSON.stringify({ok:W.RIZVI_FEED_STATUS?.ok??null,source:W.RIZVI_FEED_STATUS?.source||null,bars:W.RIZVI_FEED_STATUS?.bars??null,reason:W.RIZVI_FEED_STATUS?.reason||null,latestBarAt:W.RIZVI_FEED_STATUS?.latestBarAt??null,age:age(W.RIZVI_FEED_STATUS?.latestBarAt)}),
+ 'Feed status: '+JSON.stringify({ok:(W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.ok??null,source:(W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.source||null,bars:(W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.bars??null,reason:(W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.reason||null,latestBarAt:(W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.latestBarAt??null,age:age((W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS)?.latestBarAt)}),
  'Chart source: '+JSON.stringify({status:W.RIZVI_DIRECT_TV?.status||null,symbol:W.RIZVI_DIRECT_TV?.symbol||null,timeframe:W.RIZVI_DIRECT_TV?.timeframe||null}),
  'Bars: '+bars.length+' | last bar time: '+(ts==null?'unknown':String(ts))+' | last close: '+(close==null?'unknown':String(close))+' | bar freshness: '+age(ts),
  'Indicators: '+compEntries.length+' reported | active/non-zero: '+compEntries.filter(([k,v])=>Number(v?.score??v?.value??0)!==0).length+' | indicator report bars: '+(ir.bars??conf.bars??'unknown'),
