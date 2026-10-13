@@ -568,8 +568,24 @@ const cache=window.__RIZVI_CHART_CACHE=window.__RIZVI_CHART_CACHE||{};
 let timer=null,generation=0,inFlight=null;
 
 function normalizeBars(a){
+ /* One canonical chart time unit: Unix epoch milliseconds. Providers may send
+    epoch seconds, milliseconds, microseconds, numeric strings, or ISO timestamps. */
+ const epochMs=value=>{
+   if(value==null)return NaN;
+   let n;
+   if(typeof value==='string'&&!/^\s*\d+(?:\.\d+)?\s*$/.test(value)){
+     n=Date.parse(value);
+   }else n=Number(value);
+   if(!Number.isFinite(n)||n<=0)return NaN;
+   if(n<1e11)n*=1000;          // epoch seconds -> milliseconds
+   else if(n>=1e17)n/=1e6;     // epoch nanoseconds -> milliseconds
+   else if(n>=1e14)n/=1000;    // epoch microseconds -> milliseconds
+   return n;
+ };
  return (Array.isArray(a)?a:[]).map(x=>({
-   t:+x.t,l:+x.l,h:+x.h,o:+x.o,c:+x.c,
+   t:epochMs(x.t??x.timestamp??x.time??x.date),
+   l:Number(x.l??x.low),h:Number(x.h??x.high),
+   o:Number(x.o??x.open),c:Number(x.c??x.close),
    v:Number.isFinite(Number(x.v??x.volume))?Number(x.v??x.volume):0
  }))
   .filter(x=>[x.t,x.l,x.h,x.o,x.c].every(Number.isFinite))
