@@ -1976,11 +1976,11 @@ window.addEventListener('rizvi:indicator-update',render);
     const hq=highQuality();
     if(hq){hq.textContent='';hq.style.display='none';}
     const bandLabel=document.getElementById('rizviSetupBandLabel');
-    if(bandLabel)bandLabel.textContent=decision.band==='WEAK'?'WEAK SETUP':decision.band==='STRONG'?'STRONG SETUP':decision.band==='HIGH'?'HIGH QUALITY SETUP':'WAIT';
+    if(bandLabel){const displayScore=Number.isFinite(setupScore)?setupScore:combinedScore;bandLabel.textContent=!Number.isFinite(displayScore)||displayScore<70?'':displayScore>=90?'HIGH QUALITY SETUP':displayScore>=80?'GOOD SETUP':'WEAK SETUP';bandLabel.style.display=Number.isFinite(displayScore)&&displayScore>=70?'inline-block':'none';}
     const b=badge();
     if(b){
       b.textContent=decision.band==='WEAK'?'WEAK SETUP':decision.band==='STRONG'?'STRONG SETUP':decision.band==='HIGH'?'HIGH QUALITY SETUP':'WAIT';
-      b.style.display='none';
+      b.style.setProperty('display','none','important');b.style.setProperty('visibility','hidden','important');
       b.dataset.qualified=decision.band==='HIGH'?'true':'false';
       b.dataset.band=decision.band;
     }
