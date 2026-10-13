@@ -187,6 +187,24 @@
  .qualityBlock .badge{font-size:7px!important;padding:4px 4px!important;white-space:nowrap!important}
 }
 </style>
+<style id="rizvi-direction-linked-setup-scores">
+/* Direction-linked setup scores: both numeric values follow the live master signal. */
+.signalHead .qualityBlock,.signalHead .highQualityBlock{display:flex!important;align-items:center!important;gap:8px!important;white-space:nowrap!important}
+.signalHead .qualityBlock b,.signalHead .highQualityBlock b{font-size:22px!important;font-weight:900!important;line-height:1!important;color:#aab8c5!important}
+.signalHead[data-direction="BUY"] .qualityBlock b,.signalHead[data-direction="BUY"] .highQualityBlock b{color:#16c784!important}
+.signalHead[data-direction="SELL"] .qualityBlock b,.signalHead[data-direction="SELL"] .highQualityBlock b{color:#ff5364!important}
+.signalHead[data-direction="WAIT"] .qualityBlock b,.signalHead[data-direction="WAIT"] .highQualityBlock b{color:#aab8c5!important}
+.signalHead .highQualityBlock>span{font-size:10px!important;font-weight:800!important;color:#c2d1dc!important;letter-spacing:.25px!important}
+.signalHead .highQualityBlock .badge{font-size:9px!important;padding:4px 6px!important;white-space:nowrap!important;background:#25394b!important;border:1px solid #506477!important;color:#e0eaf2!important}
+.signalHead .highQualityBlock .badge[data-qualified="true"]{background:#07583e!important;border-color:#159767!important;color:#f2fff8!important}
+@media(max-width:900px){
+ .signalHead{gap:7px!important}
+ .signalHead .qualityBlock,.signalHead .highQualityBlock{gap:3px!important}
+ .signalHead .qualityBlock b,.signalHead .highQualityBlock b{font-size:14px!important}
+ .signalHead .highQualityBlock>span{font-size:7px!important;letter-spacing:0!important}
+ .signalHead .highQualityBlock .badge{font-size:6px!important;padding:3px 3px!important}
+}
+</style>
 
 <style id="rizvi-v5-locked-engine-panels">
 /* Approved UI-only change: Engine 5 above four equal-size, aligned panels. */
@@ -244,7 +262,7 @@
 </head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
-<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead"><div class="signalBlock"><span>SIGNAL</span><b id="rizviSignalCurrent" aria-live="polite">WAIT</b></div><div class="qualityBlock"><span>SETUP</span><b>—</b><em class="badge" style="display:none">HIGH QUALITY SETUP</em></div></div></section>
+<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead" data-direction="WAIT"><div class="signalBlock"><span>SIGNAL</span><b id="rizviSignalCurrent" aria-live="polite">WAIT</b></div><div class="qualityBlock"><span>SETUP</span><b id="rizviSetupScore">—</b></div><div class="highQualityBlock"><span>HIGH QUALITY SETUP</span><b id="rizviHighQualityScore">—</b><em class="badge" style="display:none">QUALIFIED</em></div></div></section>
 <section class="market-trend-row" id="rizviMarketTrend" aria-live="polite" aria-label="Market trend direction and strength">
   <span class="mt-label">MARKET TREND</span>
   <span class="mt-value" id="rizviMarketTrendValue" data-direction="NEUTRAL"><span id="rizviMarketTrendDirection">NEUTRAL</span><span id="rizviMarketTrendPercent">50%</span><span class="mt-meter" aria-hidden="true"><i id="rizviMarketTrendMeter"></i></span></span>
@@ -1866,8 +1884,10 @@ window.addEventListener('rizvi:indicator-update',render);
   'use strict';
   if(window.__RIZVI_V130_INDICATOR_BINDING)return;
   window.__RIZVI_V130_INDICATOR_BINDING=true;
-  const badge=()=>document.querySelector('.qualityBlock .badge');
-  const quality=()=>document.querySelector('.qualityBlock b');
+  const badge=()=>document.querySelector('.highQualityBlock .badge');
+  const quality=()=>document.getElementById('rizviSetupScore');
+  const highQuality=()=>document.getElementById('rizviHighQualityScore');
+  const signalHead=()=>document.querySelector('.signalHead');
   const directionNodes=()=> {
     const current=document.getElementById('rizviSignalCurrent');
     return current?[current]:[];
@@ -1890,12 +1910,19 @@ window.addEventListener('rizvi:indicator-update',render);
         node.style.background=active?(valid==='BUY'?'#075b3e':valid==='SELL'?'#70202b':'#5b480b'):'#172636';
       }
     });
+    const head=signalHead();
+    if(head)head.dataset.direction=valid;
+    const setupScore=Number(detail?.engine5?.indicatorScore);
+    const combinedScore=Number(confidence);
     const q=quality();
-    if(q)q.textContent=Number.isFinite(Number(confidence))?Math.round(Number(confidence))+'%':'—';
+    if(q)q.textContent=Number.isFinite(setupScore)?Math.round(setupScore)+'%':Number.isFinite(combinedScore)?Math.round(combinedScore)+'%':'—';
+    const hq=highQuality();
+    if(hq)hq.textContent=Number.isFinite(combinedScore)?Math.round(combinedScore)+'%':'—';
     const b=badge();
     if(b){
-      b.textContent='HIGH QUALITY SETUP';
-      b.style.display=qualified===true?'inline-block':'none';
+      b.textContent=qualified===true?'QUALIFIED':'NOT QUALIFIED';
+      b.style.display='inline-block';
+      b.dataset.qualified=qualified===true?'true':'false';
     }
     window.RIZVI_INDICATOR_ACTIVATION={
       state:'ACTIVE',
