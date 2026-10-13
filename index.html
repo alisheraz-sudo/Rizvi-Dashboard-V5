@@ -1905,6 +1905,47 @@ window.addEventListener('rizvi:indicator-update',render);
 })();
 </script>
 
+
+<style id="rizvi-header-direction-colour-v136">
+/* V136: colour the main signal header and setup display from the final Engine 5 decision. */
+.signalHead[data-direction="BUY"]{
+ border-color:#13a66c!important;
+ background:#06271f!important;
+ box-shadow:inset 0 0 0 1px #13a66c55!important;
+}
+.signalHead[data-direction="SELL"]{
+ border-color:#dc4554!important;
+ background:#2b1018!important;
+ box-shadow:inset 0 0 0 1px #dc455455!important;
+}
+.signalHead[data-direction="WAIT"]{
+ border-color:#b58a22!important;
+ background:#211d0b!important;
+ box-shadow:inset 0 0 0 1px #e7bd3244!important;
+}
+.signalHead[data-direction="BUY"] .signalBlock i{
+ color:#eafff5!important;background:#075b3e!important;border-color:#13a66c!important;
+}
+.signalHead[data-direction="SELL"] .signalBlock i{
+ color:#fff0f2!important;background:#70202b!important;border-color:#dc4554!important;
+}
+.signalHead[data-direction="WAIT"] .signalBlock i{
+ color:#fff7ce!important;background:#5b480b!important;border-color:#e7bd32!important;
+}
+.signalHead[data-direction="BUY"] .qualityBlock b,
+.signalHead[data-direction="BUY"] .highQualityBlock b{color:#16c784!important}
+.signalHead[data-direction="SELL"] .qualityBlock b,
+.signalHead[data-direction="SELL"] .highQualityBlock b{color:#ff5364!important}
+.signalHead[data-direction="WAIT"] .qualityBlock b,
+.signalHead[data-direction="WAIT"] .highQualityBlock b{color:#ffd34d!important}
+.signalHead[data-direction="BUY"] .highQualityBlock>span{color:#8af0bf!important}
+.signalHead[data-direction="SELL"] .highQualityBlock>span{color:#ff9aa4!important}
+.signalHead[data-direction="WAIT"] .highQualityBlock>span{color:#ffe28a!important}
+@media(max-width:900px){
+ .signalHead[data-direction="BUY"],.signalHead[data-direction="SELL"],.signalHead[data-direction="WAIT"]{transition:background-color .15s ease,border-color .15s ease}
+}
+</style>
+
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
