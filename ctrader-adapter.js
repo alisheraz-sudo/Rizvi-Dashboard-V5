@@ -82,6 +82,9 @@
         const levels=[...Object.values(d.bids).map(x=>({price:Number(x.price),bid:Number(x.size||0),ask:0,time:d.updatedAt})),...Object.values(d.asks).map(x=>({price:Number(x.price),bid:0,ask:Number(x.size||0),time:d.updatedAt}))].filter(x=>Number.isFinite(x.price)&&x.price>0&&Number.isFinite(x.bid)&&Number.isFinite(x.ask));
         if(typeof window.RIZVI_SET_ORDER_FLOW_DEPTH==='function')window.RIZVI_SET_ORDER_FLOW_DEPTH(levels,'CTRADER_LEVEL2');
         else window.RIZVI_ORDER_FLOW_DEPTH=levels;
+        /* Stage 2: persist real browser-received cTrader depth for the authenticated dashboard poller. */
+        const symbolName=(S.symbols||[]).find(x=>Number(x.symbolId)===id)?.symbolName||'XAUUSD';
+        fetch('/ctrader/orderflow',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:symbolName,levels,updatedAt:d.updatedAt,source:'CTRADER_LEVEL2'})}).catch(()=>{});
       }
     }
     if(type===P.GET_TB_RES){const id=Number(p.symbolId);const bars=(p.trendbar||[]).map(b=>decodeBar(b,id)).filter(Boolean).sort((a,b)=>a.t-b.t);emit('history',{symbolId:id,bars});applyHistory(id,bars)}
