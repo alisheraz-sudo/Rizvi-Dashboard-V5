@@ -1853,6 +1853,60 @@ window.addEventListener('rizvi:gold-engine-update',render);
 window.addEventListener('rizvi:indicator-update',render);
 })();
 </script>
+
+<style id="rizvi-header-prominence-v131">
+/* V131: prominent, direction-coloured header values; remove duplicate status badge. */
+.signalHead{border:2px solid #36536b!important;background:#061525!important;box-shadow:0 0 0 1px #06101b,0 3px 12px #0008!important}
+.signalHead>div{min-height:34px!important;padding:5px 9px!important;border:1px solid #36516a!important;border-radius:6px!important;background:#0a1c2d!important}
+.signalHead>div span{font-weight:900!important;color:#d5e4ef!important;text-shadow:0 1px 2px #000!important}
+.signalHead .signalBlock b{font-size:23px!important;font-weight:1000!important;letter-spacing:.5px!important}
+.signalHead .qualityBlock b{font-size:24px!important;font-weight:1000!important}
+.signalHead[data-direction="BUY"] .signalBlock,.signalHead[data-direction="BUY"] .qualityBlock{border-color:#13b879!important;background:#073b2c!important;box-shadow:inset 0 0 0 1px #13b87944,0 0 10px #13b87922!important}
+.signalHead[data-direction="SELL"] .signalBlock,.signalHead[data-direction="SELL"] .qualityBlock{border-color:#ef4a5b!important;background:#3d1720!important;box-shadow:inset 0 0 0 1px #ef4a5b44,0 0 10px #ef4a5b22!important}
+.signalHead[data-direction="WAIT"] .signalBlock,.signalHead[data-direction="WAIT"] .qualityBlock,.signalHead:not([data-direction]) .signalBlock,.signalHead:not([data-direction]) .qualityBlock{border-color:#d8a82b!important;background:#382d0b!important;box-shadow:inset 0 0 0 1px #d8a82b33!important}
+.signalHead .highQualityBlock{display:flex!important;border:1px solid #36516a!important;border-radius:6px!important;background:#0a1c2d!important;padding:5px 9px!important}
+.signalHead .highQualityBlock .badge{display:none!important;visibility:hidden!important}
+.signalHead .highQualityBlock b{display:none!important}
+#rizviSetupBandLabel{display:inline!important;font-size:12px!important;font-weight:1000!important;letter-spacing:.35px!important;color:#e7edf3!important;text-shadow:0 1px 2px #000!important}
+.signalHead[data-direction="BUY"] #rizviSetupBandLabel{color:#37f0ad!important}
+.signalHead[data-direction="SELL"] #rizviSetupBandLabel{color:#ff6978!important}
+.signalHead[data-direction="WAIT"] #rizviSetupBandLabel{color:#ffd45e!important}
+@media(max-width:900px){
+ .signalHead{gap:5px!important;padding:3px 4px!important}
+ .signalHead>div{padding:4px 5px!important;gap:4px!important}
+ .signalHead .signalBlock b{font-size:15px!important}
+ .signalHead .qualityBlock b{font-size:16px!important}
+ #rizviSetupBandLabel{font-size:8px!important;letter-spacing:0!important}
+}
+</style>
+<script id="rizvi-header-tier-colour-v131">
+(function(){
+ 'use strict';
+ if(window.__RIZVI_HEADER_TIER_V131)return;window.__RIZVI_HEADER_TIER_V131=true;
+ const $=id=>document.getElementById(id);
+ function apply(){
+  const head=$('rizviSignalCurrent')?.closest('.signalHead')||document.querySelector('.signalHead');
+  const scoreNode=$('rizviSetupScore'),label=$('rizviSetupBandLabel');
+  if(!head||!scoreNode||!label)return;
+  const direction=String($('rizviSignalCurrent')?.textContent||'WAIT').trim().toUpperCase();
+  head.dataset.direction=['BUY','SELL'].includes(direction)?direction:'WAIT';
+  const raw=String(scoreNode.textContent||'').replace('%','').trim();
+  const score=raw===''?'':Number(raw);
+  const valid=raw!==''&&Number.isFinite(score)&&score>=0&&score<=100;
+  const tier=!valid||score<70?'':score<80?'WEAK SETUP':score<90?'GOOD SETUP':'HIGH QUALITY SETUP';
+  label.textContent=tier;
+  label.style.display=tier?'inline':'none';
+  const q=$('rizviSetupScore');
+  if(q){q.style.fontWeight='1000';q.style.color=direction==='BUY'?'#37f0ad':direction==='SELL'?'#ff6978':'#ffd45e';}
+  document.querySelectorAll('.signalHead .highQualityBlock .badge').forEach(el=>{el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');});
+ }
+ apply();
+ window.addEventListener('rizvi:master-confirmation-update',apply);
+ window.addEventListener('rizvi:indicator-update',apply);
+ setInterval(apply,500);
+})();
+</script>
+
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
