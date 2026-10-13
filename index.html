@@ -573,12 +573,13 @@ function normalizeBars(a){
  const epochMs=value=>{
    if(value==null)return NaN;
    let n;
-   if(typeof value==='string'&&!/^\\s*\\d+(?:\\.\\d+)?\\s*$/.test(value)){
+   if(typeof value==='string'&&!/^\s*\d+(?:\.\d+)?\s*$/.test(value)){
      n=Date.parse(value);
    }else n=Number(value);
    if(!Number.isFinite(n)||n<=0)return NaN;
    if(n<1e11)n*=1000;          // epoch seconds -> milliseconds
-   else if(n>1e14)n/=1000;     // epoch microseconds -> milliseconds
+   else if(n>=1e17)n/=1e6;     // epoch nanoseconds -> milliseconds
+   else if(n>=1e14)n/=1000;    // epoch microseconds -> milliseconds
    return n;
  };
  return (Array.isArray(a)?a:[]).map(x=>({
