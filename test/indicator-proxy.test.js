@@ -38,7 +38,7 @@ test('rejects malformed OHLC and does not count invalid candles toward the 60-ba
   input[0] = { ...input[0], high: input[0].low - 1 };
   const payload = { symbol: 'XAU/USD', timeframe: '1m', bars: input };
   assert.equal(validateDashboardPayload(payload), null);
-  const result = await evaluateDiagnostics(payload, { baseUrl: '' });
+  const result = await evaluateDiagnostics(payload, { baseUrl: 'https://engine.example.test' });
   assert.equal(result.status, 422);
   assert.equal(result.body.signal, 'WAIT');
   assert.match(result.body.reason, /Fewer than 60 valid OHLCV bars/);
