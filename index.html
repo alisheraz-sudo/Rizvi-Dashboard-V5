@@ -1735,7 +1735,7 @@ sync();
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-  diag(symbol,tf,'ENGINE5 EVALUATED: action='+direction+' confidence='+result.confidence+' indicators='+active.length+'/'+Object.keys(components).length+' algorithms='+rows.length+' aligned='+alignedCount+' bars='+bs.length+' qualified='+qualified);
+  diag(symbol,tf,'ENGINE5 EVALUATED: action='+direction+' confidence='+result.confidence+' indicatorAction='+indicatorAction+' indicatorScore='+Math.round(indicatorScore)+' indicatorAgreement='+Math.round(agreement)+' algorithmMajority='+majority+' votes='+JSON.stringify(rows.map(x=>({name:x.name,action:x.action,confidence:x.confidence})))+' indicators='+active.length+'/'+Object.keys(components).length+' algorithms='+rows.length+' aligned='+alignedCount+' bars='+bs.length+' qualified='+qualified);
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:result}));
   W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:result}));
  }
