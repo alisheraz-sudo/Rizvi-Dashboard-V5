@@ -1,0 +1,24 @@
+name: Dashboard regression tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "fix/engine5-canonical-feed-publisher"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+      - name: Run regression tests
+        run: npm test
+      - name: Build check
+        run: npm run build

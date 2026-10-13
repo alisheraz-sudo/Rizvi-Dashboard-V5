@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npx serve .",
     "build": "node -e \"console.log('Rizvi Dashboard V5 static build ready')\"",
+    "test": "node --test",
     "cap:sync": "npx cap sync",
     "android": "npx cap open android",
     "ios": "npx cap open ios",
