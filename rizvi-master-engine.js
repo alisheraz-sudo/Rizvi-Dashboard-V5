@@ -59,6 +59,8 @@
     const e9=ema(closes,9),e21=ema(closes,21),r=rsi(closes);
     if(e9===null||e21===null)return;
     const trend=e9>e21?'BUY':e9<e21?'SELL':'NEUTRAL';
+    // Trend strength is a separate directional-bias score, not trade-entry confidence.
+    const trendConfidence=trend==='NEUTRAL'?50:clamp(Math.round(50+(Math.abs(e9-e21)/Math.max(Math.max(...closes.slice(-10))-Math.min(...closes.slice(-10)),1e-9))*100),50,95);
     const momentum=last.c>prev.c?'BUY':last.c<prev.c?'SELL':'NEUTRAL';
     const recent=bars.slice(-10), hi=Math.max(...recent.map(x=>Number(x.h))),lo=Math.min(...recent.map(x=>Number(x.l)));
     const range=Math.max(hi-lo,1e-9), closePos=(Number(last.c)-lo)/range;
@@ -240,7 +242,7 @@
     const visibleSignal=direction!=='WAIT'?direction:'WAIT';
 
     const engines={
-      trend:{signal:trend,confidence:clamp(trend==='NEUTRAL'?50:72),reason:'EMA 9/21'},
+      trend:{signal:trend,confidence:trendConfidence,reason:'EMA 9/21 separation normalized to recent price range'},
       structure:{signal:structure,confidence:clamp(70+(structure===direction?15:0)),reason:'recent 10-bar structure'},
       liquidity:{signal:liq.direction||'NEUTRAL',confidence:liqScore||null,reason:liq.status||'No liquidity event'},
       orderFlow:{signal:'DISABLED',confidence:null,reason:'Optional feed disabled; core signals do not depend on it'}, 
@@ -262,6 +264,7 @@
     };
     window.RIZVI_MASTER_CONFIRMATION={
       symbol,updatedAt:Date.now(),direction,confidence,qualified,
+      marketTrend:{direction:trend,confidence:trendConfidence,source:'EMA 9/21'},
       confirmations,trend,structure,momentum,rsi:r,
       rawDirection,rawConfidence,stability:{pendingCount:state.pendingCount,waitCount:state.waitCount,windowMs:15000,confidenceWindowMs:15000,holdMs:HOLD_MS,flipConfirm:FLIP_CONFIRM,waitConfirm:WAIT_CONFIRM,holdCycles:3},
       engines,autoTrading:false,
