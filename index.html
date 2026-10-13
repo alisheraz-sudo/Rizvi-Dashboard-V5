@@ -1710,8 +1710,10 @@ sync();
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
-  const feed=W.RIZVI_FEED_STATUS||{},bs=barsNow(),last=bs.at(-1);
-  if(feed.ok!==true||canonicalSymbol(feed.symbol)!==symbol||canonicalTf(feed.timeframe)!==tf){wait(symbol,'Chart/feed symbol or timeframe not aligned',{feedSymbol:feed.symbol||null,canonicalFeedSymbol:canonicalSymbol(feed.symbol),feedTimeframe:feed.timeframe||null,canonicalFeedTimeframe:canonicalTf(feed.timeframe),selectedTimeframe:tf});return;}
+  const feed=W.RIZVI_CANONICAL_FEED_STATUS||{},canonicalBars=Array.isArray(W.RIZVI_CANONICAL_RAW_BARS)?W.RIZVI_CANONICAL_RAW_BARS:null,bs=canonicalBars&&canonicalBars.length?canonicalBars:barsNow(),last=bs.at(-1);
+  if(feed.ok!==true){wait(symbol,'Canonical OHLC feed invalid or stale',{feedOk:feed.ok??null,feedReason:feed.reason||'Canonical feed status not initialized',feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
+  if(canonicalSymbol(feed.symbol)!==symbol){wait(symbol,'Feed symbol mismatch',{feedSymbol:feed.symbol||null,expectedSymbol:symbol});return;}
+  if(canonicalTf(feed.timeframe)!==tf){wait(symbol,'Feed timeframe mismatch',{feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
   const age=last?Date.now()-msTime(last.t):Infinity;
   if(bs.length<21||!last||!Number.isFinite(age)||age<0||age>180000){wait(symbol,'OHLC missing, insufficient, or stale',{bars:bs.length,barAgeMs:Number.isFinite(age)?age:null});return;}
   /* Stamp the active symbol onto the exact canonical snapshot consumed by both test suites. */
