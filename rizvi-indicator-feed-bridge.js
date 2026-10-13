@@ -50,7 +50,7 @@ async function poll(){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
   if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
   const now=Math.floor(Date.now()/1000),latest=bars[bars.length-1],age=now-latest.t;
-  if(age<0||(age>Math.max(TF_SECONDS[tf]*3,180)&&!allowStale))throw new Error(label+' stale (latest bar age '+age+'s)');
+  if(age < -5||(age>Math.max(TF_SECONDS[tf]*3,180)&&!allowStale))throw new Error(label+' stale (latest bar age '+age+'s)');
   return {bars,latest,age,stale:age>Math.max(TF_SECONDS[tf]*3,180)};
  }
  try{
