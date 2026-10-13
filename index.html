@@ -1853,6 +1853,41 @@ window.addEventListener('rizvi:gold-engine-update',render);
 window.addEventListener('rizvi:indicator-update',render);
 })();
 </script>
+
+<!-- RIZVI HEADER CLEANUP: remove duplicate WAIT and keep tier label empty below 70 -->
+<style id="rizvi-header-cleanup-v133">
+.signalHead .highQualityBlock .badge{display:none!important;visibility:hidden!important}
+#rizviSetupBandLabel{display:inline-block;min-width:0}
+</style>
+<script id="rizvi-header-cleanup-v133-script">
+(function(){
+ 'use strict';
+ if(window.__RIZVI_HEADER_CLEANUP_V133)return;
+ window.__RIZVI_HEADER_CLEANUP_V133=true;
+ function update(){
+  const scoreNode=document.getElementById('rizviSetupScore');
+  const label=document.getElementById('rizviSetupBandLabel');
+  const badge=document.querySelector('.signalHead .highQualityBlock .badge');
+  const signal=document.getElementById('rizviSignalCurrent');
+  if(badge){badge.style.setProperty('display','none','important');badge.style.setProperty('visibility','hidden','important');}
+  if(!scoreNode||!label)return;
+  const raw=String(scoreNode.textContent||'').replace('%','').trim();
+  const score=raw===''||raw==='—'?NaN:Number(raw);
+  if(!Number.isFinite(score)||score<70){label.textContent='';label.style.display='none';return;}
+  label.style.display='inline-block';
+  label.textContent=score>=90?'HIGH QUALITY SETUP':score>=80?'GOOD SETUP':'WEAK SETUP';
+  if(signal){
+   const dir=String(signal.textContent||'WAIT').trim().toUpperCase();
+   scoreNode.style.color=dir==='BUY'?'#00e39a':dir==='SELL'?'#ff5c69':'#ffd34d';
+   label.style.color=dir==='BUY'?'#00e39a':dir==='SELL'?'#ff5c69':'#ffd34d';
+  }
+ }
+ update();
+ window.addEventListener('rizvi:master-confirmation-update',update);
+ setInterval(update,1000);
+})();
+</script>
+
 </body></html><script id="rizvi-v98-final-signal-noise-gate">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 <script id="rizvi-v99-canonical-indicator-alignment">/* V111 DISABLED LEGACY VISIBLE WRITER */</script>
 
