@@ -43,7 +43,7 @@ function ensureUI(){
  return el;
 }
 function selectedSymbol(){
- const raw=String(document.getElementById('symbolSelect')?.value||window.RIZVI_DIRECT_SYMBOL||window.RIZVI_CURRENT_SYMBOL||'XAUUSD').trim().toUpperCase();
+ const raw=String(window.RIZVI_CURRENT_SYMBOL||window.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAUUSD').trim().toUpperCase();
  return raw||'BTCUSD';
 }
 function tvSymbol(){const raw=selectedSymbol();return MAP[raw]||raw;}
