@@ -41,8 +41,11 @@ function fail(sym,reason){
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
 }
 async function poll(){
+ // Do not invalidate an in-flight request when a duplicate event/interval arrives.
+ // Coalesce overlapping triggers and run one fresh poll after the current one settles.
+ if(busy){rerunRequested=true;return;}
+ busy=true;
  const seq=++requestSeq;
- if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  const goldLocked=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
  if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,timeframe:tf,source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;}
