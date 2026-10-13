@@ -35,6 +35,7 @@ function aggregate(rows,seconds){
 function fail(sym,reason){
  try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:timeframe(),reason:String(reason||'').slice(0,220)})}).catch(()=>{});}catch(_){}
  window.RIZVI_FEED_STATUS={ok:false,live:false,stale:true,symbol:sym,timeframe:timeframe(),source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason};
+ window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;
  window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,indicatorStatus:{ema:false,fvg:false,rsi:false,vwap:false,volumeProfile:false,delta:false,divergence:false,candlePattern:false,orderFlow:false,liquidity:false,rangeLevels:false},feedStatus:window.RIZVI_FEED_STATUS};
  window.RIZVI_SIGNAL_DIRECTION='WAIT';
  window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
@@ -44,7 +45,7 @@ async function poll(){
  if(busy){rerunRequested=true;return;}busy=true;
  const sym=symbol(),tf=timeframe(),key=sym+'|'+tf;
  const goldLocked=sym==='XAU/USD'&&window.RIZVI_GOLD_MARKET_LOCKED===true;
- if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};}
+ if(key!==lastKey){window.RIZVI_FEED_STATUS={ok:null,symbol:sym,timeframe:tf,source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason:'Loading fresh '+sym+' OHLC feed'};window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;}
  function validateRows(rows,label,allowStale=false){
   const bars=aggregate(normalize(rows),TF_SECONDS[tf]);
   if(bars.length<21)throw new Error(label+' history insufficient ('+bars.length+' bars)');
@@ -83,11 +84,13 @@ async function poll(){
   if(seq!==requestSeq||key!==symbol()+'|'+timeframe())return;
   const bars=validated.bars,latest=validated.latest;
   window.RIZVI_DIRECT_SYMBOL=sym;
-  window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
+  window.RIZVI_CANONICAL_RAW_BARS=bars;
+   window.RIZVI_RAW_BARS=bars;window.RIZVI_AGG_BARS=bars;
   const latestAgeSeconds=Math.max(0,Math.floor(Date.now()/1000)-latest.t);
   if(sym==='XAU/USD'&&(data?.stale===true||validated.stale)){
    const reason='LAST AVAILABLE GOLD DATA ONLY — candles are stale ('+latestAgeSeconds+'s); indicator values are historical, Engine 5 must WAIT';
    window.RIZVI_FEED_STATUS={ok:false,stale:true,live:false,symbol:sym,timeframe:tf,source:data.source||'last available OHLC',bars:bars.length,latestBarAt:latest.t,latestAgeSeconds,updatedAt:Date.now(),key,reason};
+    window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;
    window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,reason,feedStatus:window.RIZVI_FEED_STATUS};
    window.RIZVI_SIGNAL_DIRECTION='WAIT';
    window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
@@ -97,6 +100,7 @@ async function poll(){
    return;
   }
   window.RIZVI_FEED_STATUS={ok:true,stale:false,live:true,symbol:sym,timeframe:tf,source:data.source||'backend OHLC',bars:bars.length,latestBarAt:latest.t,latestAgeSeconds,updatedAt:Date.now(),key};
+   window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;
   try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason:'OK source='+(data.source||'backend OHLC')+' bars='+bars.length+' latestAgeSeconds='+latestAgeSeconds})}).catch(()=>{});}catch(_){}
   lastGoodAt=Date.now();lastKey=key;
   window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
