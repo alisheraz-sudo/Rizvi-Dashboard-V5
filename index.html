@@ -385,10 +385,10 @@
     if(!c){
       c=document.createElement('canvas');
       c.id='rizviLevelsCanvasV67';
-      c.width=1200;c.height=500;
-      c.style.cssText='position:absolute;left:0;right:0;top:47px;width:100%;height:calc(100% - 47px);display:block;z-index:20;pointer-events:none';
+      c.style.cssText='position:absolute;left:0;right:0;top:47px;width:100%;height:calc(100% - 47px);display:block;z-index:20;pointer-events:none;max-width:100%';
       host.appendChild(c);
     }
+    if(getComputedStyle(host).position==='static')host.style.position='relative';
     return c;
   }
 
@@ -450,9 +450,15 @@
 
   function draw(){
     const c=ensureCanvas(),ctx=c.getContext('2d');
+    const rect=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+    const W=Math.max(1,Math.round(rect.width)),H=Math.max(1,Math.round(rect.height));
+    if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){
+      c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
     const lv=window.RIZVI_TRADE_RANGE;
     const raw=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
-    ctx.clearRect(0,0,c.width,c.height);
+    ctx.clearRect(0,0,W,H);
     if(!lv||!raw.length)return;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
     if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
@@ -463,9 +469,9 @@
     const vals=raw.slice(-70).flatMap(b=>[Number(b.h),Number(b.l)]).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
     if(!vals.length)return;
     const max=Math.max(...vals),min=Math.min(...vals);
-    const sy=v=>c.height-30-(v-min)/(max-min||1)*(c.height-60);
+    const sy=v=>H-30-(v-min)/(max-min||1)*(H-60);
+    const boxW=Math.min(78,Math.max(62,W*0.24)),priceScaleW=Math.min(86,W*0.24),x=Math.max(6,W-priceScaleW-boxW),right=x+boxW;
     const entryY=sy(Number(lv.entry)),slY=sy(Number(lv.sl)),tp1Y=sy(Number(lv.tp1)),tp2Y=sy(Number(lv.tp2)),tp3Y=sy(Number(lv.tp3));
-    const boxW=78,priceScaleW=86,x=Math.max(8,c.width-priceScaleW-boxW),right=x+boxW;
     const top=Math.max(4,Math.min(entryY,tp3Y)),tpH=Math.max(2,Math.abs(entryY-tp3Y));
     const slTop=Math.min(entryY,slY),slH=Math.max(2,Math.abs(entryY-slY));
     ctx.save();
@@ -480,7 +486,7 @@
       ctx.strokeStyle=color;ctx.setLineDash(name==='ENTRY'||name==='SL'?[]:[4,3]);
       ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
       const label=name+' '+Number(value).toFixed(2),tw=ctx.measureText(label).width;
-      const ly=Math.max(11,Math.min(c.height-5,y-4)),lx=Math.max(5,x-tw-6);
+      const ly=Math.max(11,Math.min(H-5,y-4)),lx=Math.max(5,x-tw-6);
       ctx.fillStyle='rgba(3,16,28,.92)';ctx.fillRect(lx-4,ly-10,tw+7,13);
       ctx.fillStyle=color;ctx.fillText(label,lx,ly);
     });
@@ -499,7 +505,16 @@
   });
   window.addEventListener('rizvi:candle-update',draw);
   window.addEventListener('rizvi:timeframe-update',draw);
+  window.addEventListener('rizvi:price-update',function(e){
+    const d=e&&e.detail||{},m=window.RIZVI_MASTER_CONFIRMATION||{},decision=displayDecision(m);
+    const p=Number(d.price);
+    if(d.symbol&&String(d.symbol).toUpperCase().replace(/[^A-Z0-9]/g,'')!==String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase().replace(/[^A-Z0-9]/g,''))return;
+    if(decision.direction!=='WAIT'&&decision.score>=70&&Number.isFinite(p))window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
+    draw();
+  });
+  window.addEventListener('rizvi:signal-levels-update',draw);
   window.addEventListener('resize',draw);
+  if(window.ResizeObserver)new ResizeObserver(draw).observe(host);
   ensureCanvas();draw();
 })();
 </script></script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>
