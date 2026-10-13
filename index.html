@@ -262,7 +262,7 @@
 </head>
 <body><div class="app">
 <header class="top"><div class="brand">📈 Rizvi <b>Dashboard</b></div></header>
-<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead" data-direction="WAIT"><div class="signalBlock"><span>SIGNAL</span><b id="rizviSignalCurrent" aria-live="polite">WAIT</b></div><div class="qualityBlock"><span>SETUP</span><b id="rizviSetupScore">—</b></div><div class="highQualityBlock"><span>HIGH QUALITY SETUP</span><b id="rizviHighQualityScore">—</b><em class="badge" style="display:none">QUALIFIED</em></div></div></section>
+<section class="actions"><button class="btn buy">↗ BUY</button><button class="btn sell">↓ SELL</button><div class="signalHead" data-direction="WAIT"><div class="signalBlock"><span>SIGNAL</span><b id="rizviSignalCurrent" aria-live="polite">WAIT</b></div><div class="qualityBlock"><span>SETUP</span><b id="rizviSetupScore">—</b></div><div class="highQualityBlock"><span id="rizviSetupBandLabel">SETUP STATUS</span><b id="rizviHighQualityScore" aria-hidden="true" style="display:none">—</b><em class="badge" style="display:none">WAIT</em></div></div></section>
 <section class="market-trend-row" id="rizviMarketTrend" aria-live="polite" aria-label="Market trend direction and strength">
   <span class="mt-label">MARKET TREND</span>
   <span class="mt-value" id="rizviMarketTrendValue" data-direction="NEUTRAL"><span id="rizviMarketTrendDirection">NEUTRAL</span><span id="rizviMarketTrendPercent">50%</span><span class="mt-meter" aria-hidden="true"><i id="rizviMarketTrendMeter"></i></span></span>
@@ -1939,11 +1939,13 @@ window.addEventListener('rizvi:indicator-update',render);
     const q=quality();
     if(q)q.textContent=Number.isFinite(setupScore)?Math.round(setupScore)+'%':Number.isFinite(combinedScore)?Math.round(combinedScore)+'%':'—';
     const hq=highQuality();
-    if(hq)hq.textContent=Number.isFinite(combinedScore)?Math.round(combinedScore)+'%':'—';
+    if(hq){hq.textContent='';hq.style.display='none';}
+    const bandLabel=document.getElementById('rizviSetupBandLabel');
+    if(bandLabel)bandLabel.textContent=decision.band==='WEAK'?'WEAK SETUP':decision.band==='STRONG'?'STRONG SETUP':decision.band==='HIGH'?'HIGH QUALITY SETUP':'WAIT';
     const b=badge();
     if(b){
       b.textContent=decision.band==='WEAK'?'WEAK SETUP':decision.band==='STRONG'?'STRONG SETUP':decision.band==='HIGH'?'HIGH QUALITY SETUP':'WAIT';
-      b.style.display='inline-block';
+      b.style.display='none';
       b.dataset.qualified=decision.band==='HIGH'?'true':'false';
       b.dataset.band=decision.band;
     }
