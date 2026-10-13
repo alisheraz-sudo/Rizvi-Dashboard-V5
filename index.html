@@ -601,9 +601,13 @@ function publish(sym,bars,status='LIVE'){
  const latest=clean[clean.length-1];
  const tf=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();
  const tfSeconds=({'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600}[tf]||60);
- const latestAgeSeconds=latest?Math.max(0,Math.floor(Date.now()/1000)-Number(latest.t)):Infinity;
+ /* OHLC feeds may provide epoch seconds or milliseconds. Normalize before freshness checks. */
+ const rawLatestTime=Number(latest?.t);
+ const latestTimeMs=Number.isFinite(rawLatestTime)?(rawLatestTime<1e12?rawLatestTime*1000:rawLatestTime):NaN;
+ const latestAgeSeconds=Number.isFinite(latestTimeMs)?(Date.now()-latestTimeMs)/1000:Infinity;
  const staleXau=sym==='XAU/USD'&&window.RIZVI_XAU_DATA_STALE===true;
- const feedLive=status==='LIVE'&&!staleXau&&clean.length>=21&&Number.isFinite(latestAgeSeconds)&&latestAgeSeconds<=Math.max(180,tfSeconds*3);
+ const maxBarAgeSeconds=Math.max(180,tfSeconds*3);
+ const feedLive=status==='LIVE'&&!staleXau&&clean.length>=21&&Number.isFinite(latestAgeSeconds)&&latestAgeSeconds>=0&&latestAgeSeconds<=maxBarAgeSeconds;
  window.RIZVI_FEED_STATUS={ok:feedLive,live:feedLive,stale:!feedLive,symbol:sym,timeframe:tf,source:sym==='XAU/USD'?'XAUS-OHLC':'Yahoo Finance',bars:clean.length,latestBarAt:latest?.t??null,latestAgeSeconds:Number.isFinite(latestAgeSeconds)?latestAgeSeconds:null,updatedAt:Date.now(),reason:feedLive?null:(staleXau?'Gold upstream returned stale/fallback candles':status!=='LIVE'?'Chart status '+status:clean.length<21?'Insufficient OHLC bars':'Last candle is stale')};
  window.dispatchEvent(new CustomEvent('rizvi:candle-update',{detail:{symbol:sym,bars:clean,status}}));
 }
