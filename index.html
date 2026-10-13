@@ -1635,7 +1635,7 @@ sync();
   const out={symbol,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'WAIT',engine5:{state:'WAIT',reason,...extra},feedStatus:W.RIZVI_FEED_STATUS||null,alignment:{status:'WAIT',reason}};
   W.RIZVI_MASTER_CONFIRMATION=out;W.RIZVI_SIGNAL_DIRECTION='WAIT';
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:reason==='Gold market closed — feed polling paused'?'PAUSED_MARKET_CLOSED':'WAITING_FOR_VALIDATED_FEED',symbol,reason,updatedAt:out.updatedAt};
-  diag(symbol,tfNow(), 'ENGINE5 WAIT: '+reason+(extra.bars!==undefined?' bars='+extra.bars:''));
+  diag(symbol,tfNow(),'ENGINE5 WAIT: '+reason+' details='+JSON.stringify(extra));
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:out}));
   W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:out}));
  }
