@@ -60,7 +60,7 @@
     if(e9===null||e21===null)return;
     const trend=e9>e21?'BUY':e9<e21?'SELL':'NEUTRAL';
     // Trend strength is a separate directional-bias score, not trade-entry confidence.
-    const trendConfidence=trend==='NEUTRAL'?50:clamp(Math.round(50+(Math.abs(e9-e21)/Math.max(rangeSafe(closes.slice(-10)),1e-9))*100),50,95);
+    const trendConfidence=trend==='NEUTRAL'?50:clamp(Math.round(50+(Math.abs(e9-e21)/Math.max(Math.max(...closes.slice(-10))-Math.min(...closes.slice(-10)),1e-9))*100),50,95);
     const momentum=last.c>prev.c?'BUY':last.c<prev.c?'SELL':'NEUTRAL';
     const recent=bars.slice(-10), hi=Math.max(...recent.map(x=>Number(x.h))),lo=Math.min(...recent.map(x=>Number(x.l)));
     const range=Math.max(hi-lo,1e-9), closePos=(Number(last.c)-lo)/range;
