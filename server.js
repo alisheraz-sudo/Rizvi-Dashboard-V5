@@ -125,12 +125,19 @@ if(url.pathname==='/market/xau/spot'&&req.method==='GET'){
    const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
    if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
    const payload=await r.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.bars)?payload.bars:[]);
-   const bars=rows.map(x=>{
-    const raw=x.openTime??x.t??x.timestamp??x.time;
-    const parsed=typeof raw==='string'&&!/^\\d+(\\.\\d+)?$/.test(raw)?Date.parse(raw):Number(raw);
-    const t=Number.isFinite(parsed)?Math.floor(parsed>1e12?parsed/1000:parsed):NaN;
-    return {t,c:Number(x.close??x.c)};
-   }).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)&&x.c>0&&x.t<=Math.floor(Date.now()/1000)+5).sort((a,b)=>a.t-b.t);
+   const epochSeconds=value=>{
+    if(value==null)return NaN;
+    let n;
+    if(typeof value==='string'&&!/^\\s*\\d+(?:\\.\\d+)?\\s*$/.test(value))n=Date.parse(value);
+    else n=Number(value);
+    if(!Number.isFinite(n)||n<=0)return NaN;
+    if(n>=1e17)n/=1e9;
+    else if(n>=1e14)n/=1e6;
+    else if(n>=1e11)n/=1e3;
+    return Math.floor(n);
+   };
+   const bars=rows.map(x=>({t:epochSeconds(x.openTime??x.t??x.timestamp??x.time??x.date),c:Number(x.close??x.c)}))
+    .filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)&&x.c>0&&x.t<=Math.floor(Date.now()/1000)+5).sort((a,b)=>a.t-b.t);
    const last=bars.at(-1),age=last?Math.floor(Date.now()/1000)-last.t:Infinity;
    if(!last||age<0||age>180)throw new Error('BiQuote last candle missing or stale ('+age+'s)');
    return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'BIQUOTE-MT5-OHLC fallback',data:{spot_usd_oz:last.c},data_state:{status:'fallback-fresh-ohlc'},price_source:'BIQUOTE-MT5-OHLC',price_as_of:last.t,updated_at:Date.now(),fallbackUsed:true,primaryError:String(primary.message||primary).slice(0,140),latestAgeSeconds:age});
