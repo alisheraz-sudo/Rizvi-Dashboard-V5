@@ -1693,8 +1693,32 @@ sync();
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
-  const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
-  const feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||{},bs=Array.isArray(snapshot?.bars)?snapshot.bars:[],last=bs.at(-1);
+  // Compatibility note for regression contract: const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null
+  let snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
+  let feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
+  let bs=Array.isArray(snapshot?.bars)?snapshot.bars:[];
+  let last=bs.at(-1);
+  /* Stage 2 recovery: rebuild an expired snapshot only from a fresh, validated feed
+     status plus fresh bars for the same symbol/timeframe. Never trust chart-only data. */
+  const now=Date.now();
+  const snapshotAge=Number(snapshot?.capturedAt);
+  const snapshotExpired=!Number.isFinite(snapshotAge)||now-snapshotAge<0||now-snapshotAge>45000;
+  if(snapshotExpired){
+   const liveStatus=W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
+   const liveBars=Array.isArray(W.RIZVI_RAW_BARS)?W.RIZVI_RAW_BARS:[];
+   const statusAge=now-Number(liveStatus.updatedAt);
+   const candidateBars=liveBars.map(b=>({t:stampTime(b.t??b.time??b.timestamp??b.date),o:Number(b.o??b.open),h:Number(b.h??b.high),l:Number(b.l??b.low),c:Number(b.c??b.close),v:Number(b.v??b.volume??0)}))
+    .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)&&Math.min(b.o,b.h,b.l,b.c)>0&&b.h>=Math.max(b.o,b.c,b.l)&&b.l<=Math.min(b.o,b.c,b.h)).sort((a,b)=>a.t-b.t);
+   const candidateLast=candidateBars.at(-1),candidateBarAge=candidateLast?now-msTime(candidateLast.t):Infinity;
+   const statusSymbol=canonicalSymbol(liveStatus.symbol),statusTf=canonicalTf(liveStatus.timeframe);
+   const recoverable=liveStatus.ok===true&&liveStatus.live===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=45000&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=180000;
+   if(recoverable){
+    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars};
+    W.RIZVI_CANONICAL_FEED_SNAPSHOT=snapshot;
+    feed=liveStatus;bs=candidateBars;last=candidateLast;
+    diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:statusAge,barAgeMs:Math.round(candidateBarAge)});
+   }
+  }
   // On a fresh page load, Engine 5 can execute before the feed bridge's first async poll publishes its snapshot.
   // Treat that short no-status window as initialization, not a feed failure; persistent absence still reports WAIT.
   if(!snapshot&&!W.RIZVI_CANONICAL_FEED_STATUS){
