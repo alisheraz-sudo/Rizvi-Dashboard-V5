@@ -41,7 +41,7 @@ class FeedContractTests(unittest.TestCase):
 
     def test_rejects_stale_latest_bar(self):
         snapshot = make_snapshot()
-        snapshot["bars"][-1]["t"] = NOW - 600
+        snapshot["bars"] = [{**bar, "t": bar["t"] - 600} for bar in snapshot["bars"]]
         result = validate_snapshot(snapshot, now=NOW)
         self.assertEqual(result["reason"], "latest_bar_stale")
 
