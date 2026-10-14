@@ -36,7 +36,10 @@ function makeDxyBars(dayStart, endSec) {
 }
 async function runContext({ bars, payload, symbol = 'XAU/USD', nowMs = Date.now() }) {
   const RealDate = Date;
-  class TestDate extends RealDate { static now() { return nowMs; } }
+  class TestDate extends RealDate {
+    constructor(...args) { super(...(args.length ? args : [nowMs])); }
+    static now() { return nowMs; }
+  }
   const now = nowMs;
   const sandbox = {
     Date: TestDate, Math, Number, String, Array, Object, Intl, JSON,
