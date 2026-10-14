@@ -437,9 +437,10 @@
     }
     const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
     if(frozen&&frozenDirection===dir){
-      if(frozenBand!==band)frozen=levels(frozen.entry,dir,score);
-      else frozen.score=score;
-      frozenDirection=dir;frozenBand=band;window.RIZVI_TRADE_RANGE=frozen;
+      // Freeze entry/SL/TP for the life of this qualified setup. Score-band
+      // changes must not silently recalculate existing levels.
+      frozen.score=score;
+      window.RIZVI_TRADE_RANGE=frozen;
       return frozen;
     }
     frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;
@@ -461,7 +462,7 @@
     if(!lv||!raw.length)return;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
     if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
-    if(!lv||lv.direction!==direction||lv.band!==decision.band)return;
+    if(!lv||lv.direction!==direction)return;
     const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     const rangeSymbol=String(lv.symbol||window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     if(active!==rangeSymbol||lv.direction!==direction)return;
