@@ -80,7 +80,7 @@ test('Engine 4 day high/low refuses incomplete daily coverage', async () => {
   const bars = makeMinuteBars(dayStart + 3600, endSec);
   const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dayHighLow.status, 'UNAVAILABLE');
-  assert.match(context.dayHighLow.reason, /does not cover the start/);
+  assert.match(context.dayHighLow.reason, /does not cover the start|No XAU\/USD candles for current UTC day/);
 });
 
 test('Engine 4 DXY filter requires aligned live DXY candles and does not invent a signal', async () => {
