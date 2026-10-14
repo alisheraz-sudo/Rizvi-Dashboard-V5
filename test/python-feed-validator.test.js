@@ -78,6 +78,33 @@ test('unexpected validator response is rejected', async () => {
   safeWait(result, 'python_validator_invalid_response');
 });
 
+
+test('real Python subprocess validates a fresh XAU snapshot end to end', async () => {
+  const now = Date.now() / 1000;
+  const bars = Array.from({ length: 50 }, (_, i) => ({
+    t: now - (49 - i) * 60,
+    o: 4000 + i,
+    h: 4002 + i,
+    l: 3999 + i,
+    c: 4001 + i,
+    v: 10,
+  }));
+  const snapshot = {
+    version: 1,
+    symbol: 'XAU/USD',
+    timeframe: '1M',
+    status: { ok: true, stale: false, symbol: 'XAU/USD', timeframe: '1M' },
+    bars,
+    capturedAt: now * 1000,
+  };
+  const result = await validateWithPython(snapshot, { enabled: true, timeoutMs: 3000 });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.symbol, 'XAU/USD');
+  assert.equal(result.bar_count, 50);
+  assert.equal(result.signal_generation, false);
+  assert.equal(result.auto_trading, false);
+});
+
 test('valid contract response is returned without enabling signal generation', async () => {
   const expected = { ok: true, symbol: 'XAU/USD', bars: [{ t: 1 }], signal_generation: false, auto_trading: false };
   const result = await validateWithPython({ version: 1 }, {
