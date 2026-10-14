@@ -1541,11 +1541,10 @@ function features(bs){
 }
 const algos={
  A_TREND:{weights:{trend:30,vwap:25,momentum:20,rsi:15,candle:10}},
- B_MOMENTUM:{weights:{momentum:30,rsi:25,delta:20,trend:15,candle:10}},
+ B_MOMENTUM:{weights:{momentum:30,rsi:25,trend:15,candle:10}},
  C_LIQUIDITY:{weights:{liquidity:35,candle:20,trend:15,momentum:10,vwap:10,divergence:10}},
- D_ORDERFLOW:{weights:{orderflow:40,delta:25,volumeProfile:15,vwap:10,trend:10}},
  E_REVERSAL:{weights:{divergence:35,liquidity:25,rsi:20,candle:15,vwap:5}},
- F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,delta:10,candle:10,liquidity:12,orderflow:12,divergence:7,volumeProfile:7}}
+ F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,candle:10,liquidity:12,divergence:7,volumeProfile:7}}
 };
 const BLOCKED_FEATURES=new Set(['delta','orderflow']);
 function runAlgo(name,f){const w=algos[name].weights,enabled=Object.keys(w).filter(k=>!BLOCKED_FEATURES.has(k));let total=0,ws=0,agree=0,active=0;for(const k of enabled){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Math.max(enabled.length,1))*100),activeIndicators:active,weights:Object.fromEntries(enabled.map(k=>[k,w[k]])),blockedFeatures:[...BLOCKED_FEATURES]}}
