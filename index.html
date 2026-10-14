@@ -1767,11 +1767,16 @@ sync();
   else{qualifiedCandidateKey=candidateKey;qualifiedCandidateCount=candidateKey?1:0;}
   const qualified=rawQualified&&qualifiedCandidateCount>=QUALIFIED_CONFIRM_RUNS;
   const direction=qualified?indicatorAction:'WAIT';
-  // Display-only regime label derived from the latest 20 validated OHLC bars; never used for signal qualification.
-  const regimeBars=bs.slice(-20),regimeRange=regimeBars.length?Math.max(...regimeBars.map(b=>b.h))-Math.min(...regimeBars.map(b=>b.l)):0;
-  const regimeDrift=regimeBars.length?regimeBars.at(-1).c-regimeBars[0].c:0;
-  const regimeStrength=regimeRange>0?Math.abs(regimeDrift)/regimeRange:0;
-  const marketRegime=regimeBars.length<20?'INSUFFICIENT DATA':regimeStrength>=0.55?(regimeDrift>0?'TRENDING UP':'TRENDING DOWN'):'RANGING';
+  // Display-only regime label derived from validated OHLC bars; never used for signal qualification.
+  function computeMarketRegime(bars){
+    const regimeBars=(Array.isArray(bars)?bars:[]).slice(-20);
+    if(regimeBars.length<20)return 'INSUFFICIENT DATA';
+    const regimeRange=Math.max(...regimeBars.map(b=>b.h))-Math.min(...regimeBars.map(b=>b.l));
+    const regimeDrift=regimeBars.at(-1).c-regimeBars[0].c;
+    const regimeStrength=regimeRange>0?Math.abs(regimeDrift)/regimeRange:0;
+    return regimeStrength>=0.55?(regimeDrift>0?'TRENDING UP':regimeDrift<0?'TRENDING DOWN':'RANGING'):'RANGING';
+  }
+  const marketRegime=computeMarketRegime(bs);
   const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',marketRegime,engine4Context:engine4,
    engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',marketRegime,regimeMethod:'20-bar OHLC drift/range; display only',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
