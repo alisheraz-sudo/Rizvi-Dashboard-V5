@@ -413,15 +413,14 @@
   function displayDecision(m){
     if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
     const score=Number(m.confidence)||0;
-    if(m.qualified===true&&['BUY','SELL'].includes(m.direction)){
-      return {direction:m.direction,score,band:score>=90?'HIGH':score>=80?'STRONG':'WEAK'};
+    const direction=['BUY','SELL'].includes(m.direction)?m.direction:'WAIT';
+    // One source of truth: never turn Engine 5's final WAIT into a directional
+    // signal by reading indicatorAction or intermediate alignment fields.
+    if(direction==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
+    if(m.qualified===true&&score>=80){
+      return {direction,score,band:score>=90?'HIGH':'STRONG'};
     }
-    const e=m.engine5||{},weakDir=e.indicatorAction,alignment=m.alignment||{};
-    if(e.state==='EVALUATED'&&score>=70&&score<80&&['BUY','SELL'].includes(weakDir)&&
-       alignment.algorithmMajority===weakDir&&Number(e.algorithmsAligned)>=3&&
-       Number(e.indicatorAgreement)>=60&&!m.reason){
-      return {direction:weakDir,score,band:'WEAK'};
-    }
+    if(score>=70)return {direction,score,band:'WEAK'};
     return {direction:'WAIT',score,band:'WAIT'};
   }
   window.RIZVI_DISPLAY_DECISION=displayDecision;
@@ -438,9 +437,10 @@
     }
     const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
     if(frozen&&frozenDirection===dir){
-      if(frozenBand!==band)frozen=levels(frozen.entry,dir,score);
-      else frozen.score=score;
-      frozenDirection=dir;frozenBand=band;window.RIZVI_TRADE_RANGE=frozen;
+      // Freeze entry/SL/TP for the life of this qualified setup. Score-band
+      // changes must not silently recalculate existing levels.
+      frozen.score=score;
+      window.RIZVI_TRADE_RANGE=frozen;
       return frozen;
     }
     frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;
@@ -462,15 +462,18 @@
     if(!lv||!raw.length)return;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
     if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
-    if(!lv||lv.direction!==direction||lv.band!==decision.band)return;
+    if(!lv||lv.direction!==direction)return;
     const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     const rangeSymbol=String(lv.symbol||window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
     if(active!==rangeSymbol||lv.direction!==direction)return;
     const vals=raw.slice(-70).flatMap(b=>[Number(b.h),Number(b.l)]).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
     if(!vals.length)return;
-    const max=Math.max(...vals),min=Math.min(...vals);
-    const sy=v=>H-30-(v-min)/(max-min||1)*(H-60);
-    const boxW=Math.min(78,Math.max(62,W*0.24)),priceScaleW=Math.min(86,W*0.24),x=Math.max(6,W-priceScaleW-boxW),right=x+boxW;
+    const rawMax=Math.max(...vals),rawMin=Math.min(...vals),rawSpan=Math.max(rawMax-rawMin,Math.abs(rawMax)*0.0001,0.01);
+    /* Keep level labels away from the top/bottom canvas edges; this is an overlay-safe padded scale, not the TradingView price scale. */
+    const max=rawMax+rawSpan*0.12,min=rawMin-rawSpan*0.12;
+    const sy=v=>H-24-(v-min)/(max-min||1)*(H-48);
+    /* Put the readable box inside the plot area rather than against the right price-scale edge. */
+    const boxW=Math.min(120,Math.max(96,W*0.27)),x=Math.max(10,Math.min(W-boxW-10,W*0.58)),right=x+boxW;
     const entryY=sy(Number(lv.entry)),slY=sy(Number(lv.sl)),tp1Y=sy(Number(lv.tp1)),tp2Y=sy(Number(lv.tp2)),tp3Y=sy(Number(lv.tp3));
     const top=Math.max(4,Math.min(entryY,tp3Y)),tpH=Math.max(2,Math.abs(entryY-tp3Y));
     const slTop=Math.min(entryY,slY),slH=Math.max(2,Math.abs(entryY-slY));
@@ -480,13 +483,13 @@
     ctx.fillStyle='rgba(142,52,176,.20)';ctx.fillRect(x,slTop,boxW,slH);
     ctx.strokeStyle='rgba(142,52,176,.98)';ctx.lineWidth=1;ctx.strokeRect(x,slTop,boxW,slH);
     const items=[['ENTRY',lv.entry,entryY,'#35bde9'],['SL',lv.sl,slY,'#c58af0'],['TP1',lv.tp1,tp1Y,'#25d99a'],['TP2',lv.tp2,tp2Y,'#25d99a'],['TP3',lv.tp3,tp3Y,'#25d99a']];
-    ctx.font='bold 11px sans-serif';ctx.lineWidth=1;
+    ctx.font='bold 12px sans-serif';ctx.lineWidth=1;
     items.forEach(([name,value,y,color])=>{
       if(!Number.isFinite(Number(value)))return;
       ctx.strokeStyle=color;ctx.setLineDash(name==='ENTRY'||name==='SL'?[]:[4,3]);
       ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
       const label=name+' '+Number(value).toFixed(2),tw=ctx.measureText(label).width;
-      const ly=Math.max(11,Math.min(H-5,y-4)),lx=Math.max(5,x-tw-6);
+      const ly=Math.max(13,Math.min(H-6,y-4)),lx=Math.max(5,x-tw-8);
       ctx.fillStyle='rgba(3,16,28,.92)';ctx.fillRect(lx-4,ly-10,tw+7,13);
       ctx.fillStyle=color;ctx.fillText(label,lx,ly);
     });
