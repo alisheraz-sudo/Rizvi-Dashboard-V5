@@ -1714,14 +1714,12 @@ sync();
     .filter(b=>Number.isFinite(b.t)&&[b.o,b.h,b.l,b.c].every(Number.isFinite)&&Math.min(b.o,b.h,b.l,b.c)>0&&b.h>=Math.max(b.o,b.c,b.l)&&b.l<=Math.min(b.o,b.c,b.h)).sort((a,b)=>a.t-b.t);
    const candidateLast=candidateBars.at(-1),candidateBarAge=candidateLast?now-msTime(candidateLast.t):Infinity;
    const statusSymbol=canonicalSymbol(liveStatus.symbol),statusTf=canonicalTf(liveStatus.timeframe);
-   const recoverable=liveStatus.ok===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=45000&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=180000;
+   const recoverable=liveStatus.ok===true&&liveStatus.live===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=45000&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=180000;
    if(recoverable){
     snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars};
     W.RIZVI_CANONICAL_FEED_SNAPSHOT=snapshot;
     feed=liveStatus;bs=candidateBars;last=candidateLast;
     diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:statusAge,barAgeMs:Math.round(candidateBarAge)});
-   }else{
-    diag(symbol,tf,'ENGINE5 snapshot recovery rejected',{feedOk:liveStatus.ok??null,feedLive:liveStatus.live??null,feedStale:liveStatus.stale??null,statusAgeMs:Number.isFinite(statusAge)?Math.round(statusAge):null,statusSymbol:liveStatus.symbol||null,expectedSymbol:symbol,statusTimeframe:liveStatus.timeframe||null,expectedTimeframe:tf,bars:candidateBars.length,barAgeMs:Number.isFinite(candidateBarAge)?Math.round(candidateBarAge):null});
    }
   }
   // On a fresh page load, Engine 5 can execute before the feed bridge's first async poll publishes its snapshot.
@@ -1767,18 +1765,8 @@ sync();
   else{qualifiedCandidateKey=candidateKey;qualifiedCandidateCount=candidateKey?1:0;}
   const qualified=rawQualified&&qualifiedCandidateCount>=QUALIFIED_CONFIRM_RUNS;
   const direction=qualified?indicatorAction:'WAIT';
-  // Display-only regime label derived from validated OHLC bars; never used for signal qualification.
-  function computeMarketRegime(bars){
-    const regimeBars=(Array.isArray(bars)?bars:[]).slice(-20);
-    if(regimeBars.length<20)return 'INSUFFICIENT DATA';
-    const regimeRange=Math.max(...regimeBars.map(b=>b.h))-Math.min(...regimeBars.map(b=>b.l));
-    const regimeDrift=regimeBars.at(-1).c-regimeBars[0].c;
-    const regimeStrength=regimeRange>0?Math.abs(regimeDrift)/regimeRange:0;
-    return regimeStrength>=0.55?(regimeDrift>0?'TRENDING UP':regimeDrift<0?'TRENDING DOWN':'RANGING'):'RANGING';
-  }
-  const marketRegime=computeMarketRegime(bs);
-  const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',marketRegime,engine4Context:engine4,
-   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',marketRegime,regimeMethod:'20-bar OHLC drift/range; display only',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
+  const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',engine4Context:engine4,
+   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
    alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsEvaluated:rows.length},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
