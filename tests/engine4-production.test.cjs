@@ -129,10 +129,10 @@ test('Engine 4 refuses to mark missing buyer/seller and external context feeds a
   assert.equal(c['High-Impact US News Filter'].pass, false);
 });
 
-test('Engine 4 keeps Delta, Order Flow and Volume Profile blocked pending verified APIs', () => {
+test('Engine 4 blocks only Delta and Order Flow pending verified APIs', () => {
   const { report } = runProduction(fixtureBars(260, false));
   assert.equal(report.tests['VWAP Filter'].status, 'NO_REAL_VOLUME');
-  for (const name of ['Volume Profile', 'Delta Buy/Sell', 'Order Flow / Footprint']) {
+  for (const name of ['Delta Buy/Sell', 'Order Flow / Footprint']) {
     assert.equal(report.tests[name].status, 'BLOCKED_PENDING_API');
     assert.equal(report.tests[name].pass, false);
   }
@@ -190,7 +190,7 @@ test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
 });
 
 
-test('Engine 4 keeps three API-dependent indicators blocked even when synthetic feeds are supplied', () => {
+test('Engine 4 keeps only Delta and Order Flow blocked even when synthetic feeds are supplied', () => {
   const context = {
     dxy: { status: 'LIVE', correlation: -0.72, dxyDirection: 'SELL', signal: 'INVERSE_CONFIRMED', source: 'synthetic test fixture' },
     usNews: { status: 'LIVE', blocked: true, activeEvent: { title: 'Test high-impact event' }, reason: 'synthetic test fixture' },
@@ -205,9 +205,9 @@ test('Engine 4 keeps three API-dependent indicators blocked even when synthetic 
   });
   assert.equal(Object.keys(report.tests).length, 20);
   const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name).sort();
-  assert.deepEqual(failed, ['Delta Buy/Sell', 'Order Flow / Footprint', 'Volume Profile'].sort(), 'only the three intentionally blocked indicators should fail activation');
+  assert.deepEqual(failed, ['Delta Buy/Sell', 'Order Flow / Footprint'].sort(), 'only the two intentionally blocked indicators should fail activation');
   assert.match(report.master.components['High-Impact US News Filter'].value, /^BLOCK/);
-  for (const name of ['Volume Profile', 'Delta Buy/Sell', 'Order Flow / Footprint']) {
+  for (const name of ['Delta Buy/Sell', 'Order Flow / Footprint']) {
     assert.equal(report.master.components[name].status, 'BLOCKED_PENDING_API');
   }
   assert.equal(report.numericalAccuracyVerified, false, 'synthetic integration is not live-market accuracy');
@@ -222,7 +222,7 @@ test('Engine 4 rejects malformed OHLC rows from its production input', () => {
 
 test('Blocked inputs cannot cast an Engine 5 algorithm vote', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /const BLOCKED_FEATURES=new Set\(\['delta','orderflow','volumeProfile'\]\)/);
+  assert.match(html, /const BLOCKED_FEATURES=new Set\(\['delta','orderflow'\]\)/);
   assert.match(html, /Object\.keys\(algos\)\.filter\(k=>k!=='D_ORDERFLOW'\)\.forEach\(k=>results\[k\]=runAlgo\(k,f\)\)/);
   assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0&&!\/UNAVAILABLE\|WAITING\|INSUFFICIENT\|NO_REAL_VOLUME\|NO_REAL_ORDER_FLOW\|NO_TRADE_SIDE_VOLUME\|BLOCKED\//);
 });
