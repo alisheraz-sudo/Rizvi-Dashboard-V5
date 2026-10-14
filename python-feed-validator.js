@@ -38,13 +38,18 @@ function validateWithPython(snapshot, options = {}) {
   const run = options.execFile || execFile;
 
   return new Promise((resolve) => {
-    run(python, [script], {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+    const child = run(python, [script], {
       timeout: timeoutMs,
       maxBuffer: MAX_OUTPUT_BYTES,
       windowsHide: true,
       encoding: 'utf8',
       env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      input: payload,
     }, (error, stdout) => {
       if (error) {
         const reason = error.killed || error.code === 'ETIMEDOUT'
@@ -52,24 +57,29 @@ function validateWithPython(snapshot, options = {}) {
           : error.code === 'ENOENT'
             ? 'python_runtime_unavailable'
             : 'python_validator_execution_failed';
-        resolve({ ok: false, reason, signal_generation: false, auto_trading: false });
+        finish({ ok: false, reason, signal_generation: false, auto_trading: false });
         return;
       }
       let result;
       try {
         result = JSON.parse(stdout);
       } catch {
-        resolve({ ok: false, reason: 'python_validator_invalid_json', signal_generation: false, auto_trading: false });
+        finish({ ok: false, reason: 'python_validator_invalid_json', signal_generation: false, auto_trading: false });
         return;
       }
       if (!result || typeof result !== 'object' || Array.isArray(result) ||
           typeof result.ok !== 'boolean' || result.signal_generation !== false ||
           result.auto_trading !== false || (result.ok && !Array.isArray(result.bars))) {
-        resolve({ ok: false, reason: 'python_validator_invalid_response', signal_generation: false, auto_trading: false });
+        finish({ ok: false, reason: 'python_validator_invalid_response', signal_generation: false, auto_trading: false });
         return;
       }
-      resolve(result);
+      finish(result);
     });
+    if (child && child.stdin && typeof child.stdin.end === 'function') {
+      child.stdin.end(payload);
+    } else if (run === execFile) {
+      finish({ ok: false, reason: 'python_validator_stdin_unavailable', signal_generation: false, auto_trading: false });
+    }
   });
 }
 
