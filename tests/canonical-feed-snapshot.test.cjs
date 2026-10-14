@@ -30,3 +30,17 @@ test('Engine 5 consumes bars and status from the same snapshot, not independent 
   assert.match(engine, /Canonical feed snapshot expired/);
   assert.doesNotMatch(engine, /canonicalBars=Array\.isArray\(W\.RIZVI_CANONICAL_RAW_BARS\)/);
 });
+
+test('Engine 5 snapshot freshness follows the selected candle timeframe', () => {
+  assert.match(engine, /TF_FRESHNESS_SECONDS=\{'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400\}/);
+  assert.match(engine, /maxFeedAgeMs=tf=>Math\.max\(180000,\(TF_FRESHNESS_SECONDS\[tf\]\|\|60\)\*3000\)/);
+  assert.match(engine, /snapshotAgeMs>maxFeedAgeMs\(tf\)/);
+  assert.match(engine, /candidateBarAge<=maxFeedAgeMs\(tf\)/);
+});
+
+test('OHLC bridge normalizes seconds, milliseconds, microseconds, and nanoseconds to seconds', () => {
+  assert.match(bridge, /t>=1e17\)t\/=1e9/);
+  assert.match(bridge, /t>=1e14\)t\/=1e6/);
+  assert.match(bridge, /t>=1e11\)t\/=1e3/);
+  assert.match(bridge, /Date\.parse\(raw\)\/1000/);
+});
