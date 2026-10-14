@@ -1901,7 +1901,7 @@ function render(){
   const snap=W.RIZVI_CANONICAL_FEED_SNAPSHOT, feed=W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
   if(!snap||snap.version!==1||snap.symbol!=='XAU/USD'||feed.ok!==true||feed.symbol!==snap.symbol||feed.timeframe!==snap.timeframe) return 'INSUFFICIENT DATA';
   const tf=String(snap.timeframe||'').trim().toLowerCase();
-  const match=tf.match(/^(\\d+)\\s*(m|min|minute|h|hr|hour|d|day)$/);
+  const match=tf.match(/^(\d+)\s*(m|min|minute|h|hr|hour|d|day)$/);
   const unit=match?match[2]:'m', n=match?Number(match[1]):1;
   const tfMs=n*(/^(h|hr|hour)$/.test(unit)?3600000:/^(d|day)$/.test(unit)?86400000:60000);
   const maxAge=Math.max(90000,tfMs*2);
