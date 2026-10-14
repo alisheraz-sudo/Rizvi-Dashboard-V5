@@ -129,12 +129,13 @@ test('Engine 4 refuses to mark missing buyer/seller and external context feeds a
   assert.equal(c['High-Impact US News Filter'].pass, false);
 });
 
-test('Engine 4 blocks volume indicators when positive volume is absent', () => {
+test('Engine 4 keeps Delta, Order Flow and Volume Profile blocked pending verified APIs', () => {
   const { report } = runProduction(fixtureBars(260, false));
   assert.equal(report.tests['VWAP Filter'].status, 'NO_REAL_VOLUME');
-  assert.equal(report.tests['Volume Profile'].status, 'NO_REAL_VOLUME');
-  assert.equal(report.tests['VWAP Filter'].pass, false);
-  assert.equal(report.tests['Volume Profile'].pass, false);
+  for (const name of ['Volume Profile', 'Delta Buy/Sell', 'Order Flow / Footprint']) {
+    assert.equal(report.tests[name].status, 'BLOCKED_PENDING_API');
+    assert.equal(report.tests[name].pass, false);
+  }
 });
 
 test('Engine 4 does not pass full combinations with insufficient history', () => {
@@ -189,7 +190,7 @@ test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
 });
 
 
-test('Engine 4 end-to-end integration accepts all 20 outputs only when every feed is supplied', () => {
+test('Engine 4 keeps three API-dependent indicators blocked even when synthetic feeds are supplied', () => {
   const context = {
     dxy: { status: 'LIVE', correlation: -0.72, dxyDirection: 'SELL', signal: 'INVERSE_CONFIRMED', source: 'synthetic test fixture' },
     usNews: { status: 'LIVE', blocked: true, activeEvent: { title: 'Test high-impact event' }, reason: 'synthetic test fixture' },
@@ -203,11 +204,12 @@ test('Engine 4 end-to-end integration accepts all 20 outputs only when every fee
     RIZVI_ORDER_FLOW: { status: 'LIVE' }
   });
   assert.equal(Object.keys(report.tests).length, 20);
-  const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name);
-  assert.deepEqual(failed, [], 'all supplied synthetic feeds should produce valid outputs');
+  const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name).sort();
+  assert.deepEqual(failed, ['Delta Buy/Sell', 'Order Flow / Footprint', 'Volume Profile'].sort(), 'only the three intentionally blocked indicators should fail activation');
   assert.match(report.master.components['High-Impact US News Filter'].value, /^BLOCK/);
-  assert.equal(report.master.components['Delta Buy/Sell'].status, 'LIVE');
-  assert.equal(report.master.components['Order Flow / Footprint'].status, 'LIVE');
+  for (const name of ['Volume Profile', 'Delta Buy/Sell', 'Order Flow / Footprint']) {
+    assert.equal(report.master.components[name].status, 'BLOCKED_PENDING_API');
+  }
   assert.equal(report.numericalAccuracyVerified, false, 'synthetic integration is not live-market accuracy');
 });
 
