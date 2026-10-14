@@ -1712,7 +1712,7 @@ sync();
    const statusSymbol=canonicalSymbol(liveStatus.symbol),statusTf=canonicalTf(liveStatus.timeframe);
    const recoverable=liveStatus.ok===true&&liveStatus.live===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=45000&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=180000;
    if(recoverable){
-    snapshot={version:1,symbol,statusSymbol,timeframe:statusTf,capturedAt:now,status:liveStatus,bars:candidateBars};
+    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars};
     W.RIZVI_CANONICAL_FEED_SNAPSHOT=snapshot;
     feed=liveStatus;bs=candidateBars;last=candidateLast;
     diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:statusAge,barAgeMs:Math.round(candidateBarAge)});
