@@ -87,7 +87,7 @@ def validate_snapshot(snapshot: Any, *, now: float | None = None, min_bars: int 
         return {"ok": False, "reason": "invalid_minimum_bar_requirement"}
     if not isinstance(snapshot, Mapping):
         return {"ok": False, "reason": "snapshot_missing_or_not_object"}
-    if snapshot.get("version") != CONTRACT_VERSION:
+    if isinstance(snapshot.get("version"), bool) or snapshot.get("version") != CONTRACT_VERSION:
         return {"ok": False, "reason": "unsupported_snapshot_contract_version"}
 
     captured_at = epoch_seconds(snapshot.get("capturedAt"))
