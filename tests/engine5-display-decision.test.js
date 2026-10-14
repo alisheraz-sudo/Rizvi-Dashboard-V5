@@ -62,10 +62,10 @@ test('invalid feed always returns WAIT', () => {
 });
 
 
-const regimeMatch = html.match(/function computeMarketRegime\(bars\)\s*\{[\\s\\S]*?\\n  \}/);
+const regimeMatch = html.match(/function computeMarketRegime\(bars\)\s*\{[\s\S]*?\n  \}/);
 assert.ok(regimeMatch, 'display-only computeMarketRegime must exist');
 const regimeSandbox = {};
-vm.runInNewContext(`${regimeMatch[0]}\\nthis.computeMarketRegime = computeMarketRegime;`, regimeSandbox);
+vm.runInNewContext(`${regimeMatch[0]}\nthis.computeMarketRegime = computeMarketRegime;`, regimeSandbox);
 const computeRegime = regimeSandbox.computeMarketRegime;
 
 test('Market Regime reports insufficient data when fewer than 20 validated bars exist', () => {
