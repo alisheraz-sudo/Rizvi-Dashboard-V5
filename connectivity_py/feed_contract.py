@@ -10,6 +10,7 @@ from math import isfinite
 from typing import Any, Mapping
 
 CONTRACT_VERSION = 1
+MAX_SNAPSHOT_AGE_SECONDS = 45.0
 TIMEFRAME_SECONDS = {"1M": 60, "5M": 300, "15M": 900, "30M": 1800, "1H": 3600, "1D": 86400}
 
 
@@ -55,6 +56,8 @@ def normalize_bar(raw: Mapping[str, Any]) -> dict[str, float] | None:
     stamp = epoch_seconds(raw.get("t", raw.get("time", raw.get("timestamp", raw.get("date")))))
     def number(*keys: str, default: Any = None) -> float | None:
         value = next((raw[k] for k in keys if k in raw and raw[k] is not None), default)
+        if isinstance(value, bool):
+            return None
         try:
             result = float(value)
             return result if isfinite(result) else None
@@ -74,9 +77,27 @@ def normalize_bar(raw: Mapping[str, Any]) -> dict[str, float] | None:
 
 def validate_snapshot(snapshot: Any, *, now: float | None = None, min_bars: int = 50) -> dict[str, Any]:
     """Return an explicit validation result; invalid snapshots never become signal inputs."""
-    current = datetime.now(timezone.utc).timestamp() if now is None else float(now)
+    try:
+        current = datetime.now(timezone.utc).timestamp() if now is None else float(now)
+    except (TypeError, ValueError, OverflowError):
+        return {"ok": False, "reason": "invalid_validation_clock"}
+    if not isfinite(current):
+        return {"ok": False, "reason": "invalid_validation_clock"}
+    if isinstance(min_bars, bool) or not isinstance(min_bars, int) or min_bars < 1:
+        return {"ok": False, "reason": "invalid_minimum_bar_requirement"}
     if not isinstance(snapshot, Mapping):
         return {"ok": False, "reason": "snapshot_missing_or_not_object"}
+    if snapshot.get("version") != CONTRACT_VERSION:
+        return {"ok": False, "reason": "unsupported_snapshot_contract_version"}
+
+    captured_at = epoch_seconds(snapshot.get("capturedAt"))
+    if captured_at is None:
+        return {"ok": False, "reason": "snapshot_capture_time_missing_or_invalid"}
+    if captured_at > current + 5:
+        return {"ok": False, "reason": "snapshot_capture_time_in_future"}
+    capture_age = max(0.0, current - captured_at)
+    if capture_age > MAX_SNAPSHOT_AGE_SECONDS:
+        return {"ok": False, "reason": "snapshot_envelope_stale", "snapshot_age_seconds": round(capture_age, 3), "max_snapshot_age_seconds": MAX_SNAPSHOT_AGE_SECONDS}
 
     symbol = canonical_symbol(snapshot.get("symbol"))
     timeframe = canonical_timeframe(snapshot.get("timeframe"))
@@ -122,6 +143,8 @@ def validate_snapshot(snapshot: Any, *, now: float | None = None, min_bars: int 
         "latest_bar_at": stamps[-1],
         "latest_age_seconds": round(age, 3),
         "max_age_seconds": max_age,
+        "snapshot_age_seconds": round(capture_age, 3),
+        "max_snapshot_age_seconds": MAX_SNAPSHOT_AGE_SECONDS,
         "signal_generation": False,
         "auto_trading": False,
     }
