@@ -1928,7 +1928,9 @@ function render(){
   if(efficiency>=0.22&&last.c<e20&&e20<e50) return 'TRENDING DOWN';
   return 'MIXED / TRANSITIONAL';
  }
- const regime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime||deriveXauDisplayRegime();
+ const reportedRegime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime;
+ const hasReportedRegime=reportedRegime!=null&&!['','NOT REPORTED','UNKNOWN','N/A','NULL','UNDEFINED'].includes(String(reportedRegime).trim().toUpperCase());
+ const regime=hasReportedRegime?reportedRegime:deriveXauDisplayRegime();
  const state=master.engine5?.state||master.status||report.status||eng.state||'WAITING FOR DATA';
  const decision=master.direction||master.engine5?.direction||eng.action||'WAIT';
  const score=master.confidence??master.score??eng.score;
