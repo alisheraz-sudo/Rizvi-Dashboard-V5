@@ -571,10 +571,15 @@ const cache=window.__RIZVI_CHART_CACHE=window.__RIZVI_CHART_CACHE||{};
 let timer=null,generation=0,inFlight=null;
 
 function epochMs(value){
- let n=Number(value);
- if(!Number.isFinite(n)&&typeof value==='string')n=Date.parse(value);
+ if(value==null)return NaN;
+ let n;
+ if(typeof value==='string'&&!/^\\s*\\d+(?:\\.\\d+)?\\s*$/.test(value))n=Date.parse(value);
+ else n=Number(value);
  if(!Number.isFinite(n)||n<=0)return NaN;
- if(n<1e12)n*=1000;
+ // Normalize epoch seconds, milliseconds, microseconds, or nanoseconds to milliseconds.
+ if(n<1e11)n*=1000;
+ else if(n>=1e17)n/=1e6;
+ else if(n>=1e14)n/=1000;
  return Math.floor(n);
 }
 function normalizeBars(a){
