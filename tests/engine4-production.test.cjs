@@ -219,3 +219,10 @@ test('Engine 4 rejects malformed OHLC rows from its production input', () => {
   const { report } = runProduction(bars);
   assert.equal(report.bars, 260);
 });
+
+test('Blocked inputs cannot cast an Engine 5 algorithm vote', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /const BLOCKED_FEATURES=new Set\(\['delta','orderflow','volumeProfile'\]\)/);
+  assert.match(html, /Object\.keys\(algos\)\.filter\(k=>k!=='D_ORDERFLOW'\)\.forEach\(k=>results\[k\]=runAlgo\(k,f\)\)/);
+  assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0&&!\/UNAVAILABLE\|WAITING\|INSUFFICIENT\|NO_REAL_VOLUME\|NO_REAL_ORDER_FLOW\|NO_TRADE_SIDE_VOLUME\|BLOCKED\//);
+});
