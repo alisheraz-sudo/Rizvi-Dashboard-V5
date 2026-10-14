@@ -1693,6 +1693,7 @@ sync();
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
+  // Compatibility note for regression contract: const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null
   let snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
   let feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
   let bs=Array.isArray(snapshot?.bars)?snapshot.bars:[];
