@@ -1556,7 +1556,7 @@ function test(){const bs=bars(),f=features(bs),results={};Object.keys(algos).fil
  W.RIZVI_MULTI_ALGORITHM_REPORT=report;
  W.RIZVI_MASTER_ALGORITHM=report.master;
  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
- W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'RUNNING',algorithms:Object.keys(algos),master:report.master};
+ W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'RUNNING',algorithms:Object.keys(report.algorithms),master:report.master};
  W.dispatchEvent(new CustomEvent('rizvi:multi-algorithm-update',{detail:report}));
  return report;
 }
