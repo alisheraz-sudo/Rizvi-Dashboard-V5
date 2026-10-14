@@ -8,7 +8,7 @@ const {evaluateDiagnostics}=require('./indicator-proxy');
 function epochSeconds(value){
  if(value==null)return NaN;
  let n;
- if(typeof value==='string'&&!/^\\s*\\d+(?:\\.\\d+)?\\s*$/.test(value))n=Date.parse(value);
+ if(typeof value==='string'&&value.trim()!==''&&!Number.isFinite(Number(value.trim())))n=Date.parse(value);
  else n=Number(value);
  if(!Number.isFinite(n)||n<=0)return NaN;
  // Normalize epoch nanoseconds, microseconds, or milliseconds to seconds.
