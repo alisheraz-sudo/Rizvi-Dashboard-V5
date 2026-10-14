@@ -62,5 +62,33 @@ class FeedContractTests(unittest.TestCase):
         self.assertTrue(result["ok"], result)
         self.assertLessEqual(result["latest_age_seconds"], 5)
 
+    def test_rejects_stale_snapshot_envelope_even_if_latest_bar_is_fresh(self):
+        snapshot = make_snapshot()
+        snapshot["capturedAt"] = (NOW - 46) * 1000
+        result = validate_snapshot(snapshot, now=NOW)
+        self.assertEqual(result["reason"], "snapshot_envelope_stale")
+
+    def test_rejects_unknown_contract_version(self):
+        snapshot = make_snapshot()
+        snapshot["version"] = 2
+        result = validate_snapshot(snapshot, now=NOW)
+        self.assertEqual(result["reason"], "unsupported_snapshot_contract_version")
+
+    def test_rejects_snapshot_capture_time_in_future(self):
+        snapshot = make_snapshot()
+        snapshot["capturedAt"] = (NOW + 10) * 1000
+        result = validate_snapshot(snapshot, now=NOW)
+        self.assertEqual(result["reason"], "snapshot_capture_time_in_future")
+
+    def test_rejects_boolean_ohlc_values(self):
+        snapshot = make_snapshot()
+        snapshot["bars"][0]["o"] = True
+        result = validate_snapshot(snapshot, now=NOW)
+        self.assertEqual(result["reason"], "malformed_ohlc_bar")
+
+    def test_rejects_invalid_minimum_bar_requirement(self):
+        result = validate_snapshot(make_snapshot(), now=NOW, min_bars=0)
+        self.assertEqual(result["reason"], "invalid_minimum_bar_requirement")
+
 if __name__ == "__main__":
     unittest.main()
