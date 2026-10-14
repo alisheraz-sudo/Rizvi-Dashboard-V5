@@ -1701,11 +1701,15 @@ sync();
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
-  const feed=W.RIZVI_CANONICAL_FEED_STATUS||{},canonicalBars=Array.isArray(W.RIZVI_CANONICAL_RAW_BARS)?W.RIZVI_CANONICAL_RAW_BARS:null,bs=canonicalBars&&canonicalBars.length?canonicalBars:barsNow(),last=bs.at(-1);
-  if(feed.ok!==true){wait(symbol,'Canonical OHLC feed invalid or stale',{feedOk:feed.ok??null,feedReason:feed.reason||'Canonical feed status not initialized',feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
+  const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
+  const feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||{},bs=Array.isArray(snapshot?.bars)?snapshot.bars:[],last=bs.at(-1);
+  if(!snapshot||snapshot.version!==1||snapshot.symbol!==feed.symbol||snapshot.timeframe!==feed.timeframe){wait(symbol,'Canonical feed snapshot missing or internally inconsistent',{snapshotPresent:!!snapshot,snapshotSymbol:snapshot?.symbol||null,feedSymbol:feed.symbol||null,snapshotTimeframe:snapshot?.timeframe||null,feedTimeframe:feed.timeframe||null});return;}
+  if(feed.ok!==true){wait(symbol,'Canonical OHLC feed invalid or stale',{feedOk:feed.ok??null,feedReason:feed.reason||'Canonical feed status not initialized',feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf,snapshotAgeMs:Date.now()-Number(snapshot.capturedAt||0)});return;}
   if(canonicalSymbol(feed.symbol)!==symbol){wait(symbol,'Feed symbol mismatch',{feedSymbol:feed.symbol||null,expectedSymbol:symbol});return;}
   if(canonicalTf(feed.timeframe)!==tf){wait(symbol,'Feed timeframe mismatch',{feedTimeframe:feed.timeframe||null,selectedTimeframe:tf});return;}
   const age=last?Date.now()-msTime(last.t):Infinity;
+  const snapshotAgeMs=Date.now()-Number(snapshot.capturedAt||0);
+  if(!Number.isFinite(snapshotAgeMs)||snapshotAgeMs<0||snapshotAgeMs>45000){wait(symbol,'Canonical feed snapshot expired',{snapshotAgeMs});return;}
   if(bs.length<21||!last||!Number.isFinite(age)||age < -5000||age>180000){wait(symbol,'OHLC missing, insufficient, or stale',{bars:bs.length,barAgeMs:Number.isFinite(age)?age:null});return;}
   /* Stamp the active symbol onto the exact canonical snapshot consumed by both test suites. */
   W.RIZVI_RAW_BARS=bs;W.RIZVI_AGG_BARS=bs;
