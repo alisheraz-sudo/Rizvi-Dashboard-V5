@@ -1723,10 +1723,22 @@ sync();
    const statusSymbol=canonicalSymbol(liveStatus.symbol),statusTf=canonicalTf(liveStatus.timeframe);
    const recoverable=liveStatus.ok===true&&liveStatus.live===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=maxFeedAgeMs(tf)&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=maxFeedAgeMs(tf);
    if(recoverable){
-    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars};
+    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars,latestBarAt:candidateLast.t,latestAgeMs:Math.max(0,Math.round(candidateBarAge))};
     W.RIZVI_CANONICAL_FEED_SNAPSHOT=snapshot;
+    W.RIZVI_CANONICAL_FEED_STATUS=liveStatus;
     feed=liveStatus;bs=candidateBars;last=candidateLast;
-    diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:statusAge,barAgeMs:Math.round(candidateBarAge)});
+    diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:Math.round(statusAge),barAgeMs:Math.round(candidateBarAge),snapshotAgeMs:Math.round(snapshotAge)});
+   }else{
+    const reasons=[];
+    if(liveStatus.ok!==true)reasons.push('status-not-ok');
+    if(liveStatus.live!==true)reasons.push('status-not-live');
+    if(liveStatus.stale===true)reasons.push('status-stale');
+    if(!Number.isFinite(statusAge)||statusAge<0||statusAge>maxFeedAgeMs(tf))reasons.push('status-age-out-of-range');
+    if(statusSymbol!==symbol)reasons.push('status-symbol-mismatch');
+    if(statusTf!==tf)reasons.push('status-timeframe-mismatch');
+    if(candidateBars.length<21)reasons.push('raw-bars-insufficient');
+    if(!Number.isFinite(candidateBarAge)||candidateBarAge < -5000||candidateBarAge>maxFeedAgeMs(tf))reasons.push('latest-bar-stale-or-invalid');
+    diag(symbol,tf,'ENGINE5 snapshot recovery rejected',{reasons,statusOk:liveStatus.ok??null,statusLive:liveStatus.live??null,statusStale:liveStatus.stale??null,statusAgeMs:Number.isFinite(statusAge)?Math.round(statusAge):null,statusSymbol:liveStatus.symbol||null,statusTimeframe:liveStatus.timeframe||null,selectedSymbol:symbol,selectedTimeframe:tf,rawBars:liveBars.length,validBars:candidateBars.length,barAgeMs:Number.isFinite(candidateBarAge)?Math.round(candidateBarAge):null,snapshotAgeMs:Number.isFinite(snapshotAge)?Math.round(now-snapshotAge):null});
    }
   }
   // On a fresh page load, Engine 5 can execute before the feed bridge's first async poll publishes its snapshot.
