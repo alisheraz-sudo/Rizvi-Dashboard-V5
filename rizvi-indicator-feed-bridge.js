@@ -14,9 +14,14 @@ function normalize(rows){
  const now=Math.floor(Date.now()/1000);
  return (Array.isArray(rows)?rows:[]).map(x=>{
   const raw=x.t??x.time??x.timestamp??x.date;
-  let t=Number(raw);
-  if(!Number.isFinite(t)&&typeof raw==='string')t=Date.parse(raw)/1000;
-  else if(t>1e12)t=Math.floor(t/1000);
+  let t;
+  if(typeof raw==='string'&&raw.trim()!==''&&!Number.isFinite(Number(raw.trim())))t=Date.parse(raw)/1000;
+  else t=Number(raw);
+  if(!Number.isFinite(t)||t<=0)t=NaN;
+  else if(t>=1e17)t/=1e9;       // epoch nanoseconds -> seconds
+  else if(t>=1e14)t/=1e6;       // epoch microseconds -> seconds
+  else if(t>=1e11)t/=1e3;       // epoch milliseconds -> seconds
+  t=Math.floor(t);
   return {t,o:Number(x.o??x.open),h:Number(x.h??x.high),l:Number(x.l??x.low),c:Number(x.c??x.close),v:Number(x.v??x.volume??0)};
  })
  // The bridge uses epoch seconds internally; discard invalid/future bars before sorting or age checks.
