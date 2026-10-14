@@ -74,6 +74,12 @@ class FeedContractTests(unittest.TestCase):
         result = validate_snapshot(snapshot, now=NOW)
         self.assertEqual(result["reason"], "unsupported_snapshot_contract_version")
 
+    def test_rejects_boolean_contract_version(self):
+        snapshot = make_snapshot()
+        snapshot["version"] = True
+        result = validate_snapshot(snapshot, now=NOW)
+        self.assertEqual(result["reason"], "unsupported_snapshot_contract_version")
+
     def test_rejects_snapshot_capture_time_in_future(self):
         snapshot = make_snapshot()
         snapshot["capturedAt"] = (NOW + 10) * 1000
