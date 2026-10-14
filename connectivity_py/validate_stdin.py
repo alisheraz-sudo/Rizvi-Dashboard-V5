@@ -1,6 +1,6 @@
 import json
 import sys
-from connectivity_py.feed_contract import validate_snapshot
+from feed_contract import validate_snapshot
 
 def main():
     try:
