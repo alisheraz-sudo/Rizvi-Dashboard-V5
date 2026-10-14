@@ -10,6 +10,18 @@ function symbol(){
  return /^(XAU\/USD|XAUUSD|GOLD)$/.test(s)?'XAU/USD':s.replace(/[^A-Z0-9]/g,'')==='BTCUSD'?'BTCUSD':'UNSUPPORTED';
 }
 function timeframe(){const t=String(window.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase();return TF_SECONDS[t]?t:'1M';}
+async function fetchJsonWithTimeout(url,options={},timeoutMs=12000){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{
+  const response=await fetch(url,{...options,signal:controller.signal});
+  const data=await response.json();
+  return {response,data};
+ }catch(e){
+  if(controller.signal.aborted)throw new Error('OHLC request timed out after '+timeoutMs+'ms ('+url+')');
+  throw e;
+ }finally{clearTimeout(timer);}
+}
 function normalize(rows){
  const now=Math.floor(Date.now()/1000);
  return (Array.isArray(rows)?rows:[]).map(x=>{
@@ -73,22 +85,22 @@ async function poll(){
   if(sym==='UNSUPPORTED'){fail(sym,'No OHLC endpoint configured for this symbol');return;}
   let data=null,validated=null,primaryError='';
   if(sym==='BTCUSD'){
-   const response=await fetch('/market/btc/intraday?granularity='+TF_SECONDS[tf],{cache:'no-store',credentials:'same-origin'});
-   data=await response.json();
+   const result=await fetchJsonWithTimeout('/market/btc/intraday?granularity='+TF_SECONDS[tf],{cache:'no-store',credentials:'same-origin'});
+   const response=result.response;data=result.data;
    if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
    validated=validateRows(data.bars,data.source||'BTC OHLC endpoint');
   }else{
    try{
-    const response=await fetch('/market/xau/intraday?allowStale=1',{cache:'no-store',credentials:'same-origin'});
-    data=await response.json();
+    const result=await fetchJsonWithTimeout('/market/xau/intraday?allowStale=1',{cache:'no-store',credentials:'same-origin'});
+    const response=result.response;data=result.data;
     if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
     validated=validateRows(data.bars,data.source||'XAUS-OHLC',data.stale===true);
    }catch(e){
     primaryError=String(e?.message||e);
     // Use cTrader only when it is actually connected, authorized, and returns fresh real OHLC.
     // No spot-price fabrication: if neither provider has valid candles, keep signals at WAIT.
-    const response=await fetch('/market/ctrader?symbol=XAUUSD',{cache:'no-store',credentials:'same-origin'});
-    const backup=await response.json();
+    const result=await fetchJsonWithTimeout('/market/ctrader?symbol=XAUUSD',{cache:'no-store',credentials:'same-origin'});
+    const response=result.response,backup=result.data;
     if(!response.ok||!backup?.ok||backup.connected!==true||backup.authorized!==true||!Array.isArray(backup.bars)||!backup.bars.length){
      throw new Error('XAUS failed: '+primaryError+'; cTrader fallback unavailable'+(backup?.error?': '+backup.error:'')+' (connected='+!!backup?.connected+', authorized='+!!backup?.authorized+', bars='+(backup?.bars?.length||0)+')');
     }
