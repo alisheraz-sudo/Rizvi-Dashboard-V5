@@ -413,15 +413,14 @@
   function displayDecision(m){
     if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
     const score=Number(m.confidence)||0;
-    if(m.qualified===true&&['BUY','SELL'].includes(m.direction)){
-      return {direction:m.direction,score,band:score>=90?'HIGH':score>=80?'STRONG':'WEAK'};
+    const direction=['BUY','SELL'].includes(m.direction)?m.direction:'WAIT';
+    // One source of truth: never turn Engine 5's final WAIT into a directional
+    // signal by reading indicatorAction or intermediate alignment fields.
+    if(direction==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
+    if(m.qualified===true&&score>=80){
+      return {direction,score,band:score>=90?'HIGH':'STRONG'};
     }
-    const e=m.engine5||{},weakDir=e.indicatorAction,alignment=m.alignment||{};
-    if(e.state==='EVALUATED'&&score>=70&&score<80&&['BUY','SELL'].includes(weakDir)&&
-       alignment.algorithmMajority===weakDir&&Number(e.algorithmsAligned)>=3&&
-       Number(e.indicatorAgreement)>=60&&!m.reason){
-      return {direction:weakDir,score,band:'WEAK'};
-    }
+    if(score>=70)return {direction,score,band:'WEAK'};
     return {direction:'WAIT',score,band:'WAIT'};
   }
   window.RIZVI_DISPLAY_DECISION=displayDecision;
