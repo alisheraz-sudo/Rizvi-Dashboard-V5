@@ -34,10 +34,15 @@ function makeDxyBars(dayStart, endSec) {
   }
   return out;
 }
-async function runContext({ bars, payload, symbol = 'XAU/USD' }) {
-  const now = Date.now();
+async function runContext({ bars, payload, symbol = 'XAU/USD', nowMs = Date.now() }) {
+  const RealDate = Date;
+  class TestDate extends RealDate {
+    constructor(...args) { super(...(args.length ? args : [nowMs])); }
+    static now() { return nowMs; }
+  }
+  const now = nowMs;
   const sandbox = {
-    Date, Math, Number, String, Array, Object, Intl, JSON,
+    Date: TestDate, Math, Number, String, Array, Object, Intl, JSON,
     RIZVI_AGG_BARS: bars,
     RIZVI_CURRENT_SYMBOL: symbol,
     __RIZVI_ENGINE4_FILTERS_V1: false,
@@ -53,44 +58,44 @@ async function runContext({ bars, payload, symbol = 'XAU/USD' }) {
 }
 
 test('Engine 4 session context returns timezone-derived status only', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart, endSec);
-  const { context } = await runContext({ bars, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE', reason: 'test fixture' } } });
+  const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE', reason: 'test fixture' } } });
   assert.equal(context.session.status, 'LIVE');
   assert.equal(context.session.source, 'IANA timezone session clock');
   assert.ok(Array.isArray(context.session.active) && context.session.active.length > 0);
 });
 
 test('Engine 4 day high/low only becomes LIVE when current UTC day coverage begins near midnight', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart, endSec);
-  const { context } = await runContext({ bars, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE' } } });
+  const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dayHighLow.status, 'LIVE');
   assert.ok(context.dayHighLow.high >= context.dayHighLow.low);
   assert.equal(context.dayHighLow.firstBarAt, dayStart);
 });
 
 test('Engine 4 day high/low refuses incomplete daily coverage', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart + 3600, endSec);
-  const { context } = await runContext({ bars, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE' } } });
+  const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'UNAVAILABLE' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dayHighLow.status, 'UNAVAILABLE');
   assert.match(context.dayHighLow.reason, /does not cover the start/);
 });
 
 test('Engine 4 DXY filter requires aligned live DXY candles and does not invent a signal', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart, endSec);
-  const { context } = await runContext({ bars, payload: { dxy: { status: 'UNAVAILABLE', reason: 'No DXY source' }, usNews: { status: 'UNAVAILABLE' } } });
+  const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'UNAVAILABLE', reason: 'No DXY source' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dxy.status, 'UNAVAILABLE');
   assert.equal(context.dxy.signal, 'WAIT');
 });
 
 test('Engine 4 DXY Pearson correlation handles a deterministic inverse series', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart, endSec);
   const dxyBars = makeDxyBars(dayStart, endSec);
-  const { context } = await runContext({ bars, payload: { dxy: { status: 'LIVE', bars: dxyBars, source: 'deterministic-test-fixture' }, usNews: { status: 'UNAVAILABLE' } } });
+  const { context } = await runContext({ bars, nowMs: now, payload: { dxy: { status: 'LIVE', bars: dxyBars, source: 'deterministic-test-fixture' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dxy.status, 'LIVE');
   assert.ok(context.dxy.correlation <= -0.25, 'inverse fixture should meet inverse-correlation threshold');
   assert.equal(context.dxy.signal, 'INVERSE_CONFIRMED');
@@ -98,9 +103,9 @@ test('Engine 4 DXY Pearson correlation handles a deterministic inverse series', 
 });
 
 test('Engine 4 does not apply XAU-specific DXY filter to BTC', async () => {
-  const now = Date.now(), dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
+  const now = Math.floor(Date.now() / 86400000) * 86400000 + 12 * 3600000, dayStart = Math.floor(now / 86400000) * 86400, endSec = Math.floor(now / 1000);
   const bars = makeMinuteBars(dayStart, endSec);
-  const { context } = await runContext({ bars, symbol: 'BTCUSD', payload: { dxy: { status: 'LIVE', bars: makeDxyBars(dayStart, endSec), source: 'fixture' }, usNews: { status: 'UNAVAILABLE' } } });
+  const { context } = await runContext({ bars, symbol: 'BTCUSD', nowMs: now, payload: { dxy: { status: 'LIVE', bars: makeDxyBars(dayStart, endSec), source: 'fixture' }, usNews: { status: 'UNAVAILABLE' } } });
   assert.equal(context.dxy.status, 'UNAVAILABLE');
   assert.equal(context.dxy.signal, 'WAIT');
 });
