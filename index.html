@@ -1723,10 +1723,22 @@ sync();
    const statusSymbol=canonicalSymbol(liveStatus.symbol),statusTf=canonicalTf(liveStatus.timeframe);
    const recoverable=liveStatus.ok===true&&liveStatus.live===true&&liveStatus.stale!==true&&Number.isFinite(statusAge)&&statusAge>=0&&statusAge<=maxFeedAgeMs(tf)&&statusSymbol===symbol&&statusTf===tf&&candidateBars.length>=21&&Number.isFinite(candidateBarAge)&&candidateBarAge>=-5000&&candidateBarAge<=maxFeedAgeMs(tf);
    if(recoverable){
-    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars};
+    snapshot={version:1,symbol:liveStatus.symbol,timeframe:liveStatus.timeframe,capturedAt:now,status:liveStatus,bars:candidateBars,latestBarAt:candidateLast.t,latestAgeMs:Math.max(0,Math.round(candidateBarAge))};
     W.RIZVI_CANONICAL_FEED_SNAPSHOT=snapshot;
+    W.RIZVI_CANONICAL_FEED_STATUS=liveStatus;
     feed=liveStatus;bs=candidateBars;last=candidateLast;
-    diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:statusAge,barAgeMs:Math.round(candidateBarAge)});
+    diag(symbol,tf,'ENGINE5 recovered expired snapshot from fresh validated feed',{bars:bs.length,statusAgeMs:Math.round(statusAge),barAgeMs:Math.round(candidateBarAge),snapshotAgeMs:Math.round(snapshotAge)});
+   }else{
+    const reasons=[];
+    if(liveStatus.ok!==true)reasons.push('status-not-ok');
+    if(liveStatus.live!==true)reasons.push('status-not-live');
+    if(liveStatus.stale===true)reasons.push('status-stale');
+    if(!Number.isFinite(statusAge)||statusAge<0||statusAge>maxFeedAgeMs(tf))reasons.push('status-age-out-of-range');
+    if(statusSymbol!==symbol)reasons.push('status-symbol-mismatch');
+    if(statusTf!==tf)reasons.push('status-timeframe-mismatch');
+    if(candidateBars.length<21)reasons.push('raw-bars-insufficient');
+    if(!Number.isFinite(candidateBarAge)||candidateBarAge < -5000||candidateBarAge>maxFeedAgeMs(tf))reasons.push('latest-bar-stale-or-invalid');
+    diag(symbol,tf,'ENGINE5 snapshot recovery rejected',{reasons,statusOk:liveStatus.ok??null,statusLive:liveStatus.live??null,statusStale:liveStatus.stale??null,statusAgeMs:Number.isFinite(statusAge)?Math.round(statusAge):null,statusSymbol:liveStatus.symbol||null,statusTimeframe:liveStatus.timeframe||null,selectedSymbol:symbol,selectedTimeframe:tf,rawBars:liveBars.length,validBars:candidateBars.length,barAgeMs:Number.isFinite(candidateBarAge)?Math.round(candidateBarAge):null,snapshotAgeMs:Number.isFinite(snapshotAge)?Math.round(now-snapshotAge):null});
    }
   }
   // On a fresh page load, Engine 5 can execute before the feed bridge's first async poll publishes its snapshot.
@@ -1896,7 +1908,41 @@ function render(){
   status.textContent=(feed.stale===true&&feed.symbol==='XAU/USD'?'LAST AVAILABLE · NOT LIVE · ':'')+reported+' / '+items.length+' values reported · '+items.length+' assigned indicators';
  });
  const algos=report.algorithms||{},algoRows=Object.values(algos);
- const regime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime||'Not reported';
+ function deriveXauDisplayRegime(){
+  // Display-only Stage 3 context. This never feeds Engine 5 qualification or signal direction.
+  const snap=W.RIZVI_CANONICAL_FEED_SNAPSHOT, feed=W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
+  if(!snap||snap.version!==1||snap.symbol!=='XAU/USD'||feed.ok!==true||feed.symbol!==snap.symbol||feed.timeframe!==snap.timeframe) return 'INSUFFICIENT DATA';
+  const tf=String(snap.timeframe||'').trim().toLowerCase();
+  const match=tf.match(/^(\d+)\s*(m|min|minute|h|hr|hour|d|day)$/);
+  const unit=match?match[2]:'m', n=match?Number(match[1]):1;
+  const tfMs=n*(/^(h|hr|hour)$/.test(unit)?3600000:/^(d|day)$/.test(unit)?86400000:60000);
+  const maxAge=Math.max(90000,tfMs*2);
+  const captured=Number(snap.capturedAt), now=Date.now();
+  if(!Number.isFinite(captured)||now-captured<0||now-captured>maxAge) return 'INSUFFICIENT DATA';
+  const bars=Array.isArray(snap.bars)?snap.bars:[];
+  if(bars.length<50) return 'INSUFFICIENT DATA';
+  const rows=bars.slice(-50).map(b=>({t:Number(b.t??b.time??b.timestamp),h:Number(b.h??b.high),l:Number(b.l??b.low),c:Number(b.c??b.close)}));
+  if(rows.some(b=>![b.h,b.l,b.c].every(Number.isFinite)||b.h<b.l||b.c<=0)) return 'INSUFFICIENT DATA';
+  const last=rows[rows.length-1], barAge=now-(last.t<1e11?last.t*1000:last.t);
+  if(!Number.isFinite(barAge)||barAge < -5000||barAge>maxAge) return 'INSUFFICIENT DATA';
+  const closes=rows.map(b=>b.c);
+  const ema=(a,p)=>{const k=2/(p+1);let v=a[0];for(let i=1;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
+  const e20=ema(closes.slice(-30),20), e50=ema(closes,50);
+  const ranges=rows.slice(1).map((b,i)=>Math.max(b.h-b.l,Math.abs(b.h-rows[i].c),Math.abs(b.l-rows[i].c)));
+  const avgRange=ranges.reduce((a,b)=>a+b,0)/ranges.length;
+  if(!Number.isFinite(avgRange)||avgRange<=0) return 'INSUFFICIENT DATA';
+  const drift=Math.abs(last.c-closes[0]);
+  const path=ranges.reduce((a,b)=>a+b,0);
+  const efficiency=path>0?drift/path:0;
+  const emaGap=Math.abs(e20-e50)/avgRange;
+  if(efficiency<0.22&&emaGap<0.6) return 'RANGING';
+  if(efficiency>=0.22&&last.c>e20&&e20>e50) return 'TRENDING UP';
+  if(efficiency>=0.22&&last.c<e20&&e20<e50) return 'TRENDING DOWN';
+  return 'MIXED / TRANSITIONAL';
+ }
+ const reportedRegime=master.engine5?.marketRegime||master.marketRegime||report.regime||report.marketRegime||eng.regime;
+ const hasReportedRegime=reportedRegime!=null&&!['','NOT REPORTED','UNKNOWN','N/A','NULL','UNDEFINED'].includes(String(reportedRegime).trim().toUpperCase());
+ const regime=hasReportedRegime?reportedRegime:deriveXauDisplayRegime();
  const state=master.engine5?.state||master.status||report.status||eng.state||'WAITING FOR DATA';
  const decision=master.direction||master.engine5?.direction||eng.action||'WAIT';
  const score=master.confidence??master.score??eng.score;
