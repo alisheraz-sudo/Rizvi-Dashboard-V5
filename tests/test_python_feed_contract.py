@@ -2,6 +2,7 @@ import unittest
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 from connectivity_py.feed_contract import validate_snapshot
 
@@ -22,7 +23,9 @@ def make_snapshot(*, symbol="XAU/USD", timeframe="1M", status_ok=True, bars=None
 class FeedContractTests(unittest.TestCase):
 
     def test_stdin_entrypoint_emits_valid_contract_json(self):
-        snapshot = make_snapshot()
+        now = time.time()
+        snapshot = make_snapshot(bars=[{"t": now - (49 - i) * 60, "o": 4000+i, "h": 4002+i, "l": 3999+i, "c": 4001+i, "v": 10} for i in range(50)])
+        snapshot["capturedAt"] = now * 1000
         script = Path(__file__).resolve().parents[1] / "connectivity_py" / "validate_stdin.py"
         completed = subprocess.run(
             [sys.executable, str(script)],
