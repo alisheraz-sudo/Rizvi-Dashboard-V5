@@ -1,4 +1,8 @@
 import unittest
+import json
+import subprocess
+import sys
+from pathlib import Path
 from connectivity_py.feed_contract import validate_snapshot
 
 NOW = 1_800_000_000.0
@@ -16,6 +20,23 @@ def make_snapshot(*, symbol="XAU/USD", timeframe="1M", status_ok=True, bars=None
     }
 
 class FeedContractTests(unittest.TestCase):
+
+    def test_stdin_entrypoint_emits_valid_contract_json(self):
+        snapshot = make_snapshot()
+        script = Path(__file__).resolve().parents[1] / "connectivity_py" / "validate_stdin.py"
+        completed = subprocess.run(
+            [sys.executable, str(script)],
+            input=json.dumps(snapshot),
+            text=True,
+            capture_output=True,
+            timeout=3,
+            check=True,
+        )
+        result = json.loads(completed.stdout)
+        self.assertTrue(result["ok"], result)
+        self.assertFalse(result["signal_generation"])
+        self.assertFalse(result["auto_trading"])
+
     def test_accepts_fresh_consistent_gold_snapshot(self):
         result = validate_snapshot(make_snapshot(), now=NOW)
         self.assertTrue(result["ok"], result)
