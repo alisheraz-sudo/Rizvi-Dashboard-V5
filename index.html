@@ -1697,12 +1697,21 @@ sync();
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:out}));
   W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:out}));
  }
+ const canonicalFeedBootAt=Date.now();
+ let lastBootMissingDiagnostic=0;
  function tick(){
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
   const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
   const feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||{},bs=Array.isArray(snapshot?.bars)?snapshot.bars:[],last=bs.at(-1);
+  // On a fresh page load, Engine 5 can execute before the feed bridge's first async poll publishes its snapshot.
+  // Treat that short no-status window as initialization, not a feed failure; persistent absence still reports WAIT.
+  if(!snapshot&&!W.RIZVI_CANONICAL_FEED_STATUS){
+   const now=Date.now();
+   if(now-canonicalFeedBootAt<15000||now-lastBootMissingDiagnostic<15000)return;
+   lastBootMissingDiagnostic=now;
+  }
   if(!snapshot||snapshot.version!==1||snapshot.symbol!==feed.symbol||snapshot.timeframe!==feed.timeframe){wait(symbol,'Canonical feed snapshot missing or internally inconsistent',{snapshotPresent:!!snapshot,snapshotSymbol:snapshot?.symbol||null,feedSymbol:feed.symbol||null,snapshotTimeframe:snapshot?.timeframe||null,feedTimeframe:feed.timeframe||null});return;}
   if(feed.ok!==true){wait(symbol,'Canonical OHLC feed invalid or stale',{feedOk:feed.ok??null,feedReason:feed.reason||'Canonical feed status not initialized',feedSymbol:feed.symbol||null,feedTimeframe:feed.timeframe||null,selectedTimeframe:tf,snapshotAgeMs:Date.now()-Number(snapshot.capturedAt||0)});return;}
   if(canonicalSymbol(feed.symbol)!==symbol){wait(symbol,'Feed symbol mismatch',{feedSymbol:feed.symbol||null,expectedSymbol:symbol});return;}
