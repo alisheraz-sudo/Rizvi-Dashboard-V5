@@ -33,7 +33,7 @@ function aggregate(rows,seconds){
  return out;
 }
 function fail(sym,reason){
- try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:timeframe(),reason:String(reason||'').slice(0,220)})}).catch(()=>{});}catch(_){}
+ try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({sessionId:window.__RIZVI_DIAG_SESSION_ID||(window.__RIZVI_DIAG_SESSION_ID=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)),symbol:sym,timeframe:timeframe(),reason:String(reason||'').slice(0,220)})}).catch(()=>{});}catch(_){}
  window.RIZVI_FEED_STATUS={ok:false,live:false,stale:true,symbol:sym,timeframe:timeframe(),source:sym==='BTCUSD'?'BTC OHLC endpoint':'XAUS-OHLC',updatedAt:Date.now(),reason};
  window.RIZVI_CANONICAL_FEED_STATUS=window.RIZVI_FEED_STATUS;
  window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,indicatorStatus:{ema:false,fvg:false,rsi:false,vwap:false,volumeProfile:false,delta:false,divergence:false,candlePattern:false,orderFlow:false,liquidity:false,rangeLevels:false},feedStatus:window.RIZVI_FEED_STATUS};
@@ -97,7 +97,7 @@ async function poll(){
    window.RIZVI_MASTER_CONFIRMATION={symbol:sym,updatedAt:Date.now(),direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,reason,feedStatus:window.RIZVI_FEED_STATUS};
    window.RIZVI_SIGNAL_DIRECTION='WAIT';
    window.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:window.RIZVI_MASTER_CONFIRMATION}));
-   try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({symbol:sym,timeframe:tf,reason})}).catch(()=>{});}catch(_){}
+   try{fetch('/internal/feed-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',keepalive:true,body:JSON.stringify({sessionId:window.__RIZVI_DIAG_SESSION_ID||(window.__RIZVI_DIAG_SESSION_ID=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)),symbol:sym,timeframe:tf,reason})}).catch(()=>{});}catch(_){}
    lastGoodAt=Date.now();lastKey=key;
    window.dispatchEvent(new CustomEvent('rizvi:ohlc-feed-update',{detail:window.RIZVI_FEED_STATUS}));
    return;
