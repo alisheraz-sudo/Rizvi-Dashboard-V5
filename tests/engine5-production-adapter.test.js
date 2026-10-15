@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildInput, canonicalSymbol, canonicalTimeframe, normalizeBar } = require('../engine5-production-adapter');
+const { buildInput, canonicalSymbol, canonicalTimeframe, normalizeBar, validateSnapshot } = require('../engine5-production-adapter');
 
 test('maps current dashboard symbols and timeframe aliases', () => {
   assert.equal(canonicalSymbol('XAU/USD'), 'XAUUSD');
@@ -53,4 +53,39 @@ test('maps Engine 4 safety blockers and does not mark an unvalidated feed live',
   assert.equal(input.newsBlocked, true);
   assert.equal(input.dxyConflict, true);
   assert.equal(input.sourceMeta.feedStatus, 'NOT_VALIDATED');
+});
+
+function validSnapshot(now = Date.now()) {
+  const timestamp = new Date(now).toISOString();
+  const start = Math.floor((now - 20 * 60000) / 1000);
+  const bars = Array.from({length: 21}, (_, i) => {
+    const o = 2300 + i, c = o + 0.2;
+    return {t: start + i * 60, o, h: c + 0.2, l: o - 0.2, c, v: 100};
+  });
+  return {
+    symbol: 'XAU/USD', timeframe: '1M', bars,
+    feedStatus: {ok: true, live: true, stale: false, symbol: 'XAU/USD', timeframe: '1M'},
+    confluence: {symbol: 'XAU/USD', timeframe: '1M', timestamp, action: 'BUY', components: {}},
+    algorithmReport: {symbol: 'XAU/USD', timeframe: '1M', timestamp, algorithms: {}}
+  };
+}
+
+test('accepts only a fresh, same-symbol/timeframe, aligned snapshot', () => {
+  const now = Date.now();
+  const result = validateSnapshot(validSnapshot(now), {now});
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.blockers, []);
+});
+
+test('rejects stale feed and mismatched or stale engine reports', () => {
+  const now = Date.now();
+  const snapshot = validSnapshot(now);
+  snapshot.feedStatus.stale = true;
+  snapshot.algorithmReport.symbol = 'BTCUSD';
+  snapshot.confluence.timestamp = new Date(now - 60000).toISOString();
+  const result = validateSnapshot(snapshot, {now});
+  assert.equal(result.valid, false);
+  assert.ok(result.blockers.includes('FEED_NOT_VALIDATED_LIVE'));
+  assert.ok(result.blockers.includes('ALGORITHM_SYMBOL_MISMATCH'));
+  assert.ok(result.blockers.includes('INDICATOR_REPORT_STALE_OR_MISSING'));
 });
