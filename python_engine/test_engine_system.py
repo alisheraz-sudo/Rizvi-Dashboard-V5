@@ -54,7 +54,10 @@ class EngineSystemTests(unittest.TestCase):
         blockers = result["master_engine_5"]["blockers"]
         self.assertIn("dxy-unavailable", blockers)
         self.assertIn("us-news-unavailable", blockers)
-        self.assertIn("order-flow-unavailable", blockers)
+        self.assertNotIn("session-unavailable", blockers)
+        self.assertNotIn("day-high-low-unavailable", blockers)
+        self.assertNotIn("order-flow-unavailable", blockers)
+        self.assertNotIn("delta-unavailable", blockers)
 
     def test_outputs_are_experiment_only_and_auto_trading_off(self):
         now, snap = sample_snapshot()
