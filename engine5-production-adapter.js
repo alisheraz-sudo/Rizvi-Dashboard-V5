@@ -60,6 +60,48 @@ function normalizeComponents(components) {
   return out;
 }
 
+function timeMs(value) {
+  if (value == null || value === '') return NaN;
+  const n = Number(value);
+  if (Number.isFinite(n) && n > 0) return n < 1e12 ? n * 1000 : n;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function validateSnapshot(snapshot = {}, options = {}) {
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const reportMaxAgeMs = Number.isFinite(Number(options.reportMaxAgeMs)) ? Number(options.reportMaxAgeMs) : 15000;
+  const feed = snapshot.feedStatus || snapshot.canonicalFeedStatus || {};
+  const confluence = snapshot.confluence || snapshot.indicatorConfluence || {};
+  const algorithmReport = snapshot.algorithmReport || snapshot.multiAlgorithmReport || {};
+  const symbol = canonicalSymbol(snapshot.symbol || feed.symbol);
+  const timeframe = canonicalTimeframe(snapshot.timeframe || feed.timeframe);
+  const blockers = [];
+  if (feed.ok !== true || feed.live !== true || feed.stale === true) blockers.push('FEED_NOT_VALIDATED_LIVE');
+  if (canonicalSymbol(feed.symbol) !== symbol) blockers.push('FEED_SYMBOL_MISMATCH');
+  if (canonicalTimeframe(feed.timeframe) !== timeframe) blockers.push('FEED_TIMEFRAME_MISMATCH');
+  const bars = (Array.isArray(snapshot.bars) ? snapshot.bars : []).map(normalizeBar).filter(Boolean);
+  if (bars.length < 21) blockers.push('INSUFFICIENT_VALID_OHLC_BARS');
+  const latest = bars.at(-1);
+  const latestMs = timeMs(latest?.t);
+  const tfSeconds = ({'1M':60,'5M':300,'15M':900,'30M':1800,'1H':3600,'1D':86400})[timeframe] || 60;
+  const maxBarAgeMs = Math.max(180000, tfSeconds * 3000);
+  if (!Number.isFinite(latestMs) || latestMs > now + 5000 || now - latestMs > maxBarAgeMs) blockers.push('LATEST_OHLC_BAR_STALE_OR_INVALID');
+  for (const [label, report] of [['INDICATOR', confluence], ['ALGORITHM', algorithmReport]]) {
+    if (canonicalSymbol(report.symbol) !== symbol) blockers.push(label + '_SYMBOL_MISMATCH');
+    if (canonicalTimeframe(report.timeframe) !== timeframe) blockers.push(label + '_TIMEFRAME_MISMATCH');
+    const t = timeMs(report.timestamp);
+    if (!Number.isFinite(t) || t > now + 5000 || now - t > reportMaxAgeMs) blockers.push(label + '_REPORT_STALE_OR_MISSING');
+  }
+  const indicatorTime = timeMs(confluence.timestamp), algorithmTime = timeMs(algorithmReport.timestamp);
+  if (Number.isFinite(indicatorTime) && Number.isFinite(algorithmTime) &&
+      Math.abs(indicatorTime - algorithmTime) > reportMaxAgeMs) blockers.push('REPORT_TIMESTAMP_SKEW');
+  return { valid: blockers.length === 0, symbol, timeframe, blockers,
+    diagnostics: { validBars: bars.length, latestBarAgeMs: Number.isFinite(latestMs) ? now - latestMs : null,
+      indicatorReportAgeMs: Number.isFinite(indicatorTime) ? now - indicatorTime : null,
+      algorithmReportAgeMs: Number.isFinite(algorithmTime) ? now - algorithmTime : null } };
+}
+
 function buildInput(snapshot = {}) {
   const confluence = snapshot.confluence || snapshot.indicatorConfluence || {};
   const algorithmReport = snapshot.algorithmReport || snapshot.multiAlgorithmReport || {};
@@ -100,4 +142,4 @@ function buildInput(snapshot = {}) {
   };
 }
 
-module.exports = { canonicalSymbol, canonicalTimeframe, normalizeBar, normalizeComponents, buildInput };
+module.exports = { canonicalSymbol, canonicalTimeframe, normalizeBar, normalizeComponents, buildInput, validateSnapshot };
