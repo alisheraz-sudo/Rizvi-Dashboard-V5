@@ -24,6 +24,24 @@ def live_indicators():
 
 
 class EngineSystemTests(unittest.TestCase):
+    def test_scope_is_exactly_the_current_18_indicators(self):
+        self.assertEqual(len(EXPECTED_INDICATORS), 18)
+        self.assertEqual(len(set(EXPECTED_INDICATORS)), 18)
+        self.assertNotIn("Delta Buy/Sell", EXPECTED_INDICATORS)
+        self.assertNotIn("Order Flow", EXPECTED_INDICATORS)
+
+    def test_four_engines_partition_all_18_indicators_once(self):
+        groups = [
+            EXPECTED_INDICATORS[:6],
+            EXPECTED_INDICATORS[6:11],
+            EXPECTED_INDICATORS[11:13],
+            EXPECTED_INDICATORS[13:18],
+        ]
+        flattened = [name for group in groups for name in group]
+        self.assertEqual(len(flattened), 18)
+        self.assertEqual(len(set(flattened)), 18)
+        self.assertEqual(set(flattened), set(EXPECTED_INDICATORS))
+
     def test_locked_engine5_settings_are_preserved(self):
         self.assertEqual(LOCKED_ENGINE5["required_aligned_algorithms"], 4)
         self.assertEqual(LOCKED_ENGINE5["required_algorithms_evaluated"], 5)
