@@ -107,16 +107,26 @@ function buildInput(snapshot = {}) {
   const confluence = snapshot.confluence || snapshot.indicatorConfluence || {};
   const algorithmReport = snapshot.algorithmReport || snapshot.multiAlgorithmReport || {};
   const engine4 = snapshot.engine4Context || {};
-  const independentEngineReport = snapshot.independentEngineReport || {};
-  const engines = independentEngineReport.independent === true && Array.isArray(independentEngineReport.engines)
-    ? independentEngineReport.engines.filter(e => e && /^ENGINE_[1-4]$/.test(String(e.engine || '').toUpperCase()))
-      .map(e => ({ engine: String(e.engine).toUpperCase(), action: String(e.action || 'WAIT').toUpperCase() }))
-    : [];
   const feed = snapshot.feedStatus || snapshot.canonicalFeedStatus || {};
   const bars = (Array.isArray(snapshot.bars) ? snapshot.bars : [])
     .map(normalizeBar).filter(Boolean);
   const sourceComponents = confluence.components || confluence.master?.components ||
     snapshot.components || {};
+  // Prefer a validated explicit independent report. If none exists, calculate
+  // candidate-only domain engines from the component payload; never relabel
+  // indicator-confluence groups or legacy algorithm votes as independent engines.
+  const independentEngineReport = snapshot.independentEngineReport || {};
+  const { evaluateIndependentEngines } = require('./engine5-independent-engines');
+  const derivedReport = evaluateIndependentEngines(sourceComponents);
+  const report = independentEngineReport.independent === true &&
+    Array.isArray(independentEngineReport.engines)
+    ? independentEngineReport : derivedReport;
+  const engines = report.independent === true && Array.isArray(report.engines)
+    ? report.engines.filter(e => e && e.reportAvailable !== false &&
+        /^ENGINE_[1-4]$/.test(String(e.engine || '').toUpperCase()) &&
+        ['BUY', 'SELL', 'WAIT'].includes(String(e.action || '').toUpperCase()))
+      .map(e => ({ engine: String(e.engine).toUpperCase(), action: String(e.action).toUpperCase() }))
+    : [];
   const sourceAlgorithms = algorithmReport.algorithms || snapshot.algorithms || {};
   const algorithms = {};
   for (const [name, item] of Object.entries(sourceAlgorithms)) {
