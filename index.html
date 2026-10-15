@@ -295,7 +295,7 @@
   <div class="engine-data" id="engine2Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="3">
-  <div class="title">ENGINE 3 — <b>VOLUME & PRICE CONFIRMATION</b></div>
+  <div class="title">ENGINE 3 — <b>VOLUME & LIQUIDITY</b></div>
   <div class="engine-status" id="engine3Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine3Data">No live indicator values reported yet.</div>
 </section>
@@ -782,6 +782,12 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     // Never let a late response from the other asset overwrite the active asset's levels.
     if(!r||canonicalSymbol(r.symbol)!==activeSymbol())return false;
     window.RIZVI_MARKET_RANGE=r;
+    if(r.symbol==='XAU/USD'){
+      const prior=window.RIZVI_ENGINE4_CONTEXT||{};
+      window.RIZVI_ENGINE4_CONTEXT={...prior,dayHighLow:r.dayRangeStatus==='LIVE'
+        ?{status:'LIVE',high:r.dayHigh,low:r.dayLow,source:r.source,updatedAt:r.updatedAt}
+        :{status:'UNAVAILABLE',reason:r.dayRangeReason||'Current-day OHLC unavailable',source:r.source,updatedAt:r.updatedAt}};
+    }
     Object.keys(out).forEach(k=>{if(out[k])out[k].textContent=fmt(r[k]);});
     window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:r}));
     return true;
@@ -812,7 +818,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     });
     const bullish=sweeps.filter(x=>x.side==='LOW').length+breakouts.filter(x=>x.side==='UP').length;
     const bearish=sweeps.filter(x=>x.side==='HIGH').length+breakouts.filter(x=>x.side==='DOWN').length;
-    const eventCount=sweeps.length+grabs.length+breakouts.length;
+    const eventCount=new Set([...sweeps,...grabs,...breakouts].map(x=>x.timeframe+':'+x.side+':'+x.price)).size;
     const direction=bullish>bearish?'BUY':bearish>bullish?'SELL':'NEUTRAL';
     const score=clamp(Math.round(Math.min(100,eventCount?50+eventCount*10+(tfsCount=>tfsCount>=3?15:tfsCount>=2?8:0)(new Set([...sweeps,...breakouts].map(x=>x.timeframe))):0)));
     window.RIZVI_LIQUIDITY_ENGINE={
@@ -829,11 +835,21 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     const size=minutes*60000, end=Math.floor(now/size)*size, start=end-size;
     return bars.filter(b=>b.t>=start&&b.t<end);
   }
+  function rangeTime(value){
+    let n=typeof value==='string'&&value.trim()!==''&&!Number.isFinite(Number(value))?Date.parse(value):Number(value);
+    if(!Number.isFinite(n)||n<=0)return NaN;
+    if(n<1e11)n*=1000;
+    else if(n>=1e17)n/=1e6;
+    else if(n>=1e14)n/=1000;
+    return Math.floor(n);
+  }
   function buildRange(bars,symbol,source){
     if(!bars.length)return null;
     const now=Date.now(), dayKey=new Date(now).toISOString().slice(0,10);
     const today=bars.filter(b=>new Date(b.t).toISOString().slice(0,10)===dayKey);
     const d=today.length?today:bars.slice(-96);
+    const dayRangeStatus=today.length?'LIVE':'UNAVAILABLE';
+    const dayRangeReason=today.length?'Current UTC-day OHLC available':'No candles for current UTC day; recent candles are display fallback only';
     function hiLo(windowBars,fallbackCount){
       const a=windowBars.length?windowBars:bars.slice(-fallbackCount);
       return {high:Math.max(...a.map(x=>x.h)),low:Math.min(...a.map(x=>x.l))};
@@ -843,7 +859,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     const r30=hiLo(previousBucket(bars,30,now),4);
     const r15=hiLo(previousBucket(bars,15,now),2);
     return {
-      symbol,source,
+      symbol,source,dayRangeStatus,dayRangeReason,
       dayHigh:Math.max(...d.map(x=>x.h)),dayLow:Math.min(...d.map(x=>x.l)),
       h4High:r4.high,h4Low:r4.low,
       h1High:r1.high,h1Low:r1.low,
@@ -860,8 +876,8 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
         fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=120',{cache:'no-store'}).then(r=>r.json())
       ]);
       if(!Array.isArray(r15)||!Array.isArray(r1))throw new Error('bad response');
-      const bars15=r15.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
-      const bars1=r1.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const bars15=r15.map(x=>({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const bars1=r1.map(x=>({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
       const v=buildRange(bars15,'BTCUSD','BINANCE 15M + 1M MICRO');
       if(v&&seq===refreshSeq&&activeSymbol()==='BTCUSD'&&publish(v)){attachLiquidityEngine(v,bars1);window.RIZVI_LIQUIDITY_ENGINE.microTimeframe='1M';}
     }catch(e){
@@ -871,13 +887,17 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
   async function gold(){
     const seq=refreshSeq;
     // Respect the existing market-closed guard: avoid repeated failing XAU requests and never publish stale range data as current.
-    if(window.RIZVI_GOLD_MARKET_LOCKED===true)return;
+    if(window.RIZVI_GOLD_MARKET_LOCKED===true){
+      const prior=window.RIZVI_ENGINE4_CONTEXT||{};
+      window.RIZVI_ENGINE4_CONTEXT={...prior,dayHighLow:{status:'UNAVAILABLE',reason:'Gold market is locked/closed; current-day range is not being refreshed',source:'XAUS INTRADAY'}};
+      return;
+    }
     try{
       const response=await fetch('/market/xau/intraday?hours=36',{cache:'no-store'});
       if(!response.ok)throw new Error('XAU range feed HTTP '+response.status);
       const d=await response.json();
       const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||[]));
-      const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+      const bars=a.map(x=>Array.isArray(x)?({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:rangeTime(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
       const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
       if(v&&seq===refreshSeq&&activeSymbol()==='XAU/USD'&&publish(v)){attachLiquidityEngine(v,bars);}
@@ -1289,13 +1309,11 @@ function atr(bs,n=14){if(!Array.isArray(bs)||!Number.isInteger(n)||n<1||bs.lengt
 function candle(bs){if(bs.length<3)return{score:0,bias:0,name:'INSUFFICIENT'};let b=bs.at(-1),p=bs.at(-2),body=Math.abs(b.close-b.open),range=Math.max(b.high-b.low,1e-9),up=b.high-Math.max(b.open,b.close),dn=Math.min(b.open,b.close)-b.low,bull=b.close>b.open,bear=b.close<b.open;if(dn>body*2&&up<body)return{score:75,bias:1,name:'HAMMER'};if(up>body*2&&dn<body)return{score:75,bias:-1,name:'SHOOTING_STAR'};if(bull&&p.close<p.open&&b.close>=p.open&&b.open<=p.close)return{score:85,bias:1,name:'BULL_ENGULF'};if(bear&&p.close>p.open&&b.open>=p.close&&b.close<=p.open)return{score:85,bias:-1,name:'BEAR_ENGULF'};if(body/range<.18)return{score:45,bias:0,name:'DOJI'};return{score:55,bias:bull?1:-1,name:bull?'BULL_CANDLE':'BEAR_CANDLE'}}
 function vwap(bs){if(!Array.isArray(bs))return NaN;let pv=0,v=0,count=0;for(const b of bs.slice(-100)){const q=Number(b.volume),h=Number(b.high),l=Number(b.low),c=Number(b.close);if(![q,h,l,c].every(Number.isFinite)||q<=0||h<l||c<l||c>h)continue;pv+=((h+l+c)/3)*q;v+=q;count++;}return count>=10&&v>0&&Number.isFinite(pv/v)?pv/v:NaN}
 function vp(bs){const s=bs.slice(-100).filter(b=>Number.isFinite(b.volume)&&b.volume>0);if(s.length<10)return{score:0,bias:0,status:'NO_REAL_VOLUME'};let lo=Math.min(...s.map(b=>b.low)),hi=Math.max(...s.map(b=>b.high)),bins=24,w=Math.max((hi-lo)/bins,1e-9),vol=Array(bins).fill(0);s.forEach(b=>{let k=Math.max(0,Math.min(bins-1,Math.floor((b.close-lo)/w)));vol[k]+=b.volume});let k=vol.indexOf(Math.max(...vol)),p=lo+(k+.5)*w,c=s.at(-1).close;return{score:clamp(50+Math.abs(c-p)/(w*4)*25),bias:c>p?1:c<p?-1:0,price:p,status:'CALCULATED'}}
-function delta(bs){return{score:0,bias:0,delta:null,status:'NO_TRADE_SIDE_VOLUME',note:'Real buyer/seller aggressor volume is not present in OHLC candles'}}
 function divergence(bs){if(bs.length<30)return{score:0,bias:0,name:'INSUFFICIENT'};let c=bs.map(x=>x.close),n=10,r=[];for(let i=14;i<c.length;i++)r.push(rsi(c.slice(0,i+1)));let pc=c.at(-1)-c.at(-1-n),pr=r.at(-1)-r.at(-1-n);if(pc>0&&pr<0)return{score:85,bias:-1,name:'BEAR_DIVERGENCE'};if(pc<0&&pr>0)return{score:85,bias:1,name:'BULL_DIVERGENCE'};return{score:55,bias:0,name:'NONE'}}
 function trend(bs){if(bs.length<50)return{score:0,bias:0,name:'INSUFFICIENT'};let c=bs.map(x=>x.close),e20=ema(c,20),e50=ema(c,50),last=c.at(-1),bias=last>e20&&e20>e50?1:last<e20&&e20<e50?-1:0;return{score:bias?80:50,bias,name:bias>0?'UPTREND':bias<0?'DOWNTREND':'MIXED',ema20:e20,ema50:e50}}
-function of(){let d=W.RIZVI_ORDER_FLOW||W.RIZVI_CTRADER_ORDER_FLOW||{},x=W.RIZVI_ORDER_FLOW_DEPTH;if(!Array.isArray(x)||!x.length)return{score:0,bias:0,status:'NOT_ATTACHED'};let bid=0,ask=0;x.forEach(v=>{bid+=N(v.bid)||0;ask+=N(v.ask)||0});let t=bid+ask,im=t?(bid-ask)/t:0;return{score:clamp(50+Math.abs(im)*50),bias:im>.08?1:im<-.08?-1:0,status:'ATTACHED',imbalance:im,raw:d}}
 function liq(){let x=W.RIZVI_LIQUIDITY_ENGINE;if(!x)return{score:0,bias:0,status:'NOT_ATTACHED'};let s=N(x.liquidityScore);return{score:Number.isFinite(s)?clamp(s):0,bias:x.direction==='bullish'?1:x.direction==='bearish'?-1:0,status:'ATTACHED',raw:x}}
 function build(){
- const bs=getBars(),c=bs.map(x=>x.close),last=bs.at(-1),close=c.at(-1),e9=ema(c,9),e21=ema(c,21),s200=sma(c,200),rv=rsi(c),vw=vwap(bs),a=atr(bs),pat=candle(bs),volProfile=vp(bs),dv=divergence(bs),order=of();
+ const bs=getBars(),c=bs.map(x=>x.close),last=bs.at(-1),close=c.at(-1),e9=ema(c,9),e21=ema(c,21),s200=sma(c,200),rv=rsi(c),vw=vwap(bs),a=atr(bs),pat=candle(bs),volProfile=vp(bs),dv=divergence(bs);
  const px=x=>Number.isFinite(Number(x))?Number(x).toFixed(2):'—';
  const mk=(value,score,bias,status,note='')=>({value:value??null,score:Number.isFinite(Number(score))?Math.round(clamp(score)):0,bias:Number.isFinite(Number(bias))?Number(bias):0,status:status||'CALCULATED',note});
  const missing=(status,note)=>mk(null,0,0,status,note);
@@ -1408,14 +1426,13 @@ function build(){
   'Fair Value Gap (FVG)':fvg?mk(fvg.name,fvg.score,fvg.bias,'CALCULATED'):missing('INSUFFICIENT_BARS','Need three-candle history'),
   'Volume Profile':volProfile.status==='NO_REAL_VOLUME'?missing('NO_REAL_VOLUME','Real volume not available from the selected feed'):mk('POC '+px(volProfile.price),volProfile.score,volProfile.bias,'CALCULATED'),
   'Candle Pattern / Price Action':pat.name==='INSUFFICIENT'?missing('INSUFFICIENT_BARS','Need candle history'):mk(pat.name,pat.score,pat.bias,'CALCULATED'),
-  'Order Flow / Delta':order.status==='ATTACHED'&&Number.isFinite(order.imbalance)?mk('Real depth imbalance '+px(order.imbalance*100)+'%',order.score,order.bias,'LIVE','Requires actual bid/ask depth; no OHLC-derived substitute'):missing('NO_REAL_ORDER_FLOW','No verified live bid/ask aggressor or depth data'),
   'Divergence':dv.name==='INSUFFICIENT'?missing('INSUFFICIENT_BARS','Need at least 30 bars'):mk(dv.name,dv.score,dv.bias,'CALCULATED')
  };
  const groups=[
   ['EMA 9/21','SMA 200','MACD','ADX / DMI','VWAP Filter'],
   ['RSI-14','Stochastic','ATR','Bollinger Bands'],
   ['Market Structure','Support / Resistance','Liquidity Pools','Liquidity Sweep','Fair Value Gap (FVG)'],
-  ['Volume Profile','Candle Pattern / Price Action','Order Flow / Delta','Divergence']
+  ['Volume Profile','Candle Pattern / Price Action','Divergence']
  ];
  const groupRows=groups.map(keys=>{
   const rows=keys.map(k=>comp[k]).filter(x=>x&&x.status==='CALCULATED'&&x.score>0&&x.bias!==0);
@@ -1427,9 +1444,9 @@ function build(){
  const agreement=directional.length?Math.round(Math.max(up,down)/directional.length*100):0;
  const score=groupRows.length?Math.round(groupRows.reduce((s,x)=>s+x.score,0)/groupRows.length):0;
  const action=groupRows.length>=2&&majority!==0&&agreement>=70&&score>=70?(majority>0?'BUY':'SELL'):'WAIT';
- return{symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:Date.now(),bars:bs.length,last:close,score,agreement,action,components:comp,raw:{ema9:e9,ema21:e21,sma200:s200,macd,dmi,rsi:rv,vwap:vw,atr:a,stochastic:stoch,bollinger:bb,structure,supportResistance:sr,liquidityPools:pools,liquiditySweep:sweep,fvg,volumeProfile:volProfile,candle:pat,orderFlow:order,divergence:dv},groups:groupRows};
+ return{symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:Date.now(),bars:bs.length,last:close,score,agreement,action,components:comp,raw:{ema9:e9,ema21:e21,sma200:s200,macd,dmi,rsi:rv,vwap:vw,atr:a,stochastic:stoch,bollinger:bb,structure,supportResistance:sr,liquidityPools:pools,liquiditySweep:sweep,fvg,volumeProfile:volProfile,candle:pat,divergence:dv},groups:groupRows};
 }
-function align20(full){
+function align18(full){
  const W=window, old=full.components||{}, raw=full.raw||{}, ctx=W.RIZVI_ENGINE4_CONTEXT||{};
  const mk=(value,score,bias,status,note='')=>({value:value??null,score:Number.isFinite(Number(score))?Math.round(Math.max(0,Math.min(100,Number(score)))):0,bias:Number.isFinite(Number(bias))?Number(bias):0,status:status||'CALCULATED',note});
  const missing=(status,note)=>mk(null,0,0,status,note);
@@ -1441,8 +1458,6 @@ function align20(full){
  const st=old['Market Structure'], stPred=rows.length>=6?mk(st?.bias>0&&trendBias>0?'BULLISH CONTINUATION':st?.bias<0&&trendBias<0?'BEARISH CONTINUATION':trendBias>0?'UPWARD BIAS':trendBias<0?'DOWNWARD BIAS':'RANGE / NO DIRECTION',55,st?.bias&&st.bias===trendBias?st.bias:trendBias,'CALCULATED','Structure and five-bar direction'):missing('INSUFFICIENT_BARS','Need six candles');
  const pools=old['Liquidity Pools'], sweep=old['Liquidity Sweep'];
  const liq=(pools&&pools.status!=='INSUFFICIENT_BARS')||(sweep&&sweep.status!=='INSUFFICIENT_BARS')?mk((pools?.value||'Pools unavailable')+' · '+(sweep?.value||'Sweep unavailable'),sweep?.score||pools?.score||50,sweep?.bias||0,'CALCULATED','OHLC liquidity proxy; not order-book liquidity'):missing('INSUFFICIENT_BARS','Need recent swing bars');
- const delta=W.RIZVI_TRADE_DELTA||W.RIZVI_FOOTPRINT_DELTA||null, buy=Number(delta?.buyVolume??delta?.buy), sell=Number(delta?.sellVolume??delta?.sell), deltaOK=!!delta&&Number.isFinite(buy)&&Number.isFinite(sell)&&buy+sell>0;
- const deltaPct=deltaOK?(buy-sell)/(buy+sell)*100:0;
  const d=ctx.dxy||{}, n=ctx.usNews||{}, ss=ctx.session||{}, dr=ctx.dayHighLow||{};
  const dxyBias=d.status==='LIVE'&&Number(d.correlation)<=-.25?(d.dxyDirection==='BUY'?-1:d.dxyDirection==='SELL'?1:0):0;
  const out={
@@ -1459,8 +1474,6 @@ function align20(full){
   'Support & Resistance':old['Support / Resistance']||missing('INSUFFICIENT_BARS','S/R unavailable'),
   'Volume Profile':old['Volume Profile']||missing('NO_REAL_VOLUME','Volume profile unavailable'),
   'Liquidity Pools / Sweeps':liq,
-  'Delta Buy/Sell':deltaOK?mk('Delta '+deltaPct.toFixed(2)+'%',50+Math.min(40,Math.abs(deltaPct)/2),Math.sign(deltaPct),'LIVE','Verified aggressor buy/sell volume'):missing('NO_TRADE_SIDE_VOLUME','No verified aggressor buy/sell volume'),
-  'Order Flow / Footprint':old['Order Flow / Delta']||missing('NO_REAL_ORDER_FLOW','No verified live order-flow feed'),
   'Bullish/Bearish Divergence':old['Divergence']||missing('INSUFFICIENT_BARS','Divergence unavailable'),
   'Trading Sessions':ss.status==='LIVE'?mk((ss.active||[]).join(' + ')||'OFF_SESSION',50,0,'LIVE',ss.source||'Timezone-aware session clock'):missing('UNAVAILABLE',ss.reason||'Session data unavailable'),
   'Day High / Day Low':dr.status==='LIVE'?mk('High '+Number(dr.high).toFixed(2)+' / Low '+Number(dr.low).toFixed(2),50,0,'LIVE',dr.source||'Validated current-day OHLC'):missing('UNAVAILABLE',dr.reason||'Complete current-day OHLC unavailable'),
@@ -1468,17 +1481,17 @@ function align20(full){
   'High-Impact US News Filter':n.status==='LIVE'?mk(n.blocked?'BLOCK · '+(n.activeEvent?.title||'High-impact event'):'CLEAR'+(n.nextEvent?.title?' · Next: '+n.nextEvent.title:''),50,0,'LIVE',n.reason||n.source||'Public weekly calendar'):missing('UNAVAILABLE',n.reason||'US news unavailable')
  };
  full.components=out;
- const groups=[['EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)'],['Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)','Support & Resistance'],['Volume Profile','Liquidity Pools / Sweeps','Delta Buy/Sell','Order Flow / Footprint'],['Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low','DXY Inverse-Correlation Filter','High-Impact US News Filter']];
+ const groups=[['EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)'],['Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)','Support & Resistance'],['Volume Profile','Liquidity Pools / Sweeps'],['Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low','DXY Inverse-Correlation Filter','High-Impact US News Filter']];
  const gr=groups.map(keys=>{const list=keys.map(k=>out[k]).filter(v=>v&&v.score>0&&v.bias!==0&&!/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME/.test(String(v.status||'')));if(!list.length)return null;const sum=list.reduce((a,v)=>a+v.bias,0),bias=Math.sign(sum);return bias?{bias,score:list.reduce((a,v)=>a+v.score,0)/list.length,rows:list.length}:null;}).filter(Boolean);
  const up=gr.filter(g=>g.bias>0).length,down=gr.filter(g=>g.bias<0).length,majority=up>down?1:down>up?-1:0,agreement=gr.length?Math.round(Math.max(up,down)/gr.length*100):0,score=gr.length?Math.round(gr.reduce((a,g)=>a+g.score,0)/gr.length):0;
  full.groups=gr;full.score=score;full.agreement=agreement;full.action=gr.length>=2&&majority!==0&&agreement>=70&&score>=70?(majority>0?'BUY':'SELL'):'WAIT';
  return full;
 }
 function tests(){
- const full=align20(build()), names=Object.keys(full.components||{});
- const out={version:'v5-20-indicators-4-engines',symbol:full.symbol,timeframe:full.timeframe,timestamp:new Date().toISOString(),bars:full.bars,validationLevel:'OUTPUT_SANITY_ONLY',numericalAccuracyVerified:false,tests:{},combinations:{}};
+ const full=align18(build()), names=Object.keys(full.components||{});
+ const out={version:'v5-18-indicators-4-engines',symbol:full.symbol,timeframe:full.timeframe,timestamp:new Date().toISOString(),bars:full.bars,validationLevel:'OUTPUT_SANITY_ONLY',numericalAccuracyVerified:false,tests:{},combinations:{}};
  const validStatus=new Set(['CALCULATED','LIVE']);
- const unavailable=/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|NOT_ATTACHED|NO_TRADE_SIDE_VOLUME|ENGINE_ERROR|STALE/i;
+ const unavailable=/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|NOT_ATTACHED|BLOCKED|ENGINE_ERROR|STALE/i;
  names.forEach(n=>{
    const p=full.components[n]||{}, score=Number(p.score), bias=Number(p.bias), status=String(p.status||'WAITING_FOR_DATA');
    const hasValue=p.value!==null&&p.value!==undefined&&String(p.value).trim()!=='';
@@ -1493,7 +1506,7 @@ function tests(){
   ['EMA 9/21','VWAP Filter','Market Structure','Candle Patterns / Price Action'],
   ['Market Structure','Support & Resistance','Liquidity Pools / Sweeps','Fair Value Gap (FVG)'],
   ['RSI-14','Bullish/Bearish Divergence','Volatility Regime Filter','ATR (14)'],
-  ['Volume Profile','Order Flow / Footprint','Delta Buy/Sell','VWAP Filter'],
+  ['Volume Profile','Liquidity Pools / Sweeps','VWAP Filter','Bullish/Bearish Divergence'],
   names
  ];
  sets.forEach((set,i)=>{
@@ -1512,7 +1525,7 @@ function tests(){
  W.dispatchEvent(new CustomEvent('rizvi:indicator-confluence-update',{detail:out}));
  return out;
 }
-W.RIZVI_RUN_INDICATOR_TESTS=tests;W.RIZVI_GET_INDICATOR_CONFLUENCE=()=>align20(build());setTimeout(tests,2500);setInterval(tests,5000);
+W.RIZVI_RUN_INDICATOR_TESTS=tests;W.RIZVI_GET_INDICATOR_CONFLUENCE=()=>align18(build());setTimeout(tests,2500);setInterval(tests,5000);
 })();
 </script>
 
@@ -1531,23 +1544,20 @@ function features(bs){
  const mom=c.length>=6?(last-c.at(-6)>0?1:last-c.at(-6)<0?-1:0):0;
  const rb=rv>=55?1:rv<=45?-1:0;
  const vb=Number.isFinite(vwap)?last>vwap?1:last<vwap?-1:0:0;
- const d=null, db=0; /* Do not infer real delta from candle direction. */
  const pat=bs.length>=2?(last>bs.at(-1).open?1:-1):0;
  const li=W.RIZVI_LIQUIDITY_ENGINE||{}, lb=li.direction==='bullish'?1:li.direction==='bearish'?-1:0;
- const of=W.RIZVI_ORDER_FLOW||W.RIZVI_CTRADER_ORDER_FLOW||{}, depth=W.RIZVI_ORDER_FLOW_DEPTH||[], sums=depth.reduce((z,x)=>[z[0]+(num(x.bid)||0),z[1]+(num(x.ask)||0)],[0,0]), im=sums[0]+sums[1]?(sums[0]-sums[1])/(sums[0]+sums[1]):0, ob=im>.08?1:im<-.08?-1:0;
  const div=(c.length>=30&&rv>50&&c.at(-1)>c.at(-11))?-1:(c.length>=30&&rv<50&&c.at(-1)<c.at(-11))?1:0;
  const vp=0; /* No real volume-profile input is available in the normalized OHLC feed. */
- return {trend,momentum:mom,rsi:rb,vwap:vb,delta:db,candle:pat,liquidity:lb,orderflow:ob,divergence:div,volumeProfile:vp,raw:{ema20:e20,ema50:e50,rsi:rv,vwap,delta:d,orderflow:im,liquidity:li,of:of}};
+ return {trend,momentum:mom,rsi:rb,vwap:vb,candle:pat,liquidity:lb,divergence:div,volumeProfile:vp,raw:{ema20:e20,ema50:e50,rsi:rv,vwap,liquidity:li}};
 }
 const algos={
  A_TREND:{weights:{trend:30,vwap:25,momentum:20,rsi:15,candle:10}},
- B_MOMENTUM:{weights:{momentum:30,rsi:25,delta:20,trend:15,candle:10}},
+ B_MOMENTUM:{weights:{momentum:30,rsi:25,trend:15,candle:10}},
  C_LIQUIDITY:{weights:{liquidity:35,candle:20,trend:15,momentum:10,vwap:10,divergence:10}},
- D_ORDERFLOW:{weights:{orderflow:40,delta:25,volumeProfile:15,vwap:10,trend:10}},
  E_REVERSAL:{weights:{divergence:35,liquidity:25,rsi:20,candle:15,vwap:5}},
- F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,delta:10,candle:10,liquidity:12,orderflow:12,divergence:7,volumeProfile:7}}
+ F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,candle:10,liquidity:12,divergence:7,volumeProfile:7}}
 };
-function runAlgo(name,f){const w=algos[name].weights;let total=0,ws=0,agree=0,active=0;for(const k in w){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Object.keys(w).length)*100),activeIndicators:active,weights:w}}
+function runAlgo(name,f){const w=algos[name].weights,enabled=Object.keys(w);let total=0,ws=0,agree=0,active=0;for(const k of enabled){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Math.max(enabled.length,1))*100),activeIndicators:active,weights:Object.fromEntries(enabled.map(k=>[k,w[k]]))}}
 function test(){const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
  const ranked=Object.values(results).sort((a,b)=>b.confidence-a.confidence||b.agreement-a.agreement);
  const master=ranked[0]||{action:'WAIT',confidence:0};
@@ -1555,7 +1565,7 @@ function test(){const bs=bars(),f=features(bs),results={};Object.keys(algos).for
  W.RIZVI_MULTI_ALGORITHM_REPORT=report;
  W.RIZVI_MASTER_ALGORITHM=report.master;
  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};
- W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'RUNNING',algorithms:Object.keys(algos),master:report.master};
+ W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'RUNNING',algorithms:Object.keys(report.algorithms),master:report.master};
  W.dispatchEvent(new CustomEvent('rizvi:multi-algorithm-update',{detail:report}));
  return report;
 }
@@ -1767,13 +1777,17 @@ sync();
   const confSym=conf?.symbol?canonicalSymbol(conf.symbol):null, algoSym=report?.symbol?canonicalSymbol(report.symbol):null;
   const confTf=canonicalTf(conf?.timeframe), algoTf=canonicalTf(report?.timeframe);
   if(confSym!==symbol||algoSym!==symbol||confTf!==tf||algoTf!==tf||!confTime||!algoTime||Date.now()-confTime>15000||Date.now()-algoTime>15000){wait(symbol,'Indicator/algorithm reports missing, stale, or misaligned',{indicatorSymbol:confSym,algorithmSymbol:algoSym,indicatorTimeframe:confTf,algorithmTimeframe:algoTf,selectedTimeframe:tf,indicatorAgeMs:confTime?Date.now()-confTime:null,algorithmAgeMs:algoTime?Date.now()-algoTime:null});return;}
-  const components=conf.components||{}, entries=Object.values(components), active=entries.filter(x=>Number(x?.score)>0&&!/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME/.test(String(x?.status||'')));
+  const components=conf.components||{}, entries=Object.values(components), active=entries.filter(x=>Number(x?.score)>0&&!/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|BLOCKED/.test(String(x?.status||'')));
   const engine4=W.RIZVI_ENGINE4_CONTEXT||{}, newsBlocked=engine4.usNews?.status==='LIVE'&&engine4.usNews.blocked===true;
   const indicatorAction=['BUY','SELL'].includes(conf.action)?conf.action:'WAIT', indicatorScore=clamp(conf.score), agreement=clamp(conf.agreement);
   const algos=report.algorithms||{}, rows=Object.values(algos);
   const buy=rows.filter(x=>x.action==='BUY').length, sell=rows.filter(x=>x.action==='SELL').length;
   const majority=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
-  const alignedCount=rows.filter(x=>x.action===indicatorAction&&['BUY','SELL'].includes(indicatorAction)).length;
+  // Keep indicator alignment separate from the algorithms' raw directional votes.
+  // When the indicator engine says WAIT, "0 aligned" is not evidence that all algorithms disagree.
+  const alignedCount=indicatorAction==='WAIT'?0:rows.filter(x=>x.action===indicatorAction).length;
+  const alignedToMajority=majority==='WAIT'?0:rows.filter(x=>x.action===majority).length;
+  const algorithmWait=rows.filter(x=>x.action==='WAIT'||!['BUY','SELL'].includes(x.action)).length;
   const algoMean=rows.length?rows.reduce((s,x)=>s+clamp(x.confidence),0)/rows.length:0;
   const aligned=indicatorAction!=='WAIT'&&majority===indicatorAction;
   const confidence=Math.round((indicatorScore+algoMean)/2);
@@ -1785,15 +1799,16 @@ sync();
   const qualified=rawQualified&&qualifiedCandidateCount>=QUALIFIED_CONFIRM_RUNS;
   const direction=qualified?indicatorAction:'WAIT';
   const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',engine4Context:engine4,
-   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
+   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',totalIndicators:18,engineCount:4,indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
-   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsEvaluated:rows.length},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
+   algorithmVotes:{buy,sell,wait:algorithmWait,majority,majorityCount:alignedToMajority},
+   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsAlignedToMajority:alignedToMajority,algorithmsEvaluated:rows.length,algorithmVotes:{buy,sell,wait:algorithmWait}},source:symbol+' '+tf+' OHLC → 18-indicator confluence → '+rows.length+' available algorithms → Engine 5',feedStatus:feed};
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
-  W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
+  W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,totalIndicators:18,engineCount:4,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-  const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(majority!==indicatorAction)blockers.push('majority-mismatch');if(alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
+  const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(indicatorAction!=='WAIT'&&majority!==indicatorAction)blockers.push('majority-mismatch');if(indicatorAction!=='WAIT'&&alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
   const voteSummary=rows.map(x=>String(x.name||'?').replace(/[^A-Z0-9_]/gi,'').slice(0,10)+':'+(x.action||'?')+'/'+Math.round(clamp(x.confidence))).join(',');
-  diag(symbol,tf,'E5 '+direction+' s='+result.confidence+' ind='+indicatorAction+'/'+Math.round(indicatorScore)+' agree='+Math.round(agreement)+' maj='+majority+' aligned='+alignedCount+'/'+rows.length+' active='+active.length+' bars='+bs.length+' blockers='+(blockers.join(',')||'none')+' votes='+voteSummary);
+  diag(symbol,tf,'E5 '+direction+' s='+result.confidence+' ind='+indicatorAction+'/'+Math.round(indicatorScore)+' agree='+Math.round(agreement)+' maj='+majority+' aligned='+(indicatorAction==='WAIT'?'n/a':alignedCount)+'/'+rows.length+' votes=B'+buy+'/S'+sell+'/W'+algorithmWait+' active='+active.length+' bars='+bs.length+' blockers='+(blockers.join(',')||'none')+' votes='+voteSummary);
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:result}));
   W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:result}));
  }
@@ -1872,7 +1887,7 @@ function render(){
  const specs=[
   [['EMA 9/21',['EMA','EMA9','EMA21']],['RSI-14',['RSI14','RSI']],['Trend (5)',['TREND5','TREND']],['VWAP Filter',['VWAP']],['Volatility Regime Filter',['VOLATILITYREGIME','VOLATILITYREGIMEFILTER']],['ATR (14)',['ATR14','ATR']]],
   [['Market Structure',['MARKETSTRUCTURE','STRUCTURE']],['Structure Prediction',['STRUCTUREPREDICTION']],['Candle Patterns / Price Action',['CANDLEPATTERNSPRICEACTION','CANDLEPATTERNS','CANDLEPATTERN','CANDLE','PRICEACTION']],['Fair Value Gap (FVG)',['FVG','FAIRVALUEGAP']],['Support & Resistance',['SUPPORTRESISTANCE','SUPPORT','RESISTANCE']]],
-  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE']],['Liquidity Pools / Sweeps',['LIQUIDITYPOOLS','LIQUIDITYSWEEPS','LIQUIDITY','SWEEP']],['Delta Buy/Sell',['DELTABUYSELL','DELTA']],['Order Flow / Footprint',['ORDERFLOW','FOOTPRINT']]],
+  [['Volume Profile',['VOLUMEPROFILE','VOLUME_PROFILE']],['Liquidity Pools / Sweeps',['LIQUIDITYPOOLS','LIQUIDITYSWEEPS','LIQUIDITY','SWEEP']]],
   [['Bullish/Bearish Divergence',['BULLISHBEARISHDIVERGENCE','DIVERGENCE']],['Trading Sessions',['TRADINGSESSIONS','SESSION']],['Day High / Day Low',['DAYHIGHDAYLOW','DAYHIGH','DAYLOW']],['DXY Inverse-Correlation Filter',['DXYINVERSECORRELATIONFILTER','DXY']],['High-Impact US News Filter',['HIGHIMPACTUSNEWSFILTER','USNEWS','NEWS']]]
  ];
  function readIndicator(aliases){

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const masterEngine = fs.readFileSync('rizvi-master-engine.js', 'utf8');
 const match = html.match(/<script id="rizvi-v5-indicator-confluence-v1">([\s\S]*?)<\/script>/);
 assert.ok(match, 'production Engine 4 indicator script must exist in index.html');
 const productionScript = match[1];
@@ -90,15 +91,15 @@ function referenceAtr(bars, n = 14) {
 const expectedNames = [
   'EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)',
   'Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)',
-  'Support & Resistance','Volume Profile','Liquidity Pools / Sweeps','Delta Buy/Sell',
-  'Order Flow / Footprint','Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
+  'Support & Resistance','Volume Profile','Liquidity Pools / Sweeps',
+  'Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
   'DXY Inverse-Correlation Filter','High-Impact US News Filter'
 ];
 
-test('Engine 4 returns all 20 expected indicators and bounded outputs', () => {
+test('Engine 4 returns the 18-indicator, four-engine roster and bounded outputs', () => {
   const bars = fixtureBars();
   const { report } = runProduction(bars);
-  assert.equal(Object.keys(report.tests).length, 20);
+  assert.equal(Object.keys(report.tests).length, 18);
   assert.deepEqual(Object.keys(report.tests).sort(), [...expectedNames].sort());
   for (const [name, row] of Object.entries(report.tests)) {
     assert.ok(row.score === null || (Number.isFinite(row.score) && row.score >= 0 && row.score <= 100), name + ' score range');
@@ -121,20 +122,22 @@ test('Engine 4 EMA, RSI and ATR agree with independent reference calculations', 
 test('Engine 4 refuses to mark missing buyer/seller and external context feeds as live', () => {
   const { report } = runProduction(fixtureBars());
   const c = report.tests;
-  assert.equal(c['Delta Buy/Sell'].pass, false);
-  assert.equal(c['Order Flow / Footprint'].pass, false);
+  assert.equal(Object.keys(c).length, 18);
+  assert.ok(!('Delta Buy/Sell' in c));
+  assert.ok(!('Order Flow / Footprint' in c));
   assert.equal(c['Trading Sessions'].pass, false);
   assert.equal(c['Day High / Day Low'].pass, false);
   assert.equal(c['DXY Inverse-Correlation Filter'].pass, false);
   assert.equal(c['High-Impact US News Filter'].pass, false);
 });
 
-test('Engine 4 blocks volume indicators when positive volume is absent', () => {
+test('Engine 4 omits removed components and preserves Volume Profile source validation', () => {
   const { report } = runProduction(fixtureBars(260, false));
+  assert.equal(Object.keys(report.tests).length, 18);
+  assert.ok(!('Delta Buy/Sell' in report.tests));
+  assert.ok(!('Order Flow / Footprint' in report.tests));
   assert.equal(report.tests['VWAP Filter'].status, 'NO_REAL_VOLUME');
   assert.equal(report.tests['Volume Profile'].status, 'NO_REAL_VOLUME');
-  assert.equal(report.tests['VWAP Filter'].pass, false);
-  assert.equal(report.tests['Volume Profile'].pass, false);
 });
 
 test('Engine 4 does not pass full combinations with insufficient history', () => {
@@ -177,7 +180,7 @@ test('Engine 4 identifies a known bullish FVG fixture without fabricating order 
   assert.match(report.tests['Fair Value Gap (FVG)'].status, /CALCULATED/);
   assert.match(report.tests['Fair Value Gap (FVG)'].hasValue ? report.tests['Fair Value Gap (FVG)'].status : '', /CALCULATED/);
   assert.match(report.master.components['Fair Value Gap (FVG)'].value, /BULLISH FVG/);
-  assert.equal(report.tests['Order Flow / Footprint'].pass, false);
+  assert.ok(!('Order Flow / Footprint' in report.tests));
 });
 
 test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
@@ -189,7 +192,7 @@ test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
 });
 
 
-test('Engine 4 end-to-end integration accepts all 20 outputs only when every feed is supplied', () => {
+test('Engine 4 remains an 18-indicator roster when removed-feed payloads are supplied', () => {
   const context = {
     dxy: { status: 'LIVE', correlation: -0.72, dxyDirection: 'SELL', signal: 'INVERSE_CONFIRMED', source: 'synthetic test fixture' },
     usNews: { status: 'LIVE', blocked: true, activeEvent: { title: 'Test high-impact event' }, reason: 'synthetic test fixture' },
@@ -202,12 +205,12 @@ test('Engine 4 end-to-end integration accepts all 20 outputs only when every fee
     RIZVI_ORDER_FLOW_DEPTH: [{ bid: 120, ask: 80 }],
     RIZVI_ORDER_FLOW: { status: 'LIVE' }
   });
-  assert.equal(Object.keys(report.tests).length, 20);
+  assert.equal(Object.keys(report.tests).length, 18);
+  assert.ok(!('Delta Buy/Sell' in report.tests));
+  assert.ok(!('Order Flow / Footprint' in report.tests));
   const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name);
-  assert.deepEqual(failed, [], 'all supplied synthetic feeds should produce valid outputs');
+  assert.deepEqual(failed, [], 'verified fixture inputs should activate the remaining 18 components');
   assert.match(report.master.components['High-Impact US News Filter'].value, /^BLOCK/);
-  assert.equal(report.master.components['Delta Buy/Sell'].status, 'LIVE');
-  assert.equal(report.master.components['Order Flow / Footprint'].status, 'LIVE');
   assert.equal(report.numericalAccuracyVerified, false, 'synthetic integration is not live-market accuracy');
 });
 
@@ -216,4 +219,77 @@ test('Engine 4 rejects malformed OHLC rows from its production input', () => {
   bars.push({ time: 1799999999, open: 2300, high: 2200, low: 2301, close: 2302, volume: 100 });
   const { report } = runProduction(bars);
   assert.equal(report.bars, 260);
+});
+
+test('Master Engine 5 has no removed scoring inputs and reports the 18-indicator design', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /version:'v5-18-indicators-4-engines'/);
+  assert.doesNotMatch(html, /'Delta Buy\/Sell':missing/);
+  assert.doesNotMatch(html, /'Order Flow \/ Footprint':missing/);
+  assert.doesNotMatch(html, /BLOCKED_FEATURES|D_ORDERFLOW/);
+  assert.doesNotMatch(html, /function delta\(bs\)|function of\(\)|RIZVI_TRADE_DELTA|RIZVI_FOOTPRINT_DELTA/);
+  assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0/);
+});
+
+
+test('Master Engine 5 has no Delta/Order Flow options and reports 18 indicators across four engines', () => {
+  assert.match(masterEngine, /totalIndicators:18/);
+  assert.match(masterEngine, /engineCount:4/);
+  assert.match(masterEngine, /weightsTotal:96/);
+  assert.doesNotMatch(masterEngine, /delta|order.?flow|footprint/i);
+  assert.match(html, /totalIndicators:18,engineCount:4/);
+});
+
+
+test('Engine 5 RSI remains neutral in a completely flat market', () => {
+  const bars = Array.from({ length: 40 }, (_, i) => ({
+    t: 1790000000 + i * 60, o: 2300, h: 2301, l: 2299, c: 2300, v: 100
+  }));
+  const sandbox = {
+    Date, Math, Number, Array, Object, String, Map, JSON,
+    CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
+    setInterval: () => 0,
+    dispatchEvent: () => true,
+    RIZVI_CURRENT_SYMBOL: 'XAU/USD',
+    RIZVI_FEED_STATUS: { ok: true, symbol: 'XAU/USD' },
+    RIZVI_RAW_BARS: bars,
+    RIZVI_AGG_BARS: bars
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(masterEngine, sandbox, { timeout: 3000, filename: 'master-engine-flat-rsi.js' });
+  assert.equal(sandbox.RIZVI_MASTER_CONFIRMATION.rsi, 50);
+});
+
+test('Day High/Low bridge does not label fallback candles as a live daily range', () => {
+  assert.ok(html.includes("dayRangeStatus=today.length?'LIVE':'UNAVAILABLE'"));
+  assert.ok(html.includes('function rangeTime(value)'));
+  assert.ok(html.includes('t:rangeTime(x.timestamp||x.time||x.t)'));
+  assert.ok(html.includes("dayHighLow:r.dayRangeStatus==='LIVE'"));
+  assert.ok(html.includes('No candles for current UTC day; recent candles are display fallback only'));
+  assert.ok(html.includes('Gold market is locked/closed; current-day range is not being refreshed'));
+  assert.ok(html.includes("new Set([...sweeps,...grabs,...breakouts].map(x=>x.timeframe+':'+x.side+':'+x.price)).size"));
+});
+
+test('Engine 5 diagnostics expose raw algorithm votes when indicator confluence is WAIT', () => {
+  assert.match(html, /const alignedCount=indicatorAction==='WAIT'\?0:/);
+  assert.match(html, /const alignedToMajority=majority==='WAIT'\?0:/);
+  assert.match(html, /algorithmVotes:\{buy,sell,wait:algorithmWait,majority,majorityCount:alignedToMajority\}/);
+  assert.match(html, /indicatorAction==='WAIT'\?'n\/a':alignedCount/);
+  assert.match(html, /indicatorAction!=='WAIT'&&majority!==indicatorAction/);
+});
+
+test('Engine 5 diagnostics use the actual available algorithm count and preserve the 18-indicator roster', () => {
+  const expected = [
+    'EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)',
+    'Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)','Support & Resistance',
+    'Volume Profile','Liquidity Pools / Sweeps','Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
+    'DXY Inverse-Correlation Filter','High-Impact US News Filter'
+  ];
+  const bridgeStart = html.indexOf('function align18(full)');
+  const bridgeEnd = html.indexOf('function tests()', bridgeStart);
+  assert.ok(bridgeStart >= 0 && bridgeEnd > bridgeStart, '18-indicator alignment bridge must exist');
+  const bridge = html.slice(bridgeStart, bridgeEnd);
+  for (const name of expected) assert.ok(bridge.includes("'" + name + "'"), 'missing roster entry: ' + name);
+  assert.doesNotMatch(bridge, /Delta Buy\/Sell|Order Flow \/ Footprint|D_ORDERFLOW/);
+  assert.match(html, /rows\.length\+' available algorithms → Engine 5'/);
 });
