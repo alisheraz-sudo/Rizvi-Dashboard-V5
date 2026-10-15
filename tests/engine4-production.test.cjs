@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const masterEngine = fs.readFileSync('rizvi-master-engine.js', 'utf8');
 const match = html.match(/<script id="rizvi-v5-indicator-confluence-v1">([\s\S]*?)<\/script>/);
 assert.ok(match, 'production Engine 4 indicator script must exist in index.html');
 const productionScript = match[1];
@@ -90,12 +91,12 @@ function referenceAtr(bars, n = 14) {
 const expectedNames = [
   'EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)',
   'Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)',
-  'Support & Resistance','Volume Profile','Liquidity Pools / Sweeps','Delta Buy/Sell',
-  'Order Flow / Footprint','Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
+  'Support & Resistance','Volume Profile','Liquidity Pools / Sweeps',
+  'Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
   'DXY Inverse-Correlation Filter','High-Impact US News Filter'
 ];
 
-test('Engine 4 returns all 20 expected indicators and bounded outputs', () => {
+test('Engine 4 returns the 18-indicator, four-engine roster and bounded outputs', () => {
   const bars = fixtureBars();
   const { report } = runProduction(bars);
   assert.equal(Object.keys(report.tests).length, 20);
@@ -121,21 +122,22 @@ test('Engine 4 EMA, RSI and ATR agree with independent reference calculations', 
 test('Engine 4 refuses to mark missing buyer/seller and external context feeds as live', () => {
   const { report } = runProduction(fixtureBars());
   const c = report.tests;
-  assert.equal(c['Delta Buy/Sell'].pass, false);
-  assert.equal(c['Order Flow / Footprint'].pass, false);
+  assert.equal(Object.keys(c).length, 18);
+  assert.ok(!('Delta Buy/Sell' in c));
+  assert.ok(!('Order Flow / Footprint' in c));
   assert.equal(c['Trading Sessions'].pass, false);
   assert.equal(c['Day High / Day Low'].pass, false);
   assert.equal(c['DXY Inverse-Correlation Filter'].pass, false);
   assert.equal(c['High-Impact US News Filter'].pass, false);
 });
 
-test('Engine 4 blocks only Delta and Order Flow pending verified APIs', () => {
+test('Engine 4 omits removed components and preserves Volume Profile source validation', () => {
   const { report } = runProduction(fixtureBars(260, false));
+  assert.equal(Object.keys(report.tests).length, 18);
+  assert.ok(!('Delta Buy/Sell' in report.tests));
+  assert.ok(!('Order Flow / Footprint' in report.tests));
   assert.equal(report.tests['VWAP Filter'].status, 'NO_REAL_VOLUME');
-  for (const name of ['Delta Buy/Sell', 'Order Flow / Footprint']) {
-    assert.equal(report.tests[name].status, 'BLOCKED_PENDING_API');
-    assert.equal(report.tests[name].pass, false);
-  }
+  assert.equal(report.tests['Volume Profile'].status, 'NO_REAL_VOLUME');
 });
 
 test('Engine 4 does not pass full combinations with insufficient history', () => {
@@ -178,7 +180,7 @@ test('Engine 4 identifies a known bullish FVG fixture without fabricating order 
   assert.match(report.tests['Fair Value Gap (FVG)'].status, /CALCULATED/);
   assert.match(report.tests['Fair Value Gap (FVG)'].hasValue ? report.tests['Fair Value Gap (FVG)'].status : '', /CALCULATED/);
   assert.match(report.master.components['Fair Value Gap (FVG)'].value, /BULLISH FVG/);
-  assert.equal(report.tests['Order Flow / Footprint'].pass, false);
+  assert.ok(!('Order Flow / Footprint' in report.tests));
 });
 
 test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
@@ -190,7 +192,7 @@ test('Engine 4 recognizes a deterministic hammer candle fixture', () => {
 });
 
 
-test('Engine 4 keeps only Delta and Order Flow blocked even when synthetic feeds are supplied', () => {
+test('Engine 4 remains an 18-indicator roster when removed-feed payloads are supplied', () => {
   const context = {
     dxy: { status: 'LIVE', correlation: -0.72, dxyDirection: 'SELL', signal: 'INVERSE_CONFIRMED', source: 'synthetic test fixture' },
     usNews: { status: 'LIVE', blocked: true, activeEvent: { title: 'Test high-impact event' }, reason: 'synthetic test fixture' },
@@ -203,13 +205,12 @@ test('Engine 4 keeps only Delta and Order Flow blocked even when synthetic feeds
     RIZVI_ORDER_FLOW_DEPTH: [{ bid: 120, ask: 80 }],
     RIZVI_ORDER_FLOW: { status: 'LIVE' }
   });
-  assert.equal(Object.keys(report.tests).length, 20);
-  const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name).sort();
-  assert.deepEqual(failed, ['Delta Buy/Sell', 'Order Flow / Footprint'].sort(), 'only the two intentionally blocked indicators should fail activation');
+  assert.equal(Object.keys(report.tests).length, 18);
+  assert.ok(!('Delta Buy/Sell' in report.tests));
+  assert.ok(!('Order Flow / Footprint' in report.tests));
+  const failed = Object.entries(report.tests).filter(([, row]) => !row.pass).map(([name]) => name);
+  assert.deepEqual(failed, [], 'verified fixture inputs should activate the remaining 18 components');
   assert.match(report.master.components['High-Impact US News Filter'].value, /^BLOCK/);
-  for (const name of ['Delta Buy/Sell', 'Order Flow / Footprint']) {
-    assert.equal(report.master.components[name].status, 'BLOCKED_PENDING_API');
-  }
   assert.equal(report.numericalAccuracyVerified, false, 'synthetic integration is not live-market accuracy');
 });
 
@@ -220,9 +221,20 @@ test('Engine 4 rejects malformed OHLC rows from its production input', () => {
   assert.equal(report.bars, 260);
 });
 
-test('Blocked inputs cannot cast an Engine 5 algorithm vote', () => {
+test('Master Engine 5 has no removed scoring inputs and reports the 18-indicator design', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /const BLOCKED_FEATURES=new Set\(\['delta','orderflow'\]\)/);
-  assert.match(html, /Object\.keys\(algos\)\.filter\(k=>k!=='D_ORDERFLOW'\)\.forEach\(k=>results\[k\]=runAlgo\(k,f\)\)/);
-  assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0&&!\/UNAVAILABLE\|WAITING\|INSUFFICIENT\|NO_REAL_VOLUME\|NO_REAL_ORDER_FLOW\|NO_TRADE_SIDE_VOLUME\|BLOCKED\//);
+  assert.match(html, /version:'v5-18-indicators-4-engines'/);
+  assert.doesNotMatch(html, /'Delta Buy\/Sell':missing/);
+  assert.doesNotMatch(html, /'Order Flow \/ Footprint':missing/);
+  assert.doesNotMatch(html, /BLOCKED_FEATURES|D_ORDERFLOW/);
+  assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0/);
+});
+
+
+test('Master Engine 5 has no Delta/Order Flow options and reports 18 indicators across four engines', () => {
+  assert.match(masterEngine, /totalIndicators:18/);
+  assert.match(masterEngine, /engineCount:4/);
+  assert.match(masterEngine, /weightsTotal:96/);
+  assert.doesNotMatch(masterEngine, /delta|order.?flow|footprint/i);
+  assert.match(html, /totalIndicators:18,engineCount:4/);
 });
