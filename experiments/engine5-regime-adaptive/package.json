@@ -1,0 +1,8 @@
+{
+  "name": "rizvi-engine5-live-shadow-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Temporary isolated five-minute XAU/USD Engine 5 shadow comparison; no trading or production writes.",
+  "scripts": { "start": "node runner.js" },
+  "engines": { "node": ">=20" }
+}
