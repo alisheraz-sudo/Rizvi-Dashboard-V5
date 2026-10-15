@@ -782,6 +782,12 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     // Never let a late response from the other asset overwrite the active asset's levels.
     if(!r||canonicalSymbol(r.symbol)!==activeSymbol())return false;
     window.RIZVI_MARKET_RANGE=r;
+    if(r.symbol==='XAU/USD'){
+      const prior=window.RIZVI_ENGINE4_CONTEXT||{};
+      window.RIZVI_ENGINE4_CONTEXT={...prior,dayHighLow:r.dayRangeStatus==='LIVE'
+        ?{status:'LIVE',high:r.dayHigh,low:r.dayLow,source:r.source,updatedAt:r.updatedAt}
+        :{status:'UNAVAILABLE',reason:r.dayRangeReason||'Current-day OHLC unavailable',source:r.source,updatedAt:r.updatedAt}};
+    }
     Object.keys(out).forEach(k=>{if(out[k])out[k].textContent=fmt(r[k]);});
     window.dispatchEvent(new CustomEvent('rizvi:market-range-update',{detail:r}));
     return true;
@@ -834,6 +840,8 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     const now=Date.now(), dayKey=new Date(now).toISOString().slice(0,10);
     const today=bars.filter(b=>new Date(b.t).toISOString().slice(0,10)===dayKey);
     const d=today.length?today:bars.slice(-96);
+    const dayRangeStatus=today.length?'LIVE':'UNAVAILABLE';
+    const dayRangeReason=today.length?'Current UTC-day OHLC available':'No candles for current UTC day; recent candles are display fallback only';
     function hiLo(windowBars,fallbackCount){
       const a=windowBars.length?windowBars:bars.slice(-fallbackCount);
       return {high:Math.max(...a.map(x=>x.h)),low:Math.min(...a.map(x=>x.l))};
@@ -843,7 +851,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     const r30=hiLo(previousBucket(bars,30,now),4);
     const r15=hiLo(previousBucket(bars,15,now),2);
     return {
-      symbol,source,
+      symbol,source,dayRangeStatus,dayRangeReason,
       dayHigh:Math.max(...d.map(x=>x.h)),dayLow:Math.min(...d.map(x=>x.l)),
       h4High:r4.high,h4Low:r4.low,
       h1High:r1.high,h1Low:r1.low,
