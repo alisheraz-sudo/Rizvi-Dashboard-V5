@@ -224,6 +224,26 @@ if(url.pathname==='/ctrader/orderflow'&&(req.method==='GET'||req.method==='POST'
  return ofReply(res,200,{ok:true,connected:ctrader.status().connected,data});
 }
  if(url.pathname==='/api/indicator-diagnostics'&&req.method==='POST'){try{const payload=await readJson(req);const result=await evaluateDiagnostics(payload);return ofReply(res,result.status,result.body);}catch(e){return ofReply(res,400,{ok:false,signal:'WAIT',confidence:null,reason:'Invalid diagnostics request',autoTrading:false});}}
+if(url.pathname==='/internal/engine-audit'&&req.method==='POST'){
+ try{
+  const d=await readJson(req);
+  if(!d||d.schema!=='rizvi-engine-audit-v1'||normalizedSymbol(d.symbol)!=='XAUUSD')return ofReply(res,400,{ok:false,error:'invalid audit schema or non-Gold symbol'});
+  const json=JSON.stringify(d);
+  if(json.length>40000)return ofReply(res,413,{ok:false,error:'audit record too large'});
+  const record={
+   schema:'rizvi-engine-audit-v1',eventId:String(d.eventId||'').slice(0,80),
+   at:String(d.at||'').slice(0,40),symbol:'XAU/USD',timeframe:String(d.timeframe||'').slice(0,12),
+   feed:d.feed&&typeof d.feed==='object'?d.feed:{},
+   engines:Array.isArray(d.engines)?d.engines.slice(0,4):[],
+   indicators:d.indicators&&typeof d.indicators==='object'?d.indicators:{},
+   algorithms:Array.isArray(d.algorithms)?d.algorithms.slice(0,8):[],
+   engine5:d.engine5&&typeof d.engine5==='object'?d.engine5:{},
+   diagnostic:d.diagnostic&&typeof d.diagnostic==='object'?d.diagnostic:{}
+  };
+  console.log('[RIZVI_ENGINE_AUDIT]',JSON.stringify(record));
+  return ofReply(res,200,{ok:true,eventId:record.eventId});
+ }catch(e){return ofReply(res,400,{ok:false,error:'invalid engine audit payload'});}
+}
 if(url.pathname==='/internal/feed-diagnostic'&&req.method==='POST'){try{const d=await readJson(req),sid=String(d.sessionId||'unknown').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32),sym=String(d.symbol||'').slice(0,16),tf=String(d.timeframe||'').slice(0,8),reason=String(d.reason||'').replace(/[\r\n\t]/g,' ').slice(0,600);console.warn('[RIZVI_FEED_DIAG]',JSON.stringify({sessionId:sid,symbol:sym,timeframe:tf,reason,at:new Date().toISOString()}));return ofReply(res,200,{ok:true});}catch(e){return ofReply(res,400,{ok:false,error:'invalid diagnostic'});}}
 const files={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/sw.js':'sw.js','/icons/rizvi-192.svg':'icons/rizvi-192.svg','/icons/rizvi-512.svg':'icons/rizvi-512.svg'};
 if(url.pathname.endsWith('.js')&&!url.pathname.includes('/',1)&&/^[A-Za-z0-9._-]+\.js$/.test(url.pathname.slice(1)))files[url.pathname]=url.pathname.slice(1);
@@ -231,7 +251,7 @@ const rel=files[url.pathname];
 if(rel){const filePath=path.join(ROOT,rel);try{const data=fs.readFileSync(filePath);const type=rel.endsWith('.html')?'text/html; charset=utf-8':rel.endsWith('.js')?'application/javascript; charset=utf-8':rel.endsWith('.webmanifest')?'application/manifest+json':'image/svg+xml';const extra={'Cache-Control':(rel==='index.html'||rel.endsWith('.js')||rel==='sw.js')?'no-store':'private, max-age=3600'};if(rel==='sw.js')extra['Service-Worker-Allowed']='/';const body=rel==='index.html'?(()=>{let h=data.toString();
 const disableIds=['rizvi-v55-tradingview-lib','rizvi-single-chart-owner-v3','rizvi-live-canvas-chart-v72','rizvi-chart-v76','rizvi-chart-v77','rizvi-chart-v78'];
 for(const id of disableIds){const marker='<script id="'+id+'"';const p=h.indexOf(marker);if(p>=0){const e=h.indexOf('</script>',p);if(e>=0)h=h.slice(0,p)+'<script id="'+id+'">/* disabled: direct TradingView chart is sole owner */</script>'+h.slice(e+9);}}
-h=h.replace('</body>','<script src="/indicator-diagnostics-bridge.js" defer></script><script>window.RIZVI_AUTO_TRADING=false;</script></body>');return Buffer.from(h)})():data;return send(res,200,type,body,extra);}catch{return send(res,404,'text/plain; charset=utf-8','Not found');}}
+h=h.replace('</body>','<script src="/indicator-diagnostics-bridge.js" defer></script><script src="/engine5-audit-bridge.js" defer></script><script>window.RIZVI_AUTO_TRADING=false;</script></body>');return Buffer.from(h)})():data;return send(res,200,type,body,extra);}catch{return send(res,404,'text/plain; charset=utf-8','Not found');}}
 return send(res,404,'text/plain; charset=utf-8','Not found');});
 if(process.env.CTRADER_CLIENT_ID&&process.env.CTRADER_CLIENT_SECRET&&(process.env.CTRADER_ACCESS_TOKEN||process.env.CTRADER_REFRESH_TOKEN))ctrader.start().catch(err=>console.error('cTrader startup failed:',err.message));
 server.listen(process.env.PORT||10000,'0.0.0.0');
