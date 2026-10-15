@@ -68,7 +68,7 @@ def validate_snapshot(snapshot: dict[str, Any], now_ms: int) -> list[str]:
         multiplier = LOCKED_ENGINE5["maximum_snapshot_age_timeframe_multiplier"]
         tf_ms = {"1M": 60_000, "5M": 300_000, "15M": 900_000,
                  "30M": 1_800_000, "1H": 3_600_000, "1D": 86_400_000}.get(timeframe, 60_000)
-        max_age = max(floor, tf_ms * multiplier / 60)
+        max_age = max(floor, tf_ms * (multiplier / 1000))
         age = now_ms - captured
         if age < 0:
             errors.append("snapshot-timestamp-in-future")
