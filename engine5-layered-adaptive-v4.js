@@ -189,6 +189,9 @@ function evaluate(input={},state={}) {
   const buy=present.filter(e=>e.action==='BUY').length, sell=present.filter(e=>e.action==='SELL').length;
   const aligned=Math.max(buy,sell), agreement=present.length?100*aligned/present.length:0;
   const candidateDirection=score>=thresholds.deadband?'BUY':score<=-thresholds.deadband?'SELL':'WAIT';
+  const majorityDirection=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
+  // Never let weighted score overrule the direction supported by most sub-engines.
+  // This directly guards the historical engine-alignment failure mode.
   // Confidence is transparent decision strength from score, agreement, evidence coverage and regime quality.
   const coverage=engines.length?present.length/engines.length:0;
   const confidence=Math.round(clamp(Math.abs(score)*45+agreement*.30+coverage*10+regime.quality*15,0,100));
@@ -196,6 +199,7 @@ function evaluate(input={},state={}) {
   if(active.length<CONFIG.minActiveIndicators) blockers.push('INSUFFICIENT_ACTIVE_INDICATORS');
   if(present.length<CONFIG.minEnginesWithEvidence) blockers.push('FOUR_ENGINE_EVIDENCE_INCOMPLETE');
   if(aligned<CONFIG.minAlignedEngines) blockers.push('ENGINE_ALIGNMENT_BELOW_3_OF_4');
+  if(candidateDirection!=='WAIT' && majorityDirection!=='WAIT' && candidateDirection!==majorityDirection) blockers.push('MASTER_DIRECTION_CONFLICTS_WITH_ENGINE_MAJORITY');
   if(agreement<thresholds.agreement) blockers.push('REGIME_ADAPTIVE_AGREEMENT_BELOW_THRESHOLD');
   if(confidence<thresholds.confidence) blockers.push('REGIME_ADAPTIVE_CONFIDENCE_BELOW_THRESHOLD');
   if(candidateDirection==='WAIT') blockers.push('MASTER_SCORE_WITHIN_ADAPTIVE_DEADBAND');
