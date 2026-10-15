@@ -135,3 +135,7 @@ test('stale indicator readings are excluded from active evidence',()=>{
   assert.ok(r.blockers.includes('INSUFFICIENT_ACTIVE_INDICATORS'));
   assert.equal(r.qualified,false);
 });
+
+
+test('master output exposes one canonical confidence value for internal and displayed confidence',()=>{ const f=fixture(); const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{}); assert.equal(r.displayConfidence,r.confidence); assert.equal(r.confidenceSource,'MASTER_DECISION'); assert.equal(Number.isFinite(r.confidence),true); });
+test('fail-closed output keeps confidence fields consistent at zero',()=>{ const f=fixture(); const r=evaluate({bars:f.bars.slice(0,10),indicators:f.indicators,nowMs:f.now},{}); assert.equal(r.direction,'WAIT'); assert.equal(r.confidence,0); assert.equal(r.displayConfidence,0); assert.equal(r.confidenceSource,'MASTER_DECISION'); });
