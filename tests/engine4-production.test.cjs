@@ -262,6 +262,8 @@ test('Engine 5 RSI remains neutral in a completely flat market', () => {
 
 test('Day High/Low bridge does not label fallback candles as a live daily range', () => {
   assert.ok(html.includes("dayRangeStatus=today.length?'LIVE':'UNAVAILABLE'"));
+  assert.ok(html.includes('function rangeTime(value)'));
+  assert.ok(html.includes('t:rangeTime(x.timestamp||x.time||x.t)'));
   assert.ok(html.includes("dayHighLow:r.dayRangeStatus==='LIVE'"));
   assert.ok(html.includes('No candles for current UTC day; recent candles are display fallback only'));
   assert.ok(html.includes('Gold market is locked/closed; current-day range is not being refreshed'));
