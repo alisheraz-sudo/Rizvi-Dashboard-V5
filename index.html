@@ -473,7 +473,7 @@
     const max=rawMax+rawSpan*0.12,min=rawMin-rawSpan*0.12;
     const sy=v=>H-24-(v-min)/(max-min||1)*(H-48);
     /* Put the readable box inside the plot area rather than against the right price-scale edge. */
-    const boxW=Math.min(120,Math.max(96,W*0.27)),x=Math.max(10,Math.min(W-boxW-10,W*0.58)),right=x+boxW;
+    const boxW=Math.min(84,Math.max(68,W*0.18)),x=Math.max(10,Math.min(W-boxW-10,W*0.66)),right=x+boxW;
     const entryY=sy(Number(lv.entry)),slY=sy(Number(lv.sl)),tp1Y=sy(Number(lv.tp1)),tp2Y=sy(Number(lv.tp2)),tp3Y=sy(Number(lv.tp3));
     const top=Math.max(4,Math.min(entryY,tp3Y)),tpH=Math.max(2,Math.abs(entryY-tp3Y));
     const slTop=Math.min(entryY,slY),slH=Math.max(2,Math.abs(entryY-slY));
