@@ -76,6 +76,17 @@ class EngineSystemTests(unittest.TestCase):
         self.assertIn("ENGINE_3_VOLUME_LIQUIDITY", result["engines"])
         self.assertIn("ENGINE_4_DIVERGENCE_MARKET_CONTEXT", result["engines"])
 
+    def test_engine_reports_explain_missing_and_invalid_indicator_inputs(self):
+        now, snap = sample_snapshot()
+        indicators = live_indicators()
+        indicators["EMA 9/21"] = {"status": "LIVE", "score": float("nan"), "bias": float("nan")}
+        result = evaluate_engine_system(snap, now, indicators=indicators)
+        reasons = result["engines"]["ENGINE_1_TREND_MOMENTUM"]["indicator_reasons"]
+        self.assertIn("score-invalid", reasons["EMA 9/21"])
+        self.assertIn("bias-invalid", reasons["EMA 9/21"])
+        self.assertEqual(reasons["ATR (14)"], ["missing"])
+        self.assertIn("Volume Profile", result["engines"]["ENGINE_3_VOLUME_LIQUIDITY"]["indicator_reasons"])
+
     def test_missing_external_context_is_never_fabricated(self):
         now, snap = sample_snapshot()
         result = evaluate_engine_system(snap, now, indicators=live_indicators(), context={})
