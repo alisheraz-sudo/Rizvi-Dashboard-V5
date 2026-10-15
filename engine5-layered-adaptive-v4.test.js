@@ -64,6 +64,14 @@ test('missing API-only data is not fabricated and absent engine evidence blocks 
   assert.equal(r.activeIndicatorIds.includes('order_flow'),false);
   assert.ok(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'));
 });
+test('OHLC epoch-second timestamps are normalized to milliseconds',()=>{
+  const now=1800000000000;
+  const seconds=Array.from({length:50},(_,i)=>{const close=4000+i;const timestamp=(now-(49-i)*60000)/1000;return {t:timestamp,o:close-.4,h:close+1,l:close-1,c:close};});
+  const normalized=require('./engine5-layered-adaptive-v4').normalizeBars(seconds);
+  assert.equal(normalized.length,50);
+  assert.equal(normalized.at(-1).timestamp,now);
+});
+
 test('stale and out-of-order OHLC fail closed',()=>{
   const f=fixture();
   const stale=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now+300000},{});
