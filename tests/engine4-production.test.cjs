@@ -269,3 +269,11 @@ test('Day High/Low bridge does not label fallback candles as a live daily range'
   assert.ok(html.includes('Gold market is locked/closed; current-day range is not being refreshed'));
   assert.ok(html.includes("new Set([...sweeps,...grabs,...breakouts].map(x=>x.timeframe+':'+x.side+':'+x.price)).size"));
 });
+
+test('Engine 5 diagnostics expose raw algorithm votes when indicator confluence is WAIT', () => {
+  assert.match(html, /const alignedCount=indicatorAction==='WAIT'\?0:/);
+  assert.match(html, /const alignedToMajority=majority==='WAIT'\?0:/);
+  assert.match(html, /algorithmVotes:\{buy,sell,wait:algorithmWait,majority,majorityCount:alignedToMajority\}/);
+  assert.match(html, /indicatorAction==='WAIT'\?'n\/a':alignedCount/);
+  assert.match(html, /indicatorAction!=='WAIT'&&majority!==indicatorAction/);
+});
