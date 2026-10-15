@@ -1,7 +1,7 @@
 /**
- * Independent domain-engine evaluator for the isolated Engine 5 shadow candidate.
- * Each indicator is assigned to exactly one domain; these are calculated outputs,
- * not aliases for indicator-confluence groups or the five legacy algorithms.
+ * Diagnostic evaluator that partitions indicator inputs into named domains.
+ * These domain summaries are NOT independent engines and must never count toward
+ * the independent Engine 1-4 alignment gate.
  * No network, DOM, timers, order execution, or production side effects.
  */
 'use strict';
@@ -26,7 +26,7 @@ function matches(name, keys) {
   const key = normalize(name);
   return keys.some(k => key === normalize(k) || key.includes(normalize(k)));
 }
-function evaluateDomain(domain, components) {
+function evaluateDomainDiagnostics(domain, components) {
   const selected = Object.entries(components || {}).filter(([name]) => matches(name, domain.keys));
   const usable = selected.filter(([, item]) => item && typeof item === 'object' &&
     !unavailable.test(String(item.status || '')) &&
@@ -42,9 +42,9 @@ function evaluateDomain(domain, components) {
   const action = mean >= 0.2 ? 'BUY' : mean <= -0.2 ? 'SELL' : 'WAIT';
   const reportAvailable = usable.length >= 2 && directional.length >= 2;
   return {
-    engine: domain.engine,
+    domainId: domain.engine,
     name: domain.name,
-    independent: true,
+    independent: false,
     reportAvailable,
     action: reportAvailable ? action : 'NOT_REPORTED',
     score: reportAvailable ? Math.round((50 + mean * 50) * 100) / 100 : null,
@@ -53,21 +53,13 @@ function evaluateDomain(domain, components) {
     inputs: usable.map(([name]) => name)
   };
 }
-function evaluateIndependentEngines(components = {}) {
-  const reports = DOMAINS.map(domain => evaluateDomain(domain, components));
+function evaluateIndicatorDomainDiagnostics(components = {}) {
+  const diagnostics = DOMAINS.map(domain => evaluateDomainDiagnostics(domain, components));
   return {
-    independent: true,
-    method: 'DOMAIN_PARTITIONED_INDICATOR_EVALUATION_V1',
-    engines: reports.filter(x => x.reportAvailable).map(x => ({
-      engine: x.engine,
-      action: x.action,
-      reportAvailable: true,
-      independent: true,
-      score: x.score,
-      directionalInputs: x.directionalInputs,
-      componentCount: x.componentCount
-    })),
-    diagnostics: reports
+    independent: false,
+    method: 'INDICATOR_DOMAIN_DIAGNOSTICS_ONLY_V1',
+    engines: [],
+    diagnostics
   };
 }
-module.exports = { DOMAINS, evaluateDomain, evaluateIndependentEngines };
+module.exports = { DOMAINS, evaluateDomainDiagnostics, evaluateIndicatorDomainDiagnostics };
