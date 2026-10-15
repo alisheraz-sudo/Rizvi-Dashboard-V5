@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { evaluateIndependentEngines } = require('../engine5-independent-engines');
+const { evaluateIndicatorDomainDiagnostics } = require('../engine5-independent-engines');
 
 function fullComponents() {
   return {
@@ -16,37 +16,37 @@ function fullComponents() {
   };
 }
 
-test('calculates four domain engines from separate indicator partitions', () => {
-  const report = evaluateIndependentEngines(fullComponents());
-  assert.equal(report.independent, true);
-  assert.equal(report.method, 'DOMAIN_PARTITIONED_INDICATOR_EVALUATION_V1');
-  assert.deepEqual(report.engines.map(x => x.engine), ['ENGINE_1', 'ENGINE_2', 'ENGINE_3', 'ENGINE_4']);
-  assert.deepEqual(report.engines.map(x => x.action), ['BUY', 'SELL', 'BUY', 'SELL']);
+test('indicator domain partitions are diagnostic only and never independent engine votes', () => {
+  const report = evaluateIndicatorDomainDiagnostics(fullComponents());
+  assert.equal(report.independent, false);
+  assert.equal(report.method, 'INDICATOR_DOMAIN_DIAGNOSTICS_ONLY_V1');
+  assert.deepEqual(report.engines, []);
+  assert.deepEqual(report.diagnostics.map(x => x.domainId), ['ENGINE_1', 'ENGINE_2', 'ENGINE_3', 'ENGINE_4']);
+  assert.deepEqual(report.diagnostics.map(x => x.action), ['BUY', 'SELL', 'BUY', 'SELL']);
   const used = report.diagnostics.flatMap(x => x.inputs);
-  assert.equal(new Set(used).size, used.length, 'one component must not be counted in multiple engines');
+  assert.equal(new Set(used).size, used.length, 'one component must not be counted in multiple diagnostic domains');
 });
 
-test('does not invent an independent engine when a domain has fewer than two directional inputs', () => {
+test('diagnostics show when a domain lacks enough directional inputs', () => {
   const components = fullComponents();
   delete components['DXY Inverse-Correlation Filter'];
-  const report = evaluateIndependentEngines(components);
-  assert.equal(report.engines.some(x => x.engine === 'ENGINE_4'), false);
-  const missing = report.diagnostics.find(x => x.engine === 'ENGINE_4');
+  const report = evaluateIndicatorDomainDiagnostics(components);
+  const missing = report.diagnostics.find(x => x.domainId === 'ENGINE_4');
   assert.equal(missing.reportAvailable, false);
   assert.equal(missing.action, 'NOT_REPORTED');
 });
 
-test('unavailable components cannot create an engine vote', () => {
+test('unavailable components cannot create a directional diagnostic', () => {
   const components = fullComponents();
   components['DXY Inverse-Correlation Filter'] = { status: 'UNAVAILABLE', bias: -1, score: 90 };
-  const report = evaluateIndependentEngines(components);
-  assert.equal(report.engines.some(x => x.engine === 'ENGINE_4'), false);
+  const report = evaluateIndicatorDomainDiagnostics(components);
+  assert.equal(report.diagnostics.find(x => x.domainId === 'ENGINE_4').reportAvailable, false);
 });
 
-test('WAIT-only or neutral inputs do not count as directional alignment', () => {
-  const report = evaluateIndependentEngines({
+test('WAIT-only or neutral inputs do not count as directional diagnostic inputs', () => {
+  const report = evaluateIndicatorDomainDiagnostics({
     'Bullish/Bearish Divergence': { status: 'CALCULATED', bias: 0, score: 50 },
     'DXY Inverse-Correlation Filter': { status: 'LIVE', bias: 0, score: 50 }
   });
-  assert.equal(report.engines.some(x => x.engine === 'ENGINE_4'), false);
+  assert.equal(report.diagnostics.find(x => x.domainId === 'ENGINE_4').reportAvailable, false);
 });
