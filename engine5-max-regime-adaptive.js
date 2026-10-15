@@ -5,7 +5,7 @@
  */
 'use strict';
 const GATES=Object.freeze({minConfidence:80,minAgreement:70,minAlignedAlgorithms:4,minAlgorithms:5,minActiveIndicators:6,requiredQualifiedRuns:3});
-const BASE={trend:.24,momentum:.17,value:.13,liquidity:.18,candle:.13,reversal:.15};
+const BASE={trend:.23,momentum:.16,value:.13,liquidity:.17,candle:.13,reversal:.14,other:.04};
 const BIASES={
  TRENDING_UP:{trend:1.45,momentum:1.25,value:1.15,liquidity:1,candle:.95,reversal:.70},
  TRENDING_DOWN:{trend:1.45,momentum:1.25,value:1.15,liquidity:1,candle:.95,reversal:.70},
@@ -31,7 +31,7 @@ function detectRegime(input){
  else{name='TRANSITION';confidence=.45;reason='REGIME_TRANSITION';}
  return {name,confidence:Number(confidence.toFixed(4)),quality:'HEURISTIC',reason,metrics:{ema20:e20,ema50:e50,atr14:atr,emaSpreadAtr:Number(slope.toFixed(5)),directionConsistency:Number(consistency.toFixed(4)),volatilityRatio:Number(vr.toFixed(4)),bars:bars.length}};
 }
-function familyOf(name){const s=String(name).toLowerCase().replace(/[^a-z0-9]/g,'');for(const [f,keys] of Object.entries(FAMILIES))if(keys.some(k=>s.includes(k)))return f;return 'momentum';}
+function familyOf(name){const s=String(name).toLowerCase().replace(/[^a-z0-9]/g,'');for(const [f,keys] of Object.entries(FAMILIES))if(keys.some(k=>s.includes(k)))return f;return 'other';}
 function dir(x){if(typeof x==='number'&&Number.isFinite(x))return clamp(x,-1,1);if(typeof x!=='string')return null;const s=x.trim().toUpperCase();if(['BUY','BULLISH','UP','LONG'].includes(s))return 1;if(['SELL','BEARISH','DOWN','SHORT'].includes(s))return -1;if(['WAIT','NEUTRAL','FLAT'].includes(s))return 0;return null;}
 function extract(components){const out=[];for(const [name,x] of Object.entries(components||{})){const status=String(x?.status||'').toUpperCase();if(/UNAVAILABLE|WAITING|INSUFFICIENT|NO_REAL_VOLUME|NO_REAL_ORDER_FLOW|NO_TRADE_SIDE_VOLUME|NOT_ATTACHED|BLOCKED|STALE|ERROR/.test(status))continue;let d=dir(x?.direction??x?.action??x?.signal);const hasBias=x?.bias!==null&&x?.bias!==undefined&&x?.bias!==''&&Number.isFinite(Number(x.bias));if(d===null&&hasBias&&Number(x.bias)!==0)d=clamp(Number(x.bias),-1,1);if(d===null&&hasBias&&Number(x.bias)===0)d=0;if(d===null)continue;out.push({name,family:familyOf(name),direction:d,reliability:clamp(Number(x?.reliability)||.65,.1,1),status:status||'REPORTED'});}return out;}
 function evaluate(input={}){
