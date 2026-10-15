@@ -1783,7 +1783,11 @@ sync();
   const algos=report.algorithms||{}, rows=Object.values(algos);
   const buy=rows.filter(x=>x.action==='BUY').length, sell=rows.filter(x=>x.action==='SELL').length;
   const majority=buy>sell?'BUY':sell>buy?'SELL':'WAIT';
-  const alignedCount=rows.filter(x=>x.action===indicatorAction&&['BUY','SELL'].includes(indicatorAction)).length;
+  // Keep indicator alignment separate from the algorithms' raw directional votes.
+  // When the indicator engine says WAIT, "0 aligned" is not evidence that all algorithms disagree.
+  const alignedCount=indicatorAction==='WAIT'?0:rows.filter(x=>x.action===indicatorAction).length;
+  const alignedToMajority=majority==='WAIT'?0:rows.filter(x=>x.action===majority).length;
+  const algorithmWait=rows.filter(x=>x.action==='WAIT'||!['BUY','SELL'].includes(x.action)).length;
   const algoMean=rows.length?rows.reduce((s,x)=>s+clamp(x.confidence),0)/rows.length:0;
   const aligned=indicatorAction!=='WAIT'&&majority===indicatorAction;
   const confidence=Math.round((indicatorScore+algoMean)/2);
@@ -1797,13 +1801,14 @@ sync();
   const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',engine4Context:engine4,
    engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',totalIndicators:18,engineCount:4,indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
-   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsEvaluated:rows.length},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
+   algorithmVotes:{buy,sell,wait:algorithmWait,majority,majorityCount:alignedToMajority},
+   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsAlignedToMajority:alignedToMajority,algorithmsEvaluated:rows.length,algorithmVotes:{buy,sell,wait:algorithmWait}},source:symbol+' '+tf+' OHLC → indicators → 6 algorithms → Engine 5',feedStatus:feed};
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,totalIndicators:18,engineCount:4,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
-  const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(majority!==indicatorAction)blockers.push('majority-mismatch');if(alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
+  const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(indicatorAction!=='WAIT'&&majority!==indicatorAction)blockers.push('majority-mismatch');if(indicatorAction!=='WAIT'&&alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
   const voteSummary=rows.map(x=>String(x.name||'?').replace(/[^A-Z0-9_]/gi,'').slice(0,10)+':'+(x.action||'?')+'/'+Math.round(clamp(x.confidence))).join(',');
-  diag(symbol,tf,'E5 '+direction+' s='+result.confidence+' ind='+indicatorAction+'/'+Math.round(indicatorScore)+' agree='+Math.round(agreement)+' maj='+majority+' aligned='+alignedCount+'/'+rows.length+' active='+active.length+' bars='+bs.length+' blockers='+(blockers.join(',')||'none')+' votes='+voteSummary);
+  diag(symbol,tf,'E5 '+direction+' s='+result.confidence+' ind='+indicatorAction+'/'+Math.round(indicatorScore)+' agree='+Math.round(agreement)+' maj='+majority+' aligned='+(indicatorAction==='WAIT'?'n/a':alignedCount)+'/'+rows.length+' votes=B'+buy+'/S'+sell+'/W'+algorithmWait+' active='+active.length+' bars='+bs.length+' blockers='+(blockers.join(',')||'none')+' votes='+voteSummary);
   W.dispatchEvent(new CustomEvent('rizvi:master-confirmation-update',{detail:result}));
   W.dispatchEvent(new CustomEvent('rizvi:gold-engine-update',{detail:result}));
  }
