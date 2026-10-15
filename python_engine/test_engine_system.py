@@ -80,6 +80,7 @@ class EngineSystemTests(unittest.TestCase):
         now, snap = sample_snapshot()
         indicators = live_indicators()
         indicators["EMA 9/21"] = {"status": "LIVE", "score": float("nan"), "bias": float("nan")}
+        indicators.pop("ATR (14)")
         result = evaluate_engine_system(snap, now, indicators=indicators)
         reasons = result["engines"]["ENGINE_1_TREND_MOMENTUM"]["indicator_reasons"]
         self.assertIn("score-invalid", reasons["EMA 9/21"])
