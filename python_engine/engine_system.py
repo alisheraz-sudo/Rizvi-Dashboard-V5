@@ -177,10 +177,13 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
     if len(active_indicator_rows) < LOCKED_ENGINE5["minimum_active_indicators"]: reasons.append("active-indicators<6")
     # Only the external blockers present in deployed Engine 5 are mandatory here.
     # Session/day-high-low are indicators; order flow/delta are not deployed gates.
-    for key in ("dxy", "us_news"):
-        item = context.get(key)
-        if not isinstance(item, dict) or str(item.get("status", "")).upper() != "LIVE":
-            reasons.append(f"{key.replace('_', '-')}-unavailable")
+    unavailable_context = [
+        key for key in ("dxy", "us_news")
+        if not isinstance(context.get(key), dict)
+        or str(context[key].get("status", "")).upper() != "LIVE"
+    ]
+    # Missing context is reported separately; only a confirmed deployed blocker
+    # blocks qualification. Do not treat unavailable as a synthetic conflict.
     if context.get("news_blocked") is True: reasons.append("news-block")
     if context.get("dxy_conflict") is True: reasons.append("DXY-block")
     candidate = not reasons
@@ -205,6 +208,7 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
             "active_indicators": len(active_indicator_rows),
             "qualified_candidate": candidate, "qualified_runs": prior_qualified_runs + 1 if candidate else 0,
             "required_qualified_runs": required_runs, "qualified": qualified,
-            "blockers": reasons, "locked_settings": dict(LOCKED_ENGINE5),
+            "blockers": reasons, "unavailable_context": unavailable_context,
+            "locked_settings": dict(LOCKED_ENGINE5),
         },
     }
