@@ -8,7 +8,7 @@
 if(window.__RIZVI_DIRECT_TV_SOURCE_V3)return;
 window.__RIZVI_DIRECT_TV_SOURCE_V3=true;
 const TF={'1M':1,'5M':5,'15M':15,'30M':30,'1H':60,'1D':1440};
-let currentTF='1M',chartApi=null,candleSeries=null,overlay=null,overlayCtx=null,root=null,host=null,lastBars=[],resizeObserver=null,booted=false;
+let currentTF='1M',chartApi=null,candleSeries=null,overlay=null,overlayCtx=null,root=null,host=null,lastBars=[],resizeObserver=null,booted=false,fitNext=true;
 const fmt=v=>Number.isFinite(Number(v))?Number(v).toFixed(2):'--';
 function activeSymbol(){return String(window.RIZVI_CURRENT_SYMBOL||window.RIZVI_DIRECT_SYMBOL||'XAU/USD').trim().toUpperCase();}
 function getHost(){return document.querySelector('.chart');}
@@ -70,7 +70,7 @@ function normalizeBars(input){
 }
 function sourceBars(){
  const symbol=activeSymbol();
- const candidates=[window.RIZVI_AGG_BARS,window.RIZVI_RAW_BARS,window.RIZVI_CHART_DATA,window.RIZVI_RAW_BARS_BY_SYMBOL?.[symbol],window.RIZVI_CHART_DATA?.bars];
+ const candidates=[window.RIZVI_RAW_BARS,window.RIZVI_CHART_DATA?.[symbol]?.bars,window.RIZVI_RAW_BARS_BY_SYMBOL?.[symbol],window.RIZVI_CHART_DATA?.bars,window.RIZVI_AGG_BARS];
  for(const x of candidates){const n=normalizeBars(Array.isArray(x)?x:x?.bars);if(n.length)return n;}
  return [];
 }
@@ -88,7 +88,7 @@ function refreshBars(incoming){
   window.dispatchEvent(new CustomEvent('rizvi:direct-tv-status',{detail:window.RIZVI_DIRECT_TV}));return;
  }
  lastBars=data;
- try{candleSeries.setData(data);chartApi.timeScale().fitContent();}catch(e){return;}
+ try{candleSeries.setData(data);if(fitNext){chartApi.timeScale().fitContent();fitNext=false;}}catch(e){return;}
  const price=Number(activeSymbol()==='XAU/USD'?(window.RIZVI_LIVE_PRICES?.['XAU/USD']??window.RIZVI_LIVE_PRICE):window.RIZVI_LIVE_PRICE);
  if(Number.isFinite(price)&&price>0){try{candleSeries.update({time:data[data.length-1].time,open:data[data.length-1].open,high:Math.max(data[data.length-1].high,price),low:Math.min(data[data.length-1].low,price),close:price});}catch(e){}}
  window.RIZVI_DIRECT_TV={source:'TradingView Lightweight Charts + Rizvi live OHLC',symbol:activeSymbol(),timeframe:currentTF,status:'LIVE_OHLC_RENDERED',bars:data.length,lastBarTime:data[data.length-1].time,updatedAt:Date.now()};
@@ -122,12 +122,12 @@ function drawTRB(){
 }
 function setTf(label){
  label=String(label||'').toUpperCase();if(!TF[label])return;currentTF=label;window.RIZVI_CANDLE_TIMEFRAME=label;setHeader();
- if(createChart())refreshBars(sourceBars());
+ fitNext=true;if(createChart())refreshBars(sourceBars());
  window.dispatchEvent(new CustomEvent('rizvi:timeframe-update',{detail:{timeframe:currentTF,symbol:activeSymbol()}}));
 }
 function wire(){
  const sel=document.getElementById('symbolSelect');if(sel)sel.addEventListener('change',()=>{window.RIZVI_DIRECT_SYMBOL=sel.value;setHeader();refreshBars(sourceBars());});
- window.addEventListener('rizvi:symbol-change',e=>{if(e.detail?.symbol)window.RIZVI_DIRECT_SYMBOL=e.detail.symbol;setHeader();refreshBars(sourceBars());});
+ window.addEventListener('rizvi:symbol-change',e=>{if(e.detail?.symbol)window.RIZVI_DIRECT_SYMBOL=e.detail.symbol;fitNext=true;setHeader();refreshBars(sourceBars());});
  window.addEventListener('rizvi:candle-update',e=>refreshBars(Array.isArray(e.detail?.bars)?e.detail.bars:sourceBars()));
  window.addEventListener('rizvi:chart-source',e=>refreshBars(Array.isArray(e.detail?.bars)?e.detail.bars:sourceBars()));
  window.addEventListener('rizvi:timeframe-update',()=>refreshBars(sourceBars()));
