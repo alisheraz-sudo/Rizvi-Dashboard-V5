@@ -106,6 +106,11 @@ function buildInput(snapshot = {}) {
   const confluence = snapshot.confluence || snapshot.indicatorConfluence || {};
   const algorithmReport = snapshot.algorithmReport || snapshot.multiAlgorithmReport || {};
   const engine4 = snapshot.engine4Context || {};
+  const independentEngineReport = snapshot.independentEngineReport || {};
+  const engines = independentEngineReport.independent === true && Array.isArray(independentEngineReport.engines)
+    ? independentEngineReport.engines.filter(e => e && /^ENGINE_[1-4]$/.test(String(e.engine || '').toUpperCase()))
+      .map(e => ({ engine: String(e.engine).toUpperCase(), action: String(e.action || 'WAIT').toUpperCase() }))
+    : [];
   const feed = snapshot.feedStatus || snapshot.canonicalFeedStatus || {};
   const bars = (Array.isArray(snapshot.bars) ? snapshot.bars : [])
     .map(normalizeBar).filter(Boolean);
@@ -131,6 +136,7 @@ function buildInput(snapshot = {}) {
     bars,
     components: normalizeComponents(sourceComponents),
     algorithms,
+    engines,
     newsBlocked: engine4.usNews?.status === 'LIVE' && engine4.usNews.blocked === true,
     dxyConflict,
     sourceMeta: {
