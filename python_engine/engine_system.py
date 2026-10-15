@@ -125,9 +125,30 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
         supplied = {key: indicators[key] for key in keys if key in indicators}
         unavailable = [key for key in keys if key not in supplied or
                        str(supplied[key].get("status", "")).upper() not in {"LIVE", "CALCULATED"}]
+        indicator_reasons = {}
+        for key in keys:
+            item = supplied.get(key)
+            if item is None:
+                indicator_reasons[key] = ["missing"]
+                continue
+            status = str(item.get("status", "")).upper()
+            item_reasons = []
+            if status not in {"LIVE", "CALCULATED"}:
+                item_reasons.append(f"status-{status.lower() or 'missing'}")
+            score = item.get("score")
+            if not isinstance(score, (int, float)) or not __import__("math").isfinite(float(score)):
+                item_reasons.append("score-invalid")
+            elif float(score) <= 0:
+                item_reasons.append("score-not-active")
+            bias = item.get("bias")
+            if not isinstance(bias, (int, float)) or int(bias) not in {-1, 0, 1}:
+                item_reasons.append("bias-invalid")
+            if item_reasons:
+                indicator_reasons[key] = item_reasons
         active = [v for v in supplied.values()
                   if str(v.get("status", "")).upper() in {"LIVE", "CALCULATED"}
                   and isinstance(v.get("score"), (int, float))
+                  and __import__("math").isfinite(float(v["score"]))
                   and float(v["score"]) > 0
                   and isinstance(v.get("bias"), (int, float))
                   and int(v["bias"]) in {-1, 0, 1}]
@@ -136,9 +157,10 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
         score = sum(float(v["score"]) for v in active) / len(active) if active else 0
         engine_reports[name] = asdict(_engine_report(
             name, snapshot, "AVAILABLE" if supplied and not unavailable else "PARTIAL" if supplied else "UNAVAILABLE",
-            unavailable, ["missing-or-invalid-snapshot"] if snapshot_errors else [],
+            unavailable, (["missing-or-invalid-snapshot"] if snapshot_errors else []),
             action, score, (len(active) / len(keys) * 100), len(active),
         ))
+        engine_reports[name]["indicator_reasons"] = indicator_reasons
 
     algo_report = evaluate_algorithms(bars)
     algo_rows = list(algo_report["algorithms"].values())
