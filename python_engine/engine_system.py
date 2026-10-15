@@ -7,6 +7,7 @@ This module deliberately reports unavailable external inputs as unavailable.
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
+from math import isfinite
 from typing import Any
 
 from engine_parity import evaluate as evaluate_algorithms, normalize_bars
@@ -136,21 +137,22 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
             if status not in {"LIVE", "CALCULATED"}:
                 item_reasons.append(f"status-{status.lower() or 'missing'}")
             score = item.get("score")
-            if not isinstance(score, (int, float)) or not __import__("math").isfinite(float(score)):
+            if not isinstance(score, (int, float)) or not isfinite(float(score)):
                 item_reasons.append("score-invalid")
             elif float(score) <= 0:
                 item_reasons.append("score-not-active")
             bias = item.get("bias")
-            if not isinstance(bias, (int, float)) or int(bias) not in {-1, 0, 1}:
+            if not isinstance(bias, (int, float)) or not isfinite(float(bias)) or int(bias) not in {-1, 0, 1}:
                 item_reasons.append("bias-invalid")
             if item_reasons:
                 indicator_reasons[key] = item_reasons
         active = [v for v in supplied.values()
                   if str(v.get("status", "")).upper() in {"LIVE", "CALCULATED"}
                   and isinstance(v.get("score"), (int, float))
-                  and __import__("math").isfinite(float(v["score"]))
+                  and isfinite(float(v["score"]))
                   and float(v["score"]) > 0
                   and isinstance(v.get("bias"), (int, float))
+                  and isfinite(float(v["bias"]))
                   and int(v["bias"]) in {-1, 0, 1}]
         bias_sum = sum(int(v["bias"]) for v in active)
         action = "BUY" if bias_sum > 0 else "SELL" if bias_sum < 0 else "WAIT"
