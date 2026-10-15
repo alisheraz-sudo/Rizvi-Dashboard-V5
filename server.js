@@ -135,7 +135,7 @@ if(url.pathname==='/market/xau/spot'&&req.method==='GET'){
   // If the spot quote endpoint is down, accept only a fresh, validated 1m OHLC close as a temporary quote fallback.
   // Keep the fallback source explicit; never present stale candles as live spot.
   try{
-   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval='+interval+'&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
    if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
    const payload=await r.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.bars)?payload.bars:[]);
    const bars=rows.map(x=>({t:epochSeconds(x.openTime??x.t??x.timestamp??x.time??x.date),c:Number(x.close??x.c)}))
@@ -159,13 +159,17 @@ if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
   }
   return [...byTime.values()].sort((a,b)=>a.t-b.t);
  };
- const fresh=bars=>{const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;return bars.length>0&&age>=0&&age<=180;};
+ const requestedGranularity=Math.min(86400,Math.max(60,Number(url.searchParams.get('granularity')||60)));
+ const interval=requestedGranularity>=86400?'1d':requestedGranularity>=3600?'1h':requestedGranularity>=1800?'30m':requestedGranularity>=900?'15m':requestedGranularity>=300?'5m':'1m';
+ const range=requestedGranularity>=86400?'1y':requestedGranularity>=1800?'1mo':'5d';
+ const maxAgeSeconds=Math.max(180,requestedGranularity*3);
+ const fresh=bars=>{const age=bars.length?Math.floor(Date.now()/1000)-bars[bars.length-1].t:Infinity;return bars.length>0&&age>=0&&age<=maxAgeSeconds;};
  let primaryError='XAUS unavailable',staleFallback=null;
  try{
-  const data=await fetchXauJson('/api/v1/chart?symbol=xau&range=1d&interval=1m&fresh='+Date.now()),rows=Array.isArray(data)?data:(data?.data||data?.bars||data?.points||[]),bars=normalizeBars(rows);
+  const data=await fetchXauJson('/api/v1/chart?symbol=xau&range='+range+'&interval='+interval+'&fresh='+Date.now()),rows=Array.isArray(data)?data:(data?.data||data?.bars||data?.points||[]),bars=normalizeBars(rows);
   const age=bars.length?Math.max(0,Math.floor(Date.now()/1000)-bars[bars.length-1].t):Infinity;
-  if(fresh(bars))return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS-OHLC',interval:'1m',bars,updatedAt:Date.now(),latestAgeSeconds:age,stale:false,live:true});
-  if(url.searchParams.get('allowStale')==='1'&&bars.length>=21)staleFallback={source:'XAUS-OHLC (last available; stale)',interval:'1m',bars,latestAgeSeconds:age,reason:'Last available Gold candles; live feed is not refreshing'};
+  if(fresh(bars))return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'XAUS-OHLC',interval,bars,updatedAt:Date.now(),latestAgeSeconds:age,stale:false,live:true});
+  if(url.searchParams.get('allowStale')==='1'&&bars.length>=21)staleFallback={source:'XAUS-OHLC (last available; stale)',interval,bars,latestAgeSeconds:age,reason:'Last available Gold candles; live feed is not refreshing'};
   primaryError=bars.length?'XAUS candles stale':'XAUS returned no valid candles';
  }catch(e){primaryError=String(e.message||'XAUS request failed').slice(0,120);}
  // Never substitute COMEX GC=F futures for spot XAU/USD. If XAUS is down, use only the explicit XAUUSD OHLC provider.
@@ -174,10 +178,10 @@ if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
   const data=await r.json(),bars=normalizeBars(Array.isArray(data?.bars)?data.bars:[]);
   const age=bars.length?Math.max(0,Math.floor(Date.now()/1000)-bars[bars.length-1].t):Infinity;
   if(!fresh(bars)){
-   if(url.searchParams.get('allowStale')==='1'&&bars.length>=21&&(!staleFallback||age<staleFallback.latestAgeSeconds))staleFallback={source:'BIQUOTE-MT5-OHLC (last available; stale)',interval:'1m',bars,latestAgeSeconds:age,reason:'Last available Gold OHLC; not a live feed'};
+   if(url.searchParams.get('allowStale')==='1'&&bars.length>=21&&(!staleFallback||age<staleFallback.latestAgeSeconds))staleFallback={source:'BIQUOTE-MT5-OHLC (last available; stale)',interval,bars,latestAgeSeconds:age,reason:'Last available Gold OHLC; not a live feed'};
    throw new Error(bars.length?'BiQuote candles stale':'BiQuote returned no valid XAUUSD candles');
   }
-  return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'BIQUOTE-MT5-OHLC',interval:'1m',bars,updatedAt:Date.now(),latestAgeSeconds:age,stale:false,live:true});
+  return ofReply(res,200,{ok:true,symbol:'XAU/USD',source:'BIQUOTE-MT5-OHLC',interval,bars,updatedAt:Date.now(),latestAgeSeconds:age,stale:false,live:true});
  }catch(e){if(staleFallback)return ofReply(res,200,{ok:true,symbol:'XAU/USD',...staleFallback,updatedAt:Date.now(),stale:true,live:false});return ofReply(res,502,{ok:false,symbol:'XAU/USD',source:'OHLC-fallbacks',error:'No fresh Gold candles; '+primaryError+'; fallback: '+String(e.message||'BiQuote failed').slice(0,120)});}
 }
 if(url.pathname==='/health')return send(res,200,'text/plain; charset=utf-8','ok');
