@@ -224,4 +224,4 @@ function evaluate(input={},state={}) {
       'Outcome feedback only adapts when real, timestamped outcome statistics are supplied in enginePerformance.',
       'Delta, Order Flow and News are excluded from this approved 17-indicator candidate; missing optional context data is never synthesized.']};
 }
-module.exports={CONFIG,INDICATORS,ENGINES,BASE_WEIGHTS,AFFINITY,normalizeBars,detectRegime,adaptiveWeights,adaptiveThresholds,evaluate};
+module.exports={CONFIG,INDICATORS,ENGINES,BASE_WEIGHTS,AFFINITY,normalizeBars,normalizeIndicators,detectRegime,adaptiveWeights,adaptiveThresholds,evaluate};
