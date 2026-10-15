@@ -112,17 +112,13 @@ function buildInput(snapshot = {}) {
     .map(normalizeBar).filter(Boolean);
   const sourceComponents = confluence.components || confluence.master?.components ||
     snapshot.components || {};
-  // Prefer a validated explicit independent report. If none exists, calculate
-  // candidate-only domain engines from the component payload; never relabel
-  // indicator-confluence groups or legacy algorithm votes as independent engines.
+  // Only a separately supplied, explicitly independent engine report may
+  // enter the 3-of-4 gate. Domain partitions of indicator confluence are useful
+  // diagnostics, but are not accepted as independent engines.
   const independentEngineReport = snapshot.independentEngineReport || {};
-  const { evaluateIndependentEngines } = require('./engine5-independent-engines');
-  const derivedReport = evaluateIndependentEngines(sourceComponents);
-  const report = independentEngineReport.independent === true &&
+  const engines = independentEngineReport.independent === true &&
     Array.isArray(independentEngineReport.engines)
-    ? independentEngineReport : derivedReport;
-  const engines = report.independent === true && Array.isArray(report.engines)
-    ? report.engines.filter(e => e && e.reportAvailable !== false &&
+    ? independentEngineReport.engines.filter(e => e && e.reportAvailable !== false &&
         /^ENGINE_[1-4]$/.test(String(e.engine || '').toUpperCase()) &&
         ['BUY', 'SELL', 'WAIT'].includes(String(e.action || '').toUpperCase()))
       .map(e => ({ engine: String(e.engine).toUpperCase(), action: String(e.action).toUpperCase() }))
