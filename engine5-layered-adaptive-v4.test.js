@@ -1,4 +1,6 @@
 'use strict';
+// Candidate safety regression coverage: epoch timestamps and verified-volume quality gates.
+
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {INDICATORS,ENGINES,adaptiveWeights,adaptiveThresholds,evaluate}=require('./engine5-layered-adaptive-v4');
