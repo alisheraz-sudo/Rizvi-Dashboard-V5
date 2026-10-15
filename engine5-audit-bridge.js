@@ -38,17 +38,13 @@ function buildAuditRecord(){
  const status=W.RIZVI_INDICATOR_ENGINE_STATUS||{};
  const feed=W.RIZVI_FEED_STATUS||W.RIZVI_GOLD_ENGINE_STATUS?.feed||{};
  const groups=Array.isArray(confluence.groups)?confluence.groups:[];
- const groupNames=[
-  {engine:'ENGINE_1',name:'Trend & Momentum'},
-  {engine:'ENGINE_2',name:'Structure & Price Action'},
-  {engine:'ENGINE_3',name:'Volume & Liquidity'},
-  {engine:'ENGINE_4',name:'Divergence & Market Context'}
- ];
- const engines=groupNames.map((g,i)=>{
-  const x=groups[i];
-  return {...g,reportAvailable:!!x,score:x?safeNum(x.score):null,bias:x?safeNum(x.bias):null,
-   indicatorCount:x?safeNum(x.rows):null,direction:x?(Number(x.bias)>0?'BUY':Number(x.bias)<0?'SELL':'WAIT'):'NOT_EXPOSED'};
- });
+ // These are indicator-confluence groups (C1-C6), not independent engines.
+ // Keep them separately labeled so audit metrics cannot misrepresent them as Engine 1-4.
+ const derivedIndicatorGroups=groups.map((x,i)=>({
+  group:`C${i+1}`,reportAvailable:!!x,score:x?safeNum(x.score):null,bias:x?safeNum(x.bias):null,
+  indicatorCount:x?safeNum(x.rows):null,
+  direction:x?(Number(x.bias)>0?'BUY':Number(x.bias)<0?'SELL':'WAIT'):'NOT_REPORTED'
+ }));
  const algorithms=Object.entries(report.algorithms||{}).map(([name,x])=>({
   name,action:cleanText(x?.action||'WAIT',16),confidence:safeNum(x?.confidence),
   agreement:safeNum(x?.agreement),activeIndicators:safeNum(x?.activeIndicators)
@@ -77,7 +73,7 @@ function buildAuditRecord(){
   feed:{ok:feed.ok===true,live:feed.live===true,stale:feed.stale===true,source:cleanText(feed.source||'',80),
    barCount:safeNum(feed.bars??feed.barCount),latestAgeSeconds:safeNum(feed.latestAgeSeconds),
    updatedAt:safeNum(feed.updatedAt),reason:cleanText(feed.reason||'',200)},
-  engines,indicators,
+  engines:[],independentEngineReport:false,derivedIndicatorGroups,indicators,
   algorithms,
   engine5:{available:!!master,action:cleanText(master?.direction||'WAIT',16),
    qualified:master?.qualified===true,confidence:calculatedConfidence,displayConfidence:safeNum(master?.confidence),

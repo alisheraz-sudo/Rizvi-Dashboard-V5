@@ -26,12 +26,15 @@ function buildWindow(overrides={}){
  return Object.assign(w,overrides);
 }
 function run(w){vm.runInNewContext(source,{window:w,Date,Math,JSON,Number,String,Object,Array,Set});return w.RIZVI_BUILD_ENGINE_AUDIT();}
-test('audit captures four engine groups, algorithms, and Engine 5 blockers without changing settings',()=>{
+test('audit keeps indicator-confluence groups separate from independent engine reports',()=>{
  const a=run(buildWindow());
  assert.equal(a.schema,'rizvi-engine-audit-v1');
  assert.equal(a.symbol,'XAU/USD');
- assert.equal(a.engines.length,4);
- assert.equal(a.engines[0].score,61);
+ assert.equal(a.engines.length,0);
+ assert.equal(a.independentEngineReport,false);
+ assert.equal(a.derivedIndicatorGroups.length,4);
+ assert.equal(a.derivedIndicatorGroups[0].group,'C1');
+ assert.equal(a.derivedIndicatorGroups[0].score,61);
  assert.equal(a.algorithms.length,5);
  assert.equal(a.engine5.action,'WAIT');
  assert.equal(a.engine5.algorithmMajority,'BUY');
@@ -39,12 +42,14 @@ test('audit captures four engine groups, algorithms, and Engine 5 blockers witho
  assert.ok(a.engine5.blockers.includes('confidence<80'));
  assert.equal(a.engine5.autoTrading,false);
 });
-test('missing engine report is explicit, not a fake zero score',()=>{
+test('missing confluence group is explicit and does not become an engine report',()=>{
  const w=buildWindow({RIZVI_INDICATOR_CONFLUENCE:{action:'WAIT',score:50,agreement:50,groups:[{bias:1,score:60,rows:2},null,{bias:-1,score:55,rows:1}],components:{}}});
  const a=run(w);
- assert.equal(a.engines[1].reportAvailable,false);
- assert.equal(a.engines[1].score,null);
- assert.equal(a.engines[1].direction,'NOT_EXPOSED');
+ assert.equal(a.engines.length,0);
+ assert.equal(a.independentEngineReport,false);
+ assert.equal(a.derivedIndicatorGroups[1].reportAvailable,false);
+ assert.equal(a.derivedIndicatorGroups[1].score,null);
+ assert.equal(a.derivedIndicatorGroups[1].direction,'NOT_REPORTED');
 });
 test('server wires authenticated audit endpoint and browser bridge',()=>{
  const server=fs.readFileSync(require('node:path').join(__dirname,'server.js'),'utf8');
