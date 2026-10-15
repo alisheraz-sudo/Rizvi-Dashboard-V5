@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Rizvi Engine 5 Unified Regime-Adaptive V3 (JavaScript candidate).
+ * Rizvi Engine 5 Outcome-Aware Regime-Adaptive V4 (JavaScript candidate).
  * Pure decision module: no fetch, DOM, network, order or deployment side effects.
  * Signal-only. Confidence is decision strength, NOT a win probability.
  * The 17 indicator definitions are a registry/contract; indicators that need
@@ -9,9 +9,12 @@
  */
 const CONFIG = Object.freeze({
   minBars: 30, maxBarAgeMs: 120000, maxInputAgeMs: 180000,
-  minActiveIndicators: 6, minConfidence: 80, minAgreement: 70,
-  minAlignedEngines: 3, minEngines: 4,
-  minAlignedAlgorithms: 4, minAlgorithms: 5, requiredQualifiedBars: 3
+  minActiveIndicators: 6, minAlignedEngines: 3, minEngines: 4,
+  minAlignedAlgorithms: 4, minAlgorithms: 5, requiredQualifiedBars: 3,
+  minEngineWeight: 0.08, maxEngineWeight: 0.48,
+  minDecisionConfidence: 68, maxDecisionConfidence: 92,
+  minDecisionAgreement: 60, maxDecisionAgreement: 90,
+  minEngineDeadband: 0.08, maxEngineDeadband: 0.28
 });
 
 const INDICATORS = Object.freeze([
@@ -41,14 +44,15 @@ const ENGINE_DEFS = Object.freeze([
   { id:'ENGINE_4', name:'Volatility & Reversal', engine:'regime', indicators:['atr_volatility','divergence'] }
 ]);
 
-const BASE_WEIGHTS = Object.freeze({ trend:0.30, structure:0.30, flow:0.25, regime:0.15 });
-const REGIME_WEIGHTS = Object.freeze({
-  TRENDING_UP:   { trend:0.38, structure:0.28, flow:0.22, regime:0.12 },
-  TRENDING_DOWN: { trend:0.38, structure:0.28, flow:0.22, regime:0.12 },
-  RANGING:       { trend:0.18, structure:0.35, flow:0.25, regime:0.22 },
-  HIGH_VOLATILITY:{ trend:0.22, structure:0.25, flow:0.23, regime:0.30 },
-  TRANSITION:    { trend:0.25, structure:0.30, flow:0.22, regime:0.23 },
-  MIXED:         { ...BASE_WEIGHTS }
+// Priors only: final weights are recalculated for each regime and feedback state.
+const BASE_WEIGHTS = Object.freeze({ trend:0.25, structure:0.25, flow:0.25, regime:0.25 });
+const REGIME_AFFINITY = Object.freeze({
+  TRENDING_UP:    { trend:1.45, structure:1.05, flow:0.95, regime:0.65 },
+  TRENDING_DOWN:  { trend:1.45, structure:1.05, flow:0.95, regime:0.65 },
+  RANGING:        { trend:0.60, structure:1.45, flow:1.10, regime:1.20 },
+  HIGH_VOLATILITY:{ trend:0.80, structure:0.95, flow:0.90, regime:1.55 },
+  TRANSITION:     { trend:0.80, structure:1.15, flow:0.90, regime:1.25 },
+  MIXED:          { trend:1, structure:1, flow:1, regime:1 }
 });
 
 const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
@@ -112,9 +116,45 @@ function normalizeIndicators(rows, now, maxAge) {
   }
   return [...byId.values()];
 }
-function runSubEngine(def, active) {
+function adaptiveThresholds(regime) {
+  const m=regime.metrics||{};
+  const vol=clamp(Number(m.volRatio)||1,0.5,3);
+  const trend=clamp(Math.abs(Number(m.spread)||0),0,2);
+  // Thresholds move with measured conditions; bounds prevent runaway behavior.
+  const engineDeadband=clamp(0.10 + Math.max(0,vol-1)*0.07 - Math.min(trend,1)*0.025,
+    CONFIG.minEngineDeadband,CONFIG.maxEngineDeadband);
+  const confidence=clamp(72 + Math.max(0,vol-1)*9 - Math.min(trend,1)*4,
+    CONFIG.minDecisionConfidence,CONFIG.maxDecisionConfidence);
+  const agreement=clamp(64 + Math.max(0,vol-1)*8 - Math.min(trend,1)*4,
+    CONFIG.minDecisionAgreement,CONFIG.maxDecisionAgreement);
+  return {engineDeadband:Number(engineDeadband.toFixed(3)),
+    confidence:Math.round(confidence),agreement:Math.round(agreement)};
+}
+function adaptiveWeights(regime, state) {
+  const affinity=REGIME_AFFINITY[regime.name]||REGIME_AFFINITY.MIXED;
+  const performance=state.enginePerformance&&typeof state.enginePerformance==='object'?state.enginePerformance:{};
+  const raw={};
+  for(const def of ENGINE_DEFS) {
+    const key=def.engine, p=performance[key]||{};
+    const samples=Math.max(0,Number(p.samples)||0);
+    const hitRate=clamp(Number(p.hitRate??0.5),0,1);
+    // Small samples are shrunk toward neutral; feedback influence grows gradually.
+    const feedback=(hitRate-0.5)*(samples/(samples+20));
+    const learned=clamp(1+feedback,0.75,1.25);
+    raw[key]=(BASE_WEIGHTS[key]||0.25)*(affinity[key]||1)*learned;
+  }
+  const total=Object.values(raw).reduce((s,x)=>s+x,0)||1;
+  const normalized={};
+  for(const key of Object.keys(raw)) normalized[key]=raw[key]/total;
+  // Keep every engine represented while allowing market- and outcome-based variation.
+  const bounded={};
+  for(const key of Object.keys(normalized)) bounded[key]=clamp(normalized[key],CONFIG.minEngineWeight,CONFIG.maxEngineWeight);
+  const sum=Object.values(bounded).reduce((s,x)=>s+x,0)||1;
+  for(const key of Object.keys(bounded)) bounded[key]=Number((bounded[key]/sum).toFixed(4));
+  return bounded;
+}
+function runSubEngine(def, active, thresholds) {
   const rows=active.filter(x=>def.indicators.includes(x.id));
-  // Avoid double counting repeated indicators from the same evidence family.
   const families=new Map();
   for(const x of rows) {
     const prior=families.get(x.family);
@@ -123,26 +163,27 @@ function runSubEngine(def, active) {
   }
   const votes=[...families.values()].map(x=>x.vote);
   const strength=avg(votes);
-  const action=strength>=0.15?'BUY':strength<=-0.15?'SELL':'WAIT';
+  const action=strength>=thresholds.engineDeadband?'BUY':strength<=-thresholds.engineDeadband?'SELL':'WAIT';
   return {id:def.id,name:def.name,action,strength:Number(strength.toFixed(4)),
     confidence:Math.round(Math.abs(strength)*100),activeIndicators:rows.length,
     evidenceFamilies:families.size,indicatorIds:rows.map(x=>x.id),independent:true};
 }
 function runMaster(engines, regime, activeCount, state, lastBarTs) {
-  const weights=REGIME_WEIGHTS[regime.name]||BASE_WEIGHTS;
+  const weights=adaptiveWeights(regime,state);
+  const thresholds=adaptiveThresholds(regime);
   const present=engines.filter(e=>e.evidenceFamilies>0);
   const totalWeight=present.reduce((s,e)=>s+(weights[ENGINE_DEFS.find(d=>d.id===e.id).engine]||0),0);
   const score=totalWeight ? present.reduce((s,e)=>s+e.strength*(weights[ENGINE_DEFS.find(d=>d.id===e.id).engine]||0),0)/totalWeight : 0;
   const buy=present.filter(e=>e.action==='BUY').length, sell=present.filter(e=>e.action==='SELL').length;
-  const aligned=Math.max(buy,sell), directionName=score>=0.15?'BUY':score<=-0.15?'SELL':'WAIT';
+  const aligned=Math.max(buy,sell), directionName=score>=thresholds.engineDeadband?'BUY':score<=-thresholds.engineDeadband?'SELL':'WAIT';
   const agreement=present.length?100*aligned/present.length:0;
-  const confidence=Math.round(clamp(Math.abs(score)*75+agreement*0.25,0,100));
+  const confidence=Math.round(clamp(Math.abs(score)*70+agreement*0.30,0,100));
   const blockers=[];
   if(activeCount<CONFIG.minActiveIndicators) blockers.push('INSUFFICIENT_ACTIVE_INDICATORS');
   if(present.length<CONFIG.minEngines) blockers.push('FOUR_ENGINE_EVIDENCE_INCOMPLETE');
   if(aligned<CONFIG.minAlignedEngines) blockers.push('ENGINE_ALIGNMENT_BELOW_3_OF_4');
-  if(agreement<CONFIG.minAgreement) blockers.push('AGREEMENT_BELOW_THRESHOLD');
-  if(confidence<CONFIG.minConfidence) blockers.push('CONFIDENCE_BELOW_THRESHOLD');
+  if(agreement<thresholds.agreement) blockers.push('REGIME_ADAPTIVE_AGREEMENT_BELOW_THRESHOLD');
+  if(confidence<thresholds.confidence) blockers.push('REGIME_ADAPTIVE_CONFIDENCE_BELOW_THRESHOLD');
   const alignedAlgorithms=Array.isArray(state.algorithms)
     ? state.algorithms.filter(x=>x && x.available!==false && direction(x.action)===direction(directionName) && directionName!=='WAIT').length : 0;
   if(alignedAlgorithms<CONFIG.minAlignedAlgorithms) blockers.push('ALGORITHM_CONFIRMATION_BELOW_4_OF_5');
@@ -158,9 +199,8 @@ function runMaster(engines, regime, activeCount, state, lastBarTs) {
   return {
     symbol:'XAU/USD',direction:qualified?directionName:'WAIT',candidateDirection:directionName,
     confidence,agreement:Math.round(agreement),alignedEngines:aligned,totalEngines:present.length,
-    alignedAlgorithms,totalAlgorithms:Array.isArray(state.algorithms)?state.algorithms.filter(x=>x&&x.available!==false).length:0,
-    activeIndicators:activeCount,regime,adaptiveWeights:weights,qualified,autoTrading:false,
-    blockers,score:Number(score.toFixed(4)),
+    activeIndicators:activeCount,regime,adaptiveWeights:weights,adaptiveThresholds:thresholds,
+    qualified,autoTrading:false,blockers,score:Number(score.toFixed(4)),
     nextState:{consecutiveQualifiedBars:rawQualified?consecutive:0,
       lastQualifiedBarTimestamp:rawQualified && isNewBar?lastBarTs:previousTs}
   };
@@ -174,10 +214,11 @@ function evaluate(input={}, state={}) {
     return {direction:'WAIT',qualified:false,autoTrading:false,blockers:['STALE_OR_FUTURE_OHLC'],activeIndicators:0,engines:[],nextState:{consecutiveQualifiedBars:0,lastQualifiedBarTimestamp:state.lastQualifiedBarTimestamp??null}};
   const active=normalizeIndicators(input.indicators,now,CONFIG.maxInputAgeMs);
   const regime=detectRegime(bars);
-  const engines=ENGINE_DEFS.map(def=>runSubEngine(def,active));
+  const thresholds=adaptiveThresholds(regime);
+  const engines=ENGINE_DEFS.map(def=>runSubEngine(def,active,thresholds));
   const master=runMaster(engines,regime,active.length,{...state,algorithms:input.algorithms},last.timestamp);
   return {...master,engines,activeIndicatorIds:active.map(x=>x.id),indicatorRegistry:INDICATORS,
     source:'caller-supplied validated XAU/USD OHLC + indicator payload',
     regimeNote:'Heuristic regime detector; requires live validation and walk-forward evaluation'};
 }
-module.exports={CONFIG,INDICATORS,ENGINE_DEFS,BASE_WEIGHTS,REGIME_WEIGHTS,normalizeBars,detectRegime,evaluate};
+module.exports={CONFIG,INDICATORS,ENGINE_DEFS,BASE_WEIGHTS,REGIME_AFFINITY,normalizeBars,detectRegime,adaptiveWeights,adaptiveThresholds,evaluate};
