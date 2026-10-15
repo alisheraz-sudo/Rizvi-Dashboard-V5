@@ -119,9 +119,12 @@ function normalizeIndicators(rows,now) {
     const def=INDICATORS.find(x=>x.id===r.id), d=dir(r.action);
     if(!def||d===null) continue;
     if(r.timestamp!=null) { const t=timeMs(r.timestamp); if(!Number.isFinite(t)||now-t>CONFIG.maxInputAgeMs||t-now>5000) continue; }
-    const reliability=r.reliability==null?1:Number(r.reliability);
+    let reliability=r.reliability==null?1:Number(r.reliability);
     if(!Number.isFinite(reliability)||reliability<0||reliability>1) continue;
-    byId.set(r.id,{...def,dir:d,reliability});
+    // Volume Profile is only full-confidence evidence when the upstream feed explicitly verifies real traded volume.
+    // Never infer volume validity from an OHLC bar or silently synthesize it.
+    if(r.id==='volume_profile' && r.realVolumeVerified!==true) reliability=Math.min(reliability,0.25);
+    byId.set(r.id,{...def,dir:d,reliability,quality:r.id==='volume_profile'?(r.realVolumeVerified===true?'VERIFIED_REAL_VOLUME':'LOW_CONFIDENCE_VOLUME_UNVERIFIED'):'NORMAL'});
   }
   return [...byId.values()];
 }
