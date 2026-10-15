@@ -32,20 +32,21 @@ const INDICATORS = Object.freeze([
   {id:'candle_price_action',engine:'structure',family:'price_action'},
   {id:'fvg',engine:'structure',family:'imbalance'},
   {id:'support_resistance',engine:'structure',family:'levels'},
-  {id:'range_levels',engine:'structure',family:'range'},
+  {id:'day_high_low',engine:'structure',family:'daily_levels'},
+  {id:'trading_sessions',engine:'structure',family:'session_context'},
   {id:'vwap',engine:'flow',family:'value'},
   {id:'volume_profile',engine:'flow',family:'volume'},
   {id:'liquidity_sweeps',engine:'flow',family:'liquidity'},
-  {id:'delta_buy_sell',engine:'flow',family:'delta',requiresApi:true},
-  {id:'order_flow',engine:'flow',family:'orderflow',requiresApi:true},
+
   {id:'atr_volatility',engine:'regime',family:'volatility'},
-  {id:'divergence',engine:'regime',family:'reversal'}
+  {id:'divergence',engine:'regime',family:'reversal'},
+  {id:'dxy_inverse_correlation',engine:'regime',family:'macro_context'}
 ]);
 const ENGINES = Object.freeze([
   {id:'ENGINE_1',key:'trend',name:'Trend & Momentum',indicators:['ema_9_21','rsi_14','macd','trend_strength']},
-  {id:'ENGINE_2',key:'structure',name:'Structure & Price Action',indicators:['market_structure','structure_prediction','candle_price_action','fvg','support_resistance','range_levels']},
-  {id:'ENGINE_3',key:'flow',name:'Volume & Liquidity',indicators:['vwap','volume_profile','liquidity_sweeps','delta_buy_sell','order_flow']},
-  {id:'ENGINE_4',key:'regime',name:'Volatility & Reversal',indicators:['atr_volatility','divergence']}
+  {id:'ENGINE_2',key:'structure',name:'Structure & Price Action',indicators:['market_structure','structure_prediction','candle_price_action','fvg','support_resistance','day_high_low','trading_sessions']},
+  {id:'ENGINE_3',key:'flow',name:'Volume & Liquidity',indicators:['vwap','volume_profile','liquidity_sweeps']},
+  {id:'ENGINE_4',key:'regime',name:'Volatility & Reversal',indicators:['atr_volatility','divergence','dxy_inverse_correlation']}
 ]);
 const BASE_WEIGHTS = Object.freeze({trend:.25,structure:.25,flow:.25,regime:.25});
 const AFFINITY = Object.freeze({
@@ -218,6 +219,6 @@ function evaluate(input={},state={}) {
       lastQualifiedBarTimestamp:rawQualified&&isNewBar?last.timestamp:priorTs},
     notes:['Confidence is not win probability.','Regime detector is heuristic pending walk-forward validation.',
       'Outcome feedback only adapts when real, timestamped outcome statistics are supplied in enginePerformance.',
-      'Missing API-backed Delta/Order Flow are never synthesized.']};
+      'Delta, Order Flow and News are excluded from this approved 17-indicator candidate; missing optional context data is never synthesized.']};
 }
 module.exports={CONFIG,INDICATORS,ENGINES,BASE_WEIGHTS,AFFINITY,normalizeBars,detectRegime,adaptiveWeights,adaptiveThresholds,evaluate};
