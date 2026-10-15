@@ -83,7 +83,7 @@ test('stale and out-of-order OHLC fail closed',()=>{
   assert.ok(order.blockers.includes('INSUFFICIENT_OR_INVALID_OHLC'));
 });
 
-test('master cannot follow weighted score when it conflicts with the majority of sub-engines',()=>{
+test('adaptive weighted score sets master direction; engine majority does not veto it',()=>{
   const f=fixture();
   f.indicators=f.indicators.map(x=>{
     const engine=INDICATORS.find(d=>d.id===x.id).engine;
@@ -93,10 +93,11 @@ test('master cannot follow weighted score when it conflicts with the majority of
   const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
   assert.equal(r.engines.filter(e=>e.action==='SELL').length,3);
   assert.equal(r.engines.filter(e=>e.action==='BUY').length,1);
-  assert.equal(r.candidateDirection,'BUY'); // weighted score would otherwise overrule the 3-engine majority
-  assert.ok(r.blockers.includes('MASTER_DIRECTION_CONFLICTS_WITH_ENGINE_MAJORITY'));
-  assert.equal(r.qualified,false);
+  assert.equal(r.candidateDirection,'BUY');
+  assert.equal(r.blockers.includes('MASTER_DIRECTION_CONFLICTS_WITH_ENGINE_MAJORITY'),false);
+  // Independent confidence/agreement safety gates may still return WAIT; majority cannot rewrite the score.
   assert.equal(r.direction,'WAIT');
+  assert.ok(r.blockers.some(x=>x==='REGIME_ADAPTIVE_CONFIDENCE_BELOW_THRESHOLD'||x==='REGIME_ADAPTIVE_AGREEMENT_BELOW_THRESHOLD'));
 });
 test('missing Engine 4 evidence is reported as incomplete rather than silently treated as alignment',()=>{
   const f=fixture();
