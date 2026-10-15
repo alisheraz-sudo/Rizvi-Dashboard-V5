@@ -1,27 +1,10 @@
 {
-  "name": "rizvi-dashboard-v5",
-  "version": "5.0.0",
+  "name": "rizvi-engine5-live-shadow-runner",
+  "version": "0.1.0",
   "private": true,
-  "description": "Rizvi Dashboard V5 mobile trading dashboard",
+  "description": "Isolated five-minute read-only XAU/USD Engine 5 shadow runner; does not serve or modify production dashboard.",
   "scripts": {
-    "dev": "npx serve .",
-    "build": "node -e \"console.log('Rizvi Dashboard V5 static build ready')\"",
-    "test": "node --test",
-    "cap:sync": "npx cap sync",
-    "android": "npx cap open android",
-    "ios": "npx cap open ios",
-    "start": "node server.js"
+    "start": "node experiments/engine5-regime-adaptive/runner.js"
   },
-  "dependencies": {
-    "@capacitor/core": "7.4.3",
-    "@capacitor/android": "7.4.3",
-    "@capacitor/ios": "7.4.3",
-    "@capacitor/app": "7.1.0",
-    "@capacitor/browser": "7.0.2",
-    "ws": "^8.18.3"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "7.4.3",
-    "typescript": "5.9.2"
-  }
+  "engines": { "node": ">=20" }
 }
