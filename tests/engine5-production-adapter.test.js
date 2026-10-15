@@ -92,3 +92,25 @@ test('rejects stale feed and mismatched or stale engine reports', () => {
 });
 
 test('only explicitly independent engine reports can enter the 3-of-4 gate',()=>{const base={symbol:'XAU/USD',independentEngineReport:{independent:false,engines:[{engine:'ENGINE_1',action:'BUY'}]}};assert.deepEqual(buildInput(base).engines,[]);const accepted=buildInput({symbol:'XAU/USD',independentEngineReport:{independent:true,engines:[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'},{engine:'ENGINE_5',action:'BUY'}]}});assert.deepEqual(accepted.engines,[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'}]);});
+
+test('derives domain-engine reports from indicator components, not confluence groups', () => {
+  const input = buildInput({
+    symbol: 'XAU/USD',
+    confluence: { components: {
+      'EMA 9/21': {status:'CALCULATED',bias:1,score:60},
+      'RSI-14': {status:'CALCULATED',bias:1,score:60},
+      'Market Structure': {status:'CALCULATED',bias:-1,score:40},
+      'Structure Prediction': {status:'CALCULATED',bias:-1,score:40},
+      'VWAP Filter': {status:'CALCULATED',bias:1,score:65},
+      'Volume Profile': {status:'CALCULATED',bias:1,score:65},
+      'Bullish/Bearish Divergence': {status:'CALCULATED',bias:-1,score:35},
+      'DXY Inverse-Correlation Filter': {status:'LIVE',bias:-1,score:65}
+    }}
+  });
+  assert.deepEqual(input.engines, [
+    {engine:'ENGINE_1',action:'BUY'},
+    {engine:'ENGINE_2',action:'SELL'},
+    {engine:'ENGINE_3',action:'BUY'},
+    {engine:'ENGINE_4',action:'SELL'}
+  ]);
+});
