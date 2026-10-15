@@ -1,0 +1,29 @@
+name: Isolated Python engine prototype tests
+
+on:
+  pull_request:
+    paths:
+      - 'python_engine/**'
+      - '.github/workflows/python-engine-tests.yml'
+  push:
+    branches:
+      - 'experiment/python-engine-parity'
+    paths:
+      - 'python_engine/**'
+      - '.github/workflows/python-engine-tests.yml'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out experiment branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python modules
+        run: python -m compileall -q python_engine
+      - name: Run isolated unit tests
+        working-directory: python_engine
+        run: python -m unittest -v test_engine_parity test_engine_system
