@@ -175,7 +175,9 @@ def evaluate_engine_system(snapshot: dict[str, Any], now_ms: int,
     if confidence < LOCKED_ENGINE5["minimum_confidence"]: reasons.append("confidence<80")
     if indicator_agreement < LOCKED_ENGINE5["minimum_indicator_agreement"]: reasons.append("agreement<70")
     if len(active_indicator_rows) < LOCKED_ENGINE5["minimum_active_indicators"]: reasons.append("active-indicators<6")
-    for key in ("dxy", "us_news", "session", "day_high_low", "order_flow", "delta"):
+    # Only the external blockers present in deployed Engine 5 are mandatory here.
+    # Session/day-high-low are indicators; order flow/delta are not deployed gates.
+    for key in ("dxy", "us_news"):
         item = context.get(key)
         if not isinstance(item, dict) or str(item.get("status", "")).upper() != "LIVE":
             reasons.append(f"{key.replace('_', '-')}-unavailable")
