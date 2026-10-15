@@ -31,6 +31,15 @@ class EngineParityTests(unittest.TestCase):
         self.assertEqual(len(bars), 1)
         self.assertEqual(bars[0]["close"], 1.5)
 
+    def test_iso_timestamp_strings_are_normalized(self):
+        bars = normalize_bars([{"date": "2026-10-15T12:00:00Z", "o": 1, "h": 2, "l": 0.5, "c": 1.5}])
+        self.assertEqual(len(bars), 1)
+        self.assertGreater(bars[0]["time"], 1_700_000_000)
+
+    def test_invalid_timestamp_does_not_drop_valid_ohlc_row(self):
+        bars = normalize_bars([{"date": "not-a-date", "o": 1, "h": 2, "l": 0.5, "c": 1.5}])
+        self.assertEqual(len(bars), 1)
+
     def test_invalid_ohlc_rows_are_dropped(self):
         bars = normalize_bars([{"open": 1, "high": 2, "low": 0, "close": 1}, {"open": "bad", "high": 2, "low": 0, "close": 1}])
         self.assertEqual(len(bars), 1)
