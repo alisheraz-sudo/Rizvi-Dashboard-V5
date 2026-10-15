@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {INDICATORS,ENGINE_DEFS,evaluate}=require('./engine5-unified-regime-adaptive-v3');
+const {INDICATORS,ENGINE_DEFS,adaptiveWeights,adaptiveThresholds,evaluate}=require('./engine5-unified-regime-adaptive-v3');
 
 function fixture(now=1_800_000_000_000) {
   const bars=[];
@@ -22,6 +22,26 @@ test('four subengines have a stable simple contract for master alignment',()=>{
   assert.deepEqual(ENGINE_DEFS.map(x=>x.id),['ENGINE_1','ENGINE_2','ENGINE_3','ENGINE_4']);
   assert.ok(ENGINE_DEFS.every(x=>x.indicators.length>0));
 });
+
+test('weights and decision thresholds change with detected regime',()=>{
+  const trending={name:'TRENDING_UP',metrics:{spread:0.9,consistency:0.7,volRatio:1.1}};
+  const ranging={name:'RANGING',metrics:{spread:0.05,consistency:0.0,volRatio:0.9}};
+  const wt=adaptiveWeights(trending,{});
+  const wr=adaptiveWeights(ranging,{});
+  assert.notDeepEqual(wt,wr);
+  assert.ok(wt.trend>wr.trend);
+  assert.ok(wr.structure>wt.structure);
+  assert.notDeepEqual(adaptiveThresholds(trending),adaptiveThresholds(ranging));
+});
+test('outcome feedback gradually influences weights but is bounded',()=>{
+  const regime={name:'TRENDING_UP',metrics:{spread:0.9,consistency:0.7,volRatio:1.1}};
+  const neutral=adaptiveWeights(regime,{});
+  const feedback=adaptiveWeights(regime,{enginePerformance:{trend:{hitRate:0.8,samples:100},structure:{hitRate:0.3,samples:100}}});
+  assert.notDeepEqual(neutral,feedback);
+  for(const w of Object.values(feedback)) assert.ok(w>=0.08 && w<=0.48);
+  assert.ok(Math.abs(Object.values(feedback).reduce((a,b)=>a+b,0)-1)<0.001);
+});
+
 test('adaptive master qualifies only after three distinct fresh bars',()=>{
   const f=fixture();
   let state={};
