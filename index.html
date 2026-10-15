@@ -1724,8 +1724,18 @@ sync();
   const snapshotAge=Number(snapshot?.capturedAt);
   const snapshotExpired=!Number.isFinite(snapshotAge)||now-snapshotAge<0||now-snapshotAge>maxFeedAgeMs(tf);
   if(snapshotExpired){
-   /* Actively refresh the canonical bridge when Engine 5 detects an expired snapshot; throttle to one request per 10 seconds. */
-   if(typeof W.RIZVI_REFRESH_CANONICAL_FEED==='function'&&now-Number(W.__RIZVI_ENGINE5_RECOVERY_REFRESH_AT||0)>=10000){W.__RIZVI_ENGINE5_RECOVERY_REFRESH_AT=now;try{W.RIZVI_REFRESH_CANONICAL_FEED();}catch(_){}}
+   /* A canonical refresh is asynchronous. Do not validate the pre-refresh status/bars in this tick:
+      the feed bridge may be busy and only publish fresh state after its current poll settles. */
+   const refreshAvailable=typeof W.RIZVI_REFRESH_CANONICAL_FEED==='function';
+   const lastRefreshAt=Number(W.__RIZVI_ENGINE5_RECOVERY_REFRESH_AT||0);
+   if(refreshAvailable&&now-lastRefreshAt>=10000){
+    W.__RIZVI_ENGINE5_RECOVERY_REFRESH_AT=now;
+    try{W.RIZVI_REFRESH_CANONICAL_FEED();}catch(e){diag(symbol,tf,'ENGINE5 canonical refresh request failed',{error:String(e)});}
+    return;
+   }
+   /* Give the in-flight refresh up to the throttle window to publish. The next tick
+      re-reads the canonical snapshot; only validate/reject after the window expires. */
+   if(refreshAvailable&&now-lastRefreshAt<10000)return;
    const liveStatus=W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
    const liveBars=Array.isArray(W.RIZVI_CANONICAL_RAW_BARS)?W.RIZVI_CANONICAL_RAW_BARS:[];
    const statusAge=now-Number(liveStatus.updatedAt);
