@@ -21,3 +21,14 @@ test('indicator scores modulate directional contribution while missing scores pr
 test('duplicate engine IDs cannot inflate 3-of-4 alignment',()=>{const components={EMA:{bias:1,reliability:1,score:90,status:'LIVE'},Trend:{bias:1,reliability:1,score:90,status:'LIVE'},MACD:{bias:1,reliability:1,score:90,status:'LIVE'},RSI:{bias:1,reliability:1,score:90,status:'LIVE'},VWAP:{bias:1,reliability:1,score:90,status:'LIVE'},'Price Action':{bias:1,reliability:1,score:90,status:'LIVE'}};const algorithms={a:{action:'BUY',confidence:99},b:{action:'BUY',confidence:99},c:{action:'BUY',confidence:99},d:{action:'BUY',confidence:99},e:{action:'WAIT',confidence:99}};const engines=[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_1',action:'BUY'}];const r=evaluate({bars:bars(),components,algorithms,engines});assert.equal(r.enginesReported,1);assert.equal(r.qualified,false);assert.ok(r.blockers.includes('INDEPENDENT_ENGINE_REPORT_MISSING'));});
 
 test('failed qualification resets the consecutive qualified-run streak',()=>{const components={EMA:{bias:1,reliability:1,status:'LIVE'},Trend:{bias:1,reliability:1,status:'LIVE'},MACD:{bias:1,reliability:1,status:'LIVE'},RSI:{bias:1,reliability:1,status:'LIVE'},VWAP:{bias:1,reliability:1,status:'LIVE'},'Price Action':{bias:1,reliability:1,status:'LIVE'}};const algorithms={a:{action:'BUY',confidence:99},b:{action:'BUY',confidence:99},c:{action:'BUY',confidence:99},d:{action:'BUY',confidence:99},e:{action:'WAIT',confidence:99}};const engines=[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'BUY'},{engine:'ENGINE_4',action:'SELL'}];const r=evaluate({bars:bars(),components,algorithms,engines,qualifiedRunCount:2,newsBlocked:true});assert.equal(r.qualified,false);assert.equal(r.qualifiedRunCount,0);});
+
+test('missing genuine independent-engine reports always blocks qualification',()=>{
+  const components={EMA:{bias:1,reliability:1,score:90,status:'LIVE'},Trend:{bias:1,reliability:1,score:90,status:'LIVE'},MACD:{bias:1,reliability:1,score:90,status:'LIVE'},RSI:{bias:1,reliability:1,score:90,status:'LIVE'},VWAP:{bias:1,reliability:1,score:90,status:'LIVE'},'Price Action':{bias:1,reliability:1,score:90,status:'LIVE'}};
+  const algorithms={a:{action:'BUY',confidence:99},b:{action:'BUY',confidence:99},c:{action:'BUY',confidence:99},d:{action:'BUY',confidence:99},e:{action:'WAIT',confidence:99}};
+  const r=evaluate({bars:bars(),components,algorithms,engines:[],qualifiedRunCount:2});
+  assert.equal(r.enginesReported,0);
+  assert.equal(r.enginesAligned,0);
+  assert.equal(r.qualified,false);
+  assert.equal(r.action,'WAIT');
+  assert.ok(r.blockers.includes('INDEPENDENT_ENGINE_REPORT_MISSING'));
+});
