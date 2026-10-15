@@ -180,7 +180,7 @@ function runEngine(def,active,thresholds) {
 }
 function evaluate(input={},state={}) {
   const now=Number.isFinite(input.nowMs)?input.nowMs:Date.now(), bars=normalizeBars(input.bars);
-  const fail=(reason)=>({symbol:'XAU/USD',direction:'WAIT',candidateDirection:'WAIT',qualified:false,autoTrading:false,
+  const fail=(reason)=>({symbol:'XAU/USD',direction:'WAIT',candidateDirection:'WAIT',confidence:0,displayConfidence:0,confidenceSource:'MASTER_DECISION',qualified:false,autoTrading:false,
     blockers:[reason],activeIndicators:0,engines:[],nextState:{...state,consecutiveQualifiedBars:0}});
   if(bars.length<CONFIG.minBars) return fail('INSUFFICIENT_OR_INVALID_OHLC');
   const last=bars[bars.length-1];
@@ -213,7 +213,7 @@ function evaluate(input={},state={}) {
   if(consecutive<CONFIG.requiredQualifiedBars) blockers.push('WAITING_FOR_3_DISTINCT_QUALIFIED_BARS');
   const qualified=rawQualified&&isNewBar&&consecutive>=CONFIG.requiredQualifiedBars;
   return {symbol:'XAU/USD',direction:qualified?candidateDirection:'WAIT',candidateDirection,qualified,autoTrading:false,
-    score:Number(score.toFixed(4)),confidence,agreement:Math.round(agreement),alignedEngines:aligned,totalEngines:present.length,
+    score:Number(score.toFixed(4)),confidence,displayConfidence:confidence,confidenceSource:'MASTER_DECISION',agreement:Math.round(agreement),alignedEngines:aligned,totalEngines:present.length,
     activeIndicators:active.length,activeIndicatorIds:active.map(x=>x.id),engines,regime,adaptiveWeights:weights,
     adaptiveThresholds:thresholds,blockers,
     nextState:{...state,regimeState:regime.nextState,consecutiveQualifiedBars:rawQualified?consecutive:0,
