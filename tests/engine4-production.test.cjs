@@ -227,6 +227,7 @@ test('Master Engine 5 has no removed scoring inputs and reports the 18-indicator
   assert.doesNotMatch(html, /'Delta Buy\/Sell':missing/);
   assert.doesNotMatch(html, /'Order Flow \/ Footprint':missing/);
   assert.doesNotMatch(html, /BLOCKED_FEATURES|D_ORDERFLOW/);
+  assert.doesNotMatch(html, /function delta\(bs\)|function of\(\)|RIZVI_TRADE_DELTA|RIZVI_FOOTPRINT_DELTA/);
   assert.match(html, /active=entries\.filter\(x=>Number\(x\?\.score\)>0/);
 });
 
