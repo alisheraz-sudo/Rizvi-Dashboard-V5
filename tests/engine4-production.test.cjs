@@ -293,3 +293,10 @@ test('Engine 5 diagnostics use the actual available algorithm count and preserve
   assert.doesNotMatch(bridge, /Delta Buy\/Sell|Order Flow \/ Footprint|D_ORDERFLOW/);
   assert.match(html, /rows\.length\+' available algorithms → Engine 5'/);
 });
+
+
+test('Dashboard UI uses Engine 5 indicator eligibility rules and exposes per-indicator status reasons', () => {
+  assert.match(html, /active\/eligible: '\+compEntries\.filter\(\(\[k,v\]\)=>Number\(v\?\.score\)>0&&!\/UNAVAILABLE\|WAITING\|INSUFFICIENT\|NO_REAL_VOLUME\|NO_REAL_ORDER_FLOW\|NO_TRADE_SIDE_VOLUME\|BLOCKED\//);
+  assert.match(html, /v\?\.status\|\|'STATUS_MISSING'/);
+  assert.match(html, /v\?\.reason\|\|v\?\.message\|\|'no reason supplied'/);
+});
