@@ -12,6 +12,13 @@ function fixture(now=1800000000000) {
   const indicators=INDICATORS.filter(x=>!x.requiresApi).map(x=>({id:x.id,action:'BUY',available:true,reliability:1,timestamp:now}));
   return {now,bars,indicators};
 }
+test('approved 17-indicator registry excludes Delta, Order Flow and News while retaining Volume Profile and context',()=>{
+  assert.equal(INDICATORS.length,17);
+  const ids=INDICATORS.map(x=>x.id);
+  assert.equal(new Set(ids).size,17);
+  for(const excluded of ['delta_buy_sell','order_flow','high_impact_us_news','news_filter']) assert.equal(ids.includes(excluded),false,excluded+' must be excluded');
+  for(const required of ['volume_profile','dxy_inverse_correlation','day_high_low','trading_sessions']) assert.equal(ids.includes(required),true,required+' must be retained');
+});
 test('four independent sub-engines are present and have non-overlapping contracts',()=>{
   assert.deepEqual(ENGINES.map(x=>x.id),['ENGINE_1','ENGINE_2','ENGINE_3','ENGINE_4']);
   assert.ok(ENGINES.every(x=>x.indicators.length>0));
@@ -54,6 +61,7 @@ test('missing API-only data is not fabricated and absent engine evidence blocks 
   const f=fixture();
   const r=evaluate({bars:f.bars,indicators:f.indicators.filter(x=>x.id!=='vwap'&&x.id!=='volume_profile'&&x.id!=='liquidity_sweeps'),nowMs:f.now},{});
   assert.equal(r.activeIndicatorIds.includes('delta_buy_sell'),false);
+  assert.equal(r.activeIndicatorIds.includes('order_flow'),false);
   assert.ok(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'));
 });
 test('stale and out-of-order OHLC fail closed',()=>{
@@ -87,6 +95,14 @@ test('missing Engine 4 evidence is reported as incomplete rather than silently t
   assert.equal(r.engines.find(e=>e.id==='ENGINE_4').hasEvidence,false);
   assert.ok(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'));
   assert.equal(r.qualified,false);
+});
+test('missing optional DXY context does not create a hard blocker when Engine 4 has other evidence',()=>{
+  const f=fixture();
+  f.indicators=f.indicators.filter(x=>x.id!=='dxy_inverse_correlation');
+  const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
+  assert.equal(r.activeIndicatorIds.includes('dxy_inverse_correlation'),false);
+  assert.equal(r.engines.find(e=>e.id==='ENGINE_4').hasEvidence,true);
+  assert.equal(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'),false);
 });
 test('stale indicator readings are excluded from active evidence',()=>{
   const f=fixture();
