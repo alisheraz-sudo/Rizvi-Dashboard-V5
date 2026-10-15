@@ -75,7 +75,7 @@ def validate_snapshot(snapshot: dict[str, Any], now_ms: int) -> list[str]:
         elif age > max_age:
             errors.append("snapshot-stale")
     rows = normalize_bars(snapshot.get("bars", []))
-    if len(rows) < 50:
+    if len(rows) < 21:
         errors.append("insufficient-valid-bars")
     if rows and isinstance(snapshot.get("bars"), list):
         last_stamp = rows[-1].get("time", float("nan"))
