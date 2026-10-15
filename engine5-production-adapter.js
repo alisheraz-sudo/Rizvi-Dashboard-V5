@@ -50,6 +50,7 @@ function normalizeComponents(components) {
     out[name] = {
       status: status || 'REPORTED',
       ...(Number.isFinite(bias) && bias >= -1 && bias <= 1 ? { bias } : {}),
+      ...(item.score != null && Number.isFinite(Number(item.score)) && Number(item.score) >= 0 && Number(item.score) <= 100 ? { score: Number(item.score) } : {}),
       ...(item.direction != null ? { direction: item.direction } : {}),
       ...(item.action != null ? { action: item.action } : {}),
       ...(item.signal != null ? { signal: item.signal } : {}),
