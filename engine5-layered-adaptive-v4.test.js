@@ -64,3 +64,35 @@ test('stale and out-of-order OHLC fail closed',()=>{
   const order=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
   assert.ok(order.blockers.includes('INSUFFICIENT_OR_INVALID_OHLC'));
 });
+
+test('master cannot follow weighted score when it conflicts with the majority of sub-engines',()=>{
+  const f=fixture();
+  f.indicators=f.indicators.map(x=>{
+    const engine=INDICATORS.find(d=>d.id===x.id).engine;
+    return engine==='trend'?{...x,action:'BUY',reliability:1}:
+      {...x,action:'SELL',reliability:.15};
+  });
+  const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
+  assert.equal(r.engines.filter(e=>e.action==='SELL').length,3);
+  assert.equal(r.engines.filter(e=>e.action==='BUY').length,1);
+  assert.equal(r.candidateDirection,'BUY'); // weighted score would otherwise overrule the 3-engine majority
+  assert.ok(r.blockers.includes('MASTER_DIRECTION_CONFLICTS_WITH_ENGINE_MAJORITY'));
+  assert.equal(r.qualified,false);
+  assert.equal(r.direction,'WAIT');
+});
+test('missing Engine 4 evidence is reported as incomplete rather than silently treated as alignment',()=>{
+  const f=fixture();
+  f.indicators=f.indicators.filter(x=>x.id!=='atr_volatility'&&x.id!=='divergence');
+  const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
+  assert.equal(r.engines.find(e=>e.id==='ENGINE_4').hasEvidence,false);
+  assert.ok(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'));
+  assert.equal(r.qualified,false);
+});
+test('stale indicator readings are excluded from active evidence',()=>{
+  const f=fixture();
+  f.indicators=f.indicators.map(x=>({...x,timestamp:f.now-600000}));
+  const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
+  assert.equal(r.activeIndicators,0);
+  assert.ok(r.blockers.includes('INSUFFICIENT_ACTIVE_INDICATORS'));
+  assert.equal(r.qualified,false);
+});
