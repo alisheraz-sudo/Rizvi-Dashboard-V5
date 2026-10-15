@@ -239,3 +239,28 @@ test('Master Engine 5 has no Delta/Order Flow options and reports 18 indicators 
   assert.doesNotMatch(masterEngine, /delta|order.?flow|footprint/i);
   assert.match(html, /totalIndicators:18,engineCount:4/);
 });
+
+
+test('Engine 5 RSI remains neutral in a completely flat market', () => {
+  const bars = Array.from({ length: 40 }, (_, i) => ({
+    t: 1790000000 + i * 60, o: 2300, h: 2301, l: 2299, c: 2300, v: 100
+  }));
+  const sandbox = {
+    Date, Math, Number, Array, Object, String, Map, JSON,
+    CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
+    setInterval: () => 0,
+    RIZVI_CURRENT_SYMBOL: 'XAU/USD',
+    RIZVI_FEED_STATUS: { ok: true, symbol: 'XAU/USD' },
+    RIZVI_RAW_BARS: bars,
+    RIZVI_AGG_BARS: bars
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(masterEngine, sandbox, { timeout: 3000, filename: 'master-engine-flat-rsi.js' });
+  assert.equal(sandbox.RIZVI_MASTER_CONFIRMATION.rsi, 50);
+});
+
+test('Day High/Low bridge does not label fallback candles as a live daily range', () => {
+  assert.ok(html.includes("dayRangeStatus=today.length?'LIVE':'UNAVAILABLE'"));
+  assert.ok(html.includes("dayHighLow:r.dayRangeStatus==='LIVE'"));
+  assert.ok(html.includes('No candles for current UTC day; recent candles are display fallback only'));
+});
