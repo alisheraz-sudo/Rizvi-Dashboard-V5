@@ -55,6 +55,16 @@ class EngineSystemTests(unittest.TestCase):
         now, snap = sample_snapshot(symbol="BTCUSD")
         self.assertIn("symbol-not-XAU/USD", validate_snapshot(snap, now))
 
+    def test_snapshot_accepts_deployed_minimum_of_21_bars(self):
+        now, snap = sample_snapshot()
+        snap["bars"] = snap["bars"][-21:]
+        self.assertNotIn("insufficient-valid-bars", validate_snapshot(snap, now))
+
+    def test_snapshot_rejects_fewer_than_21_bars(self):
+        now, snap = sample_snapshot()
+        snap["bars"] = snap["bars"][-20:]
+        self.assertIn("insufficient-valid-bars", validate_snapshot(snap, now))
+
     def test_snapshot_rejects_stale_snapshot(self):
         now, snap = sample_snapshot(age_ms=600_000)
         self.assertIn("snapshot-stale", validate_snapshot(snap, now))
