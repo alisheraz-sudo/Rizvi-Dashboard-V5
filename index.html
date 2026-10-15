@@ -835,6 +835,14 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
     const size=minutes*60000, end=Math.floor(now/size)*size, start=end-size;
     return bars.filter(b=>b.t>=start&&b.t<end);
   }
+  function rangeTime(value){
+    let n=typeof value==='string'&&value.trim()!==''&&!Number.isFinite(Number(value))?Date.parse(value):Number(value);
+    if(!Number.isFinite(n)||n<=0)return NaN;
+    if(n<1e11)n*=1000;
+    else if(n>=1e17)n/=1e6;
+    else if(n>=1e14)n/=1000;
+    return Math.floor(n);
+  }
   function buildRange(bars,symbol,source){
     if(!bars.length)return null;
     const now=Date.now(), dayKey=new Date(now).toISOString().slice(0,10);
@@ -868,8 +876,8 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
         fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=120',{cache:'no-store'}).then(r=>r.json())
       ]);
       if(!Array.isArray(r15)||!Array.isArray(r1))throw new Error('bad response');
-      const bars15=r15.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
-      const bars1=r1.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const bars15=r15.map(x=>({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
+      const bars1=r1.map(x=>({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l)&&Number.isFinite(x.c));
       const v=buildRange(bars15,'BTCUSD','BINANCE 15M + 1M MICRO');
       if(v&&seq===refreshSeq&&activeSymbol()==='BTCUSD'&&publish(v)){attachLiquidityEngine(v,bars1);window.RIZVI_LIQUIDITY_ENGINE.microTimeframe='1M';}
     }catch(e){
@@ -889,7 +897,7 @@ select(window.RIZVI_CURRENT_SYMBOL||'XAU/USD');
       if(!response.ok)throw new Error('XAU range feed HTTP '+response.status);
       const d=await response.json();
       const a=Array.isArray(d?.bars)?d.bars:(Array.isArray(d)?d:(d?.data||d?.prices||[]));
-      const bars=a.map(x=>Array.isArray(x)?({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:+(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
+      const bars=a.map(x=>Array.isArray(x)?({t:rangeTime(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4]}):({t:rangeTime(x.timestamp||x.time||x.t),o:+(x.open||x.o),h:+(x.high||x.h),l:+(x.low||x.l),c:+(x.close||x.c)})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.h)&&Number.isFinite(x.l));
       if(!bars.length)throw new Error('no gold bars');
       const v=buildRange(bars,'XAU/USD','XAUS INTRADAY');
       if(v&&seq===refreshSeq&&activeSymbol()==='XAU/USD'&&publish(v)){attachLiquidityEngine(v,bars);}
