@@ -1,0 +1,28 @@
+name: Engine 5 Layered Adaptive Candidate Tests
+
+on:
+  pull_request:
+    paths:
+      - 'engine5-layered-adaptive-v4.js'
+      - 'engine5-layered-adaptive-v4.test.js'
+      - '.github/workflows/engine5-layered-adaptive.yml'
+  push:
+    branches:
+      - 'feature/engine5-layered-adaptive-refinement'
+    paths:
+      - 'engine5-layered-adaptive-v4.js'
+      - 'engine5-layered-adaptive-v4.test.js'
+      - '.github/workflows/engine5-layered-adaptive.yml'
+
+jobs:
+  candidate-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated Engine 5 regression tests
+        run: node --test engine5-layered-adaptive-v4.test.js
