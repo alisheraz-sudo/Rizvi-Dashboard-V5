@@ -59,7 +59,7 @@ const AFFINITY = Object.freeze({
 });
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
-const timeMs=v=>typeof v==='number'&&Number.isFinite(v)?v:Date.parse(v);
+const timeMs=v=>{ if(typeof v==='number'&&Number.isFinite(v)) return Math.abs(v)<1e12?v*1000:v; const parsed=Date.parse(v); return parsed; };
 function dir(v) {
   if(typeof v==='number'&&Number.isFinite(v)) return clamp(v,-1,1);
   const s=String(v??'').trim().toUpperCase();
