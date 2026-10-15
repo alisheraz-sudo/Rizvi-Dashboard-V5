@@ -99,7 +99,7 @@ const expectedNames = [
 test('Engine 4 returns the 18-indicator, four-engine roster and bounded outputs', () => {
   const bars = fixtureBars();
   const { report } = runProduction(bars);
-  assert.equal(Object.keys(report.tests).length, 20);
+  assert.equal(Object.keys(report.tests).length, 18);
   assert.deepEqual(Object.keys(report.tests).sort(), [...expectedNames].sort());
   for (const [name, row] of Object.entries(report.tests)) {
     assert.ok(row.score === null || (Number.isFinite(row.score) && row.score >= 0 && row.score <= 100), name + ' score range');
