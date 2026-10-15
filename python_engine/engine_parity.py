@@ -7,6 +7,7 @@ are intentionally outside this module and remain unchanged.
 from __future__ import annotations
 
 from math import isfinite
+from datetime import datetime
 from typing import Any, Iterable
 
 
@@ -27,12 +28,28 @@ def _number(value: Any) -> float:
         return float("nan")
 
 
+def _timestamp(value: Any) -> float:
+    """Accept numeric epoch values and ISO/date strings like the browser feed."""
+    numeric = _number(value)
+    if isfinite(numeric):
+        return numeric
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=__import__("datetime").timezone.utc)
+            return parsed.timestamp()
+        except ValueError:
+            pass
+    return float("nan")
+
+
 def normalize_bars(rows: Iterable[dict[str, Any]]) -> list[dict[str, float]]:
     """Normalize OHLCV aliases the same way as the browser scorer."""
     out = []
     for row in rows:
         bar = {
-            "time": _number(row.get("time", row.get("timestamp", row.get("t", row.get("date"))))),
+            "time": _timestamp(row.get("time", row.get("timestamp", row.get("t", row.get("date"))))),
             "open": _number(row.get("open", row.get("o"))),
             "high": _number(row.get("high", row.get("h"))),
             "low": _number(row.get("low", row.get("l"))),
