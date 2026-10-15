@@ -33,6 +33,7 @@ test('maps production components and algorithm votes without inventing missing b
   });
   assert.equal(input.symbol, 'XAUUSD');
   assert.equal(input.components['EMA 9/21'].bias, 1);
+  assert.equal(input.components['EMA 9/21'].score, 75);
   assert.equal(input.components['No Bias'].bias, undefined);
   assert.equal(input.components['Delta Buy/Sell'].status, 'NO_REAL_ORDER_FLOW');
   assert.equal(input.algorithms.trend.action, 'BUY');
@@ -89,3 +90,5 @@ test('rejects stale feed and mismatched or stale engine reports', () => {
   assert.ok(result.blockers.includes('ALGORITHM_SYMBOL_MISMATCH'));
   assert.ok(result.blockers.includes('INDICATOR_REPORT_STALE_OR_MISSING'));
 });
+
+test('only explicitly independent engine reports can enter the 3-of-4 gate',()=>{const base={symbol:'XAU/USD',independentEngineReport:{independent:false,engines:[{engine:'ENGINE_1',action:'BUY'}]}};assert.deepEqual(buildInput(base).engines,[]);const accepted=buildInput({symbol:'XAU/USD',independentEngineReport:{independent:true,engines:[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'},{engine:'ENGINE_5',action:'BUY'}]}});assert.deepEqual(accepted.engines,[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'}]);});
