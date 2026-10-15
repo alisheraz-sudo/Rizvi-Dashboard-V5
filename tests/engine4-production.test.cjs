@@ -277,3 +277,19 @@ test('Engine 5 diagnostics expose raw algorithm votes when indicator confluence 
   assert.match(html, /indicatorAction==='WAIT'\?'n\/a':alignedCount/);
   assert.match(html, /indicatorAction!=='WAIT'&&majority!==indicatorAction/);
 });
+
+test('Engine 5 diagnostics use the actual available algorithm count and preserve the 18-indicator roster', () => {
+  const expected = [
+    'EMA 9/21','RSI-14','Trend (5)','VWAP Filter','Volatility Regime Filter','ATR (14)',
+    'Market Structure','Structure Prediction','Candle Patterns / Price Action','Fair Value Gap (FVG)','Support & Resistance',
+    'Volume Profile','Liquidity Pools / Sweeps','Bullish/Bearish Divergence','Trading Sessions','Day High / Day Low',
+    'DXY Inverse-Correlation Filter','High-Impact US News Filter'
+  ];
+  const bridgeStart = html.indexOf('function align18(full)');
+  const bridgeEnd = html.indexOf('function tests()', bridgeStart);
+  assert.ok(bridgeStart >= 0 && bridgeEnd > bridgeStart, '18-indicator alignment bridge must exist');
+  const bridge = html.slice(bridgeStart, bridgeEnd);
+  for (const name of expected) assert.ok(bridge.includes("'" + name + "'"), 'missing roster entry: ' + name);
+  assert.doesNotMatch(bridge, /Delta Buy\/Sell|Order Flow \/ Footprint|D_ORDERFLOW/);
+  assert.match(html, /rows\.length\+' available algorithms → Engine 5'/);
+});
