@@ -31,6 +31,8 @@
   const barTime = bar => reportTime(bar?.t ?? bar?.time ?? bar?.timestamp ?? bar?.date);
   const last = bars.at(-1);
   const latestBarMs = barTime(last);
+  const snapshotMs = reportTime(snap?.capturedAt);
+  const feedUpdatedMs = reportTime(feed.updatedAt);
   const indicatorMs = reportTime(confluence.timestamp);
   const algorithmMs = reportTime(algorithms.timestamp);
   const problems = [];
@@ -40,6 +42,8 @@
   if (String(feed.symbol || '').toUpperCase().replace(/\s/g, '') !== symbol) problems.push('FEED_SYMBOL_MISMATCH');
   if (String(feed.timeframe || '').toUpperCase().replace(/\s/g, '') !== timeframe) problems.push('FEED_TIMEFRAME_MISMATCH');
   if (bars.length < 50) problems.push('FEWER_THAN_50_CANONICAL_BARS');
+  if (!Number.isFinite(snapshotMs) || snapshotMs > now + 5000 || now - snapshotMs > 180000) problems.push('CANONICAL_SNAPSHOT_MISSING_OR_STALE');
+  if (!Number.isFinite(feedUpdatedMs) || feedUpdatedMs > now + 5000 || now - feedUpdatedMs > 180000) problems.push('FEED_STATUS_MISSING_OR_STALE');
   if (!Number.isFinite(latestBarMs) || latestBarMs > now + 5000 || now - latestBarMs > 180000) problems.push('LATEST_BAR_MISSING_OR_STALE');
   if (!Number.isFinite(indicatorMs) || now - indicatorMs < -5000 || now - indicatorMs > 15000) problems.push('INDICATOR_REPORT_MISSING_OR_STALE');
   if (!Number.isFinite(algorithmMs) || now - algorithmMs < -5000 || now - algorithmMs > 15000) problems.push('ALGORITHM_REPORT_MISSING_OR_STALE');
@@ -59,6 +63,7 @@
     },
     snapshotMeta: {
       version: snap?.version ?? null, capturedAt: snap?.capturedAt ?? null,
+      capturedAgeMs: Number.isFinite(snapshotMs) ? now - snapshotMs : null,
       latestBarAt: snap?.latestBarAt ?? null, latestAgeMs: snap?.latestAgeMs ?? null,
       canonicalBarCount: bars.length, latestBarAgeMs: Number.isFinite(latestBarMs) ? now - latestBarMs : null
     },
