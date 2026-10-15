@@ -249,6 +249,7 @@ test('Engine 5 RSI remains neutral in a completely flat market', () => {
     Date, Math, Number, Array, Object, String, Map, JSON,
     CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
     setInterval: () => 0,
+    dispatchEvent: () => true,
     RIZVI_CURRENT_SYMBOL: 'XAU/USD',
     RIZVI_FEED_STATUS: { ok: true, symbol: 'XAU/USD' },
     RIZVI_RAW_BARS: bars,
