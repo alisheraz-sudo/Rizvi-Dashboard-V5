@@ -19,7 +19,7 @@
   const engine4 = W.RIZVI_ENGINE4_CONTEXT || {};
   const symbol = String(snap?.symbol || W.RIZVI_CURRENT_SYMBOL || feed.symbol || '').toUpperCase().replace(/\s/g, '');
   const timeframe = String(snap?.timeframe || W.RIZVI_CANDLE_TIMEFRAME || feed.timeframe || '').toUpperCase().replace(/\s/g, '');
-  if (!/^XAU\\/?USD$/.test(symbol) && symbol !== 'GOLD') {
+  if (!['XAU/USD', 'XAUUSD', 'GOLD'].includes(symbol)) {
     const rejected = { schema: 'rizvi-engine5-shadow-snapshot-v1', validation: { candidateUsable: false, problems: ['NOT_GOLD_SYMBOL'] }, autoTrading: false };
     console.warn('Engine 5 shadow export refused: Gold/XAUUSD must be selected. No market data was exported.');
     return rejected;
