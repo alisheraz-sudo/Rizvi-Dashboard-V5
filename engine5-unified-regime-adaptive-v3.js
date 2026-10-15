@@ -144,7 +144,7 @@ function runMaster(engines, regime, activeCount, state, lastBarTs) {
   if(agreement<CONFIG.minAgreement) blockers.push('AGREEMENT_BELOW_THRESHOLD');
   if(confidence<CONFIG.minConfidence) blockers.push('CONFIDENCE_BELOW_THRESHOLD');
   const alignedAlgorithms=Array.isArray(state.algorithms)
-    ? state.algorithms.filter(x=>x && x.available!==false && direction(x.action)===directionName && directionName!=='WAIT').length : 0;
+    ? state.algorithms.filter(x=>x && x.available!==false && direction(x.action)===direction(directionName) && directionName!=='WAIT').length : 0;
   if(alignedAlgorithms<CONFIG.minAlignedAlgorithms) blockers.push('ALGORITHM_CONFIRMATION_BELOW_4_OF_5');
   if((Array.isArray(state.algorithms)?state.algorithms.filter(x=>x&&x.available!==false).length:0)<CONFIG.minAlgorithms) blockers.push('ALGORITHM_INPUTS_INCOMPLETE');
   const rawQualified=blockers.length===0 && directionName!=='WAIT';
