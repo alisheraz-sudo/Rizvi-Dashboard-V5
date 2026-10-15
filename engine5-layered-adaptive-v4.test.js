@@ -112,6 +112,18 @@ test('missing optional DXY context does not create a hard blocker when Engine 4 
   assert.equal(r.engines.find(e=>e.id==='ENGINE_4').hasEvidence,true);
   assert.equal(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'),false);
 });
+test('unverified Volume Profile is retained only as low-confidence evidence',()=>{
+  const {normalizeBars}=require('./engine5-layered-adaptive-v4');
+  const f=fixture();
+  const raw=f.indicators.find(x=>x.id==='volume_profile');
+  const low=require('./engine5-layered-adaptive-v4').normalizeIndicators([raw],f.now)[0];
+  assert.equal(low.reliability,0.25);
+  assert.equal(low.quality,'LOW_CONFIDENCE_VOLUME_UNVERIFIED');
+  const verified=require('./engine5-layered-adaptive-v4').normalizeIndicators([{...raw,realVolumeVerified:true}],f.now)[0];
+  assert.equal(verified.reliability,1);
+  assert.equal(verified.quality,'VERIFIED_REAL_VOLUME');
+});
+
 test('stale indicator readings are excluded from active evidence',()=>{
   const f=fixture();
   f.indicators=f.indicators.map(x=>({...x,timestamp:f.now-600000}));
