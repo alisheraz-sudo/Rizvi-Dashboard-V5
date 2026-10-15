@@ -23,22 +23,24 @@ async function fetchJsonWithTimeout(url,options={},timeoutMs=12000){
  }finally{clearTimeout(timer);}
 }
 function normalize(rows){
- const now=Math.floor(Date.now()/1000);
- return (Array.isArray(rows)?rows:[]).map(x=>{
+ const now=Math.floor(Date.now()/1000),byTime=new Map();
+ for(const x of (Array.isArray(rows)?rows:[])){
   const raw=x.t??x.time??x.timestamp??x.date;
   let t;
   if(typeof raw==='string'&&raw.trim()!==''&&!Number.isFinite(Number(raw.trim())))t=Date.parse(raw)/1000;
   else t=Number(raw);
   if(!Number.isFinite(t)||t<=0)t=NaN;
-  else if(t>=1e17)t/=1e9;       // epoch nanoseconds -> seconds
-  else if(t>=1e14)t/=1e6;       // epoch microseconds -> seconds
-  else if(t>=1e11)t/=1e3;       // epoch milliseconds -> seconds
+  else if(t>=1e17)t/=1e9;
+  else if(t>=1e14)t/=1e6;
+  else if(t>=1e11)t/=1e3;
   t=Math.floor(t);
-  return {t,o:Number(x.o??x.open),h:Number(x.h??x.high),l:Number(x.l??x.low),c:Number(x.c??x.close),v:Number(x.v??x.volume??0)};
- })
- // The bridge uses epoch seconds internally; discard invalid/future bars before sorting or age checks.
- .filter(x=>Number.isFinite(x.t)&&x.t>0&&x.t<=now+5&&[x.o,x.h,x.l,x.c].every(Number.isFinite))
- .sort((a,b)=>a.t-b.t);
+  const o=Number(x.o??x.open),h=Number(x.h??x.high),l=Number(x.l??x.low),c=Number(x.c??x.close),v=Number(x.v??x.volume??0);
+  // Reject malformed prices, impossible OHLC ranges, negative volume, and future candles.
+  if(!Number.isFinite(t)||t<=0||t>now+5||![o,h,l,c,v].every(Number.isFinite)||Math.min(o,h,l,c)<=0||v<0||h<Math.max(o,c,l)||l>Math.min(o,c,h))continue;
+  // Duplicate timestamps can arise from provider retries; retain one canonical candle per timestamp.
+  byTime.set(t,{t,o,h,l,c,v});
+ }
+ return [...byTime.values()].sort((a,b)=>a.t-b.t);
 }
 function aggregate(rows,seconds){
  const out=[];
@@ -91,7 +93,7 @@ async function poll(){
    validated=validateRows(data.bars,data.source||'BTC OHLC endpoint');
   }else{
    try{
-    const result=await fetchJsonWithTimeout('/market/xau/intraday?allowStale=1',{cache:'no-store',credentials:'same-origin'});
+    const result=await fetchJsonWithTimeout('/market/xau/intraday?granularity='+TF_SECONDS[tf]+'&allowStale=1',{cache:'no-store',credentials:'same-origin'});
     const response=result.response;data=result.data;
     if(!response.ok||!data?.ok||!Array.isArray(data.bars))throw new Error(data?.error||('HTTP '+response.status));
     validated=validateRows(data.bars,data.source||'XAUS-OHLC',data.stale===true);
