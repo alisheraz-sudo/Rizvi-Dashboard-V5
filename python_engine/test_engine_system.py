@@ -79,13 +79,25 @@ class EngineSystemTests(unittest.TestCase):
     def test_missing_external_context_is_never_fabricated(self):
         now, snap = sample_snapshot()
         result = evaluate_engine_system(snap, now, indicators=live_indicators(), context={})
-        blockers = result["master_engine_5"]["blockers"]
-        self.assertIn("dxy-unavailable", blockers)
-        self.assertIn("us-news-unavailable", blockers)
+        master = result["master_engine_5"]
+        blockers = master["blockers"]
+        self.assertEqual(master["unavailable_context"], ["dxy", "us_news"])
+        self.assertNotIn("dxy-unavailable", blockers)
+        self.assertNotIn("us-news-unavailable", blockers)
         self.assertNotIn("session-unavailable", blockers)
         self.assertNotIn("day-high-low-unavailable", blockers)
         self.assertNotIn("order-flow-unavailable", blockers)
         self.assertNotIn("delta-unavailable", blockers)
+
+    def test_confirmed_external_blockers_still_block(self):
+        now, snap = sample_snapshot()
+        result = evaluate_engine_system(
+            snap, now, indicators=live_indicators(),
+            context={"news_blocked": True, "dxy_conflict": True},
+        )
+        blockers = result["master_engine_5"]["blockers"]
+        self.assertIn("news-block", blockers)
+        self.assertIn("DXY-block", blockers)
 
     def test_outputs_are_experiment_only_and_auto_trading_off(self):
         now, snap = sample_snapshot()
