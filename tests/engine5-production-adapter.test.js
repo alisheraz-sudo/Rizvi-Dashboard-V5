@@ -93,7 +93,7 @@ test('rejects stale feed and mismatched or stale engine reports', () => {
 
 test('only explicitly independent engine reports can enter the 3-of-4 gate',()=>{const base={symbol:'XAU/USD',independentEngineReport:{independent:false,engines:[{engine:'ENGINE_1',action:'BUY'}]}};assert.deepEqual(buildInput(base).engines,[]);const accepted=buildInput({symbol:'XAU/USD',independentEngineReport:{independent:true,engines:[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'},{engine:'ENGINE_5',action:'BUY'}]}});assert.deepEqual(accepted.engines,[{engine:'ENGINE_1',action:'BUY'},{engine:'ENGINE_2',action:'BUY'},{engine:'ENGINE_3',action:'SELL'},{engine:'ENGINE_4',action:'WAIT'}]);});
 
-test('derives domain-engine reports from indicator components, not confluence groups', () => {
+test('indicator domain partitions are not accepted as independent-engine votes', () => {
   const input = buildInput({
     symbol: 'XAU/USD',
     confluence: { components: {
@@ -107,10 +107,6 @@ test('derives domain-engine reports from indicator components, not confluence gr
       'DXY Inverse-Correlation Filter': {status:'LIVE',bias:-1,score:65}
     }}
   });
-  assert.deepEqual(input.engines, [
-    {engine:'ENGINE_1',action:'BUY'},
-    {engine:'ENGINE_2',action:'SELL'},
-    {engine:'ENGINE_3',action:'BUY'},
-    {engine:'ENGINE_4',action:'SELL'}
-  ]);
+  assert.deepEqual(input.engines, [],
+    'indicator groups must not be relabelled as independent Engine 1-4 outputs');
 });
