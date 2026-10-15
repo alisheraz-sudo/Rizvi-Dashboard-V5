@@ -54,14 +54,20 @@ function buildAuditRecord(){
   agreement:safeNum(x?.agreement),activeIndicators:safeNum(x?.activeIndicators)
  }));
  const indicators=componentMap();
+ const algoMean=algorithms.length?algorithms.reduce((sum,x)=>sum+(x.confidence??0),0)/algorithms.length:0;
+ const calculatedConfidence=master?Math.round(((safeNum(e5.indicatorScore??confluence.score)??0)+algoMean)/2):null;
  const blockers=[];
  if(!master)blockers.push('MASTER_CONFIRMATION_MISSING');
- if(master&&!master.qualified)blockers.push(...(Array.isArray(master.blockers)?master.blockers:[]));
- if(master&&!master.qualified&&blockers.length===1){
+ if(master&&!master.qualified){
   if(e5.indicatorAction==='WAIT')blockers.push('indicator-WAIT');
-  if(safeNum(e5.indicatorScore)<70)blockers.push('indicator-score-below-70');
-  if(safeNum(e5.indicatorAgreement)<70)blockers.push('agreement<70');
-  if(safeNum(master.confidence)<80)blockers.push('confidence<80');
+  if(safeNum(e5.indicatorScore??confluence.score)<70)blockers.push('indicator-score-below-70');
+  if(safeNum(e5.indicatorAgreement??confluence.agreement)<70)blockers.push('agreement<70');
+  if(calculatedConfidence<80)blockers.push('confidence<80');
+  if(safeNum(e5.algorithmsAligned)<4)blockers.push('aligned-algorithms<4');
+  if(safeNum(e5.algorithmsEvaluated??algorithms.length)<5)blockers.push('algorithms-evaluated<5');
+  if(safeNum(e5.activeIndicators)<6)blockers.push('active-indicators<6');
+  if(safeNum(e5.qualifiedRuns)<safeNum(e5.requiredQualifiedRuns||3))blockers.push('qualified-confirmation-runs-incomplete');
+  if(master.reason)blockers.push(cleanText(master.reason,120));
  }
  return {
   schema:'rizvi-engine-audit-v1',eventId:(W.crypto&&W.crypto.randomUUID)?W.crypto.randomUUID():String(now())+'-'+Math.random().toString(36).slice(2,10),
@@ -73,7 +79,7 @@ function buildAuditRecord(){
   engines,indicators,
   algorithms,
   engine5:{available:!!master,action:cleanText(master?.direction||'WAIT',16),
-   qualified:master?.qualified===true,confidence:safeNum(master?.confidence),
+   qualified:master?.qualified===true,confidence:calculatedConfidence,displayConfidence:safeNum(master?.confidence),
    indicatorAction:cleanText(e5.indicatorAction||confluence.action||'WAIT',16),
    indicatorScore:safeNum(e5.indicatorScore??confluence.score),
    agreement:safeNum(e5.indicatorAgreement??confluence.agreement),
