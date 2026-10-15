@@ -41,7 +41,6 @@
   const indicatorMs = reportTime(confluence.timestamp);
   const algorithmMs = reportTime(algorithms.timestamp);
   const problems = [];
-  if (!/^XAU\/?USD$/.test(symbol) && symbol !== 'GOLD') problems.push('NOT_GOLD_SYMBOL');
   if (!snap || snap.version !== 1) problems.push('CANONICAL_SNAPSHOT_MISSING_OR_UNKNOWN_VERSION');
   if (feed.ok !== true || feed.live !== true || feed.stale === true) problems.push('FEED_NOT_VALIDATED_LIVE');
   if (String(feed.symbol || '').toUpperCase().replace(/\s/g, '') !== symbol) problems.push('FEED_SYMBOL_MISMATCH');
