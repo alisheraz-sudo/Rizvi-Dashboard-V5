@@ -174,7 +174,7 @@ if(url.pathname==='/market/xau/intraday'&&req.method==='GET'){
  }catch(e){primaryError=String(e.message||'XAUS request failed').slice(0,120);}
  // Never substitute COMEX GC=F futures for spot XAU/USD. If XAUS is down, use only the explicit XAUUSD OHLC provider.
   try{
-  const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
+  const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval='+interval+'&limit=200',{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
   const data=await r.json(),bars=normalizeBars(Array.isArray(data?.bars)?data.bars:[]);
   const age=bars.length?Math.max(0,Math.floor(Date.now()/1000)-bars[bars.length-1].t):Infinity;
   if(!fresh(bars)){
