@@ -1731,6 +1731,7 @@ sync();
    if(refreshAvailable&&now-lastRefreshAt>=10000){
     W.__RIZVI_ENGINE5_RECOVERY_REFRESH_AT=now;
     try{W.RIZVI_REFRESH_CANONICAL_FEED();}catch(e){diag(symbol,tf,'ENGINE5 canonical refresh request failed',{error:String(e)});}
+    wait(symbol,'Canonical feed refresh in progress',{snapshotAgeMs:Number.isFinite(snapshotAge)?Math.round(now-snapshotAge):null});
     return;
    }
    /* Give the in-flight refresh up to the throttle window to publish. The next tick
