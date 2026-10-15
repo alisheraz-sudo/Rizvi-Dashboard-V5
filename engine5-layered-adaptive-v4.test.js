@@ -90,7 +90,7 @@ test('master cannot follow weighted score when it conflicts with the majority of
 });
 test('missing Engine 4 evidence is reported as incomplete rather than silently treated as alignment',()=>{
   const f=fixture();
-  f.indicators=f.indicators.filter(x=>x.id!=='atr_volatility'&&x.id!=='divergence');
+  f.indicators=f.indicators.filter(x=>x.id!=='atr_volatility'&&x.id!=='divergence'&&x.id!=='dxy_inverse_correlation');
   const r=evaluate({bars:f.bars,indicators:f.indicators,nowMs:f.now},{});
   assert.equal(r.engines.find(e=>e.id==='ENGINE_4').hasEvidence,false);
   assert.ok(r.blockers.includes('FOUR_ENGINE_EVIDENCE_INCOMPLETE'));
