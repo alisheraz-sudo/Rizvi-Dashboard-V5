@@ -4,7 +4,7 @@ const W=window;
 if(W.__RIZVI_ENGINE5_AUDIT_BRIDGE)return;
 W.__RIZVI_ENGINE5_AUDIT_BRIDGE=true;
 const now=()=>Date.now();
-const safeNum=v=>Number.isFinite(Number(v))?Number(v):null;
+const safeNum=v=>v==null||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
 const cleanText=(v,max=240)=>String(v==null?'':v).replace(/[\r\n\t]/g,' ').slice(0,max);
 function componentMap(){
  const sources=[
@@ -60,8 +60,9 @@ function buildAuditRecord(){
  if(!master)blockers.push('MASTER_CONFIRMATION_MISSING');
  if(master&&!master.qualified){
   if(e5.indicatorAction==='WAIT')blockers.push('indicator-WAIT');
-  if(safeNum(e5.indicatorScore??confluence.score)<70)blockers.push('indicator-score-below-70');
-  if(safeNum(e5.indicatorAgreement??confluence.agreement)<70)blockers.push('agreement<70');
+  const score=safeNum(e5.indicatorScore??confluence.score),agreement=safeNum(e5.indicatorAgreement??confluence.agreement);
+  if(score==null)blockers.push('indicator-score-missing');else if(score<70)blockers.push('indicator-score-below-70');
+  if(agreement==null)blockers.push('agreement-missing');else if(agreement<70)blockers.push('agreement<70');
   if(calculatedConfidence<80)blockers.push('confidence<80');
   if(safeNum(e5.algorithmsAligned)<4)blockers.push('aligned-algorithms<4');
   if(safeNum(e5.algorithmsEvaluated??algorithms.length)<5)blockers.push('algorithms-evaluated<5');
