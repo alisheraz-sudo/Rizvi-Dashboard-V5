@@ -19,7 +19,8 @@ def sample_snapshot(symbol="XAU/USD", timeframe="1M", age_ms=10_000):
 
 def live_indicators():
     return {key: {"status": "CALCULATED", "score": 80, "bias": 1}
-            for key in EXPECTED_INDICATORS[:12]}
+            for key in EXPECTED_INDICATORS
+            if key not in {"Volume Profile", "High-Impact US News Filter"}}
 
 
 class EngineSystemTests(unittest.TestCase):
@@ -61,7 +62,7 @@ class EngineSystemTests(unittest.TestCase):
         self.assertFalse(result["production_ready"])
         self.assertFalse(result["auto_trading"])
 
-    def test_two_held_indicators_remain_unavailable_when_not_supplied(self):
+    def test_unsupplied_indicators_are_not_fabricated(self):
         now, snap = sample_snapshot()
         result = evaluate_engine_system(snap, now, indicators=live_indicators())
         self.assertNotIn("Volume Profile", result["indicators"])
