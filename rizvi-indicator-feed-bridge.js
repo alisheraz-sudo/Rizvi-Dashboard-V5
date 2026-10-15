@@ -136,6 +136,6 @@ async function poll(){
  finally{busy=false;if(rerunRequested){rerunRequested=false;setTimeout(poll,50);}}
 }
 window.RIZVI_REFRESH_CANONICAL_FEED=()=>{if(busy){rerunRequested=true;return;}poll();};
-function start(){poll();setInterval(poll,15000);const onSymbolChange=()=>setTimeout(poll,0);window.addEventListener('rizvi:symbol-change',onSymbolChange);document.addEventListener('rizvi:symbol-change',onSymbolChange);document.getElementById('symbolSelect')?.addEventListener('change',onSymbolChange);window.addEventListener('rizvi:direct-tv-status',onSymbolChange);}
+function start(){poll();setInterval(poll,15000);const onSymbolChange=()=>setTimeout(poll,0);const onResume=()=>{if(document.visibilityState==='hidden')return;setTimeout(poll,0);};window.addEventListener('rizvi:symbol-change',onSymbolChange);document.addEventListener('rizvi:symbol-change',onSymbolChange);document.getElementById('symbolSelect')?.addEventListener('change',onSymbolChange);window.addEventListener('rizvi:direct-tv-status',onSymbolChange);window.addEventListener('pageshow',onResume);window.addEventListener('focus',onResume);document.addEventListener('visibilitychange',onResume);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
