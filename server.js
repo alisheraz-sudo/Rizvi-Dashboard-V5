@@ -135,7 +135,7 @@ if(url.pathname==='/market/xau/spot'&&req.method==='GET'){
   // If the spot quote endpoint is down, accept only a fresh, validated 1m OHLC close as a temporary quote fallback.
   // Keep the fallback source explicit; never present stale candles as live spot.
   try{
-   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval='+interval+'&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
+   const r=await fetch('https://biquote.io/api/XAUUSD/ohlc?interval=1m&limit=200',{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0 RizviDashboard/5.0'},signal:AbortSignal.timeout(10000),cache:'no-store'});
    if(!r.ok)throw new Error('BiQuote HTTP '+r.status);
    const payload=await r.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.bars)?payload.bars:[]);
    const bars=rows.map(x=>({t:epochSeconds(x.openTime??x.t??x.timestamp??x.time??x.date),c:Number(x.close??x.c)}))
