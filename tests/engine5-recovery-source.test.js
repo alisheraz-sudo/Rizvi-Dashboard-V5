@@ -10,7 +10,7 @@ test('Engine 5 snapshot recovery reads only canonical feed bars', () => {
   assert.match(bridge, /window\.RIZVI_CANONICAL_RAW_BARS\s*=\s*bars/);
   assert.match(html, /const liveBars=Array\.isArray\(W\.RIZVI_CANONICAL_RAW_BARS\)\?W\.RIZVI_CANONICAL_RAW_BARS:\[\];/);
   assert.doesNotMatch(html, /const liveBars=Array\.isArray\(W\.RIZVI_RAW_BARS\)\?W\.RIZVI_RAW_BARS:\[\];/);
-  assert.match(bridge, /window\\.RIZVI_REFRESH_CANONICAL_FEED=\\(\\)=>/);
+  assert.match(bridge, /window\.RIZVI_REFRESH_CANONICAL_FEED=\(\)=>/);
   assert.match(html, /RIZVI_REFRESH_CANONICAL_FEED/);
   assert.match(html, /RIZVI_ENGINE5_RECOVERY_REFRESH_AT/);
 });
