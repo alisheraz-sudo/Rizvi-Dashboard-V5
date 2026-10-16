@@ -15,7 +15,7 @@ function getHost(){return document.querySelector('.chart');}
 function ensureUI(){
  host=getHost();if(!host)return false;
  host.style.position='relative';host.style.overflow='hidden';
- let head=document.getElementById('rizviChartToolbar');
+ let head=document.getElementById('rizviChartToolbar')||host.querySelector('.head');
  if(!head){
   head=document.createElement('div');head.id='rizviChartToolbar';head.className='head';
   head.style.cssText='position:absolute;left:0;right:0;top:0;height:47px;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#031421;border-bottom:1px solid #173650;color:#dce8ef;font:12px Arial,sans-serif;';
@@ -26,7 +26,7 @@ function ensureUI(){
  }
  root=document.getElementById('rizviTvChartV55');
  if(!root){root=document.createElement('div');root.id='rizviTvChartV55';host.appendChild(root);}
- root.style.cssText='position:absolute!important;left:0!important;right:0!important;top:47px!important;bottom:0!important;width:100%!important;height:calc(100% - 47px)!important;z-index:4!important;background:#031421!important;';
+ if(!root.parentElement||root.parentElement!==host)host.appendChild(root);\n root.style.cssText='position:absolute!important;left:0!important;right:0!important;top:47px!important;bottom:0!important;width:100%!important;height:calc(100% - 47px)!important;z-index:4!important;background:#031421!important;';
  let old=document.getElementById('rizviLevelsCanvasV67');if(old)old.style.setProperty('display','none','important');
  return true;
 }
@@ -70,7 +70,7 @@ function normalizeBars(input){
 }
 function sourceBars(){
  const symbol=activeSymbol();
- const candidates=[window.RIZVI_RAW_BARS,window.RIZVI_CHART_DATA?.[symbol]?.bars,window.RIZVI_RAW_BARS_BY_SYMBOL?.[symbol],window.RIZVI_CHART_DATA?.bars,window.RIZVI_AGG_BARS];
+ const normalized=symbol==='XAUUSD'||symbol==='GOLD'?'XAU/USD':symbol;\n const candidates=[window.RIZVI_AGG_BARS,window.RIZVI_RAW_BARS,window.RIZVI_CANDLES,window.RIZVI_OHLC,window.RIZVI_CHART_DATA?.[normalized]?.bars,window.RIZVI_CHART_DATA?.[symbol]?.bars,window.RIZVI_RAW_BARS_BY_SYMBOL?.[normalized],window.RIZVI_RAW_BARS_BY_SYMBOL?.[symbol],window.RIZVI_CHART_DATA?.bars];
  for(const x of candidates){const n=normalizeBars(Array.isArray(x)?x:x?.bars);if(n.length)return n;}
  return [];
 }
@@ -89,7 +89,7 @@ function refreshBars(incoming){
  }
  lastBars=data;
  try{candleSeries.setData(data);if(fitNext){chartApi.timeScale().fitContent();fitNext=false;}}catch(e){return;}
- const price=Number(activeSymbol()==='XAU/USD'?(window.RIZVI_LIVE_PRICES?.['XAU/USD']??window.RIZVI_LIVE_PRICE):window.RIZVI_LIVE_PRICE);
+ const sym=activeSymbol(),isGold=['XAU/USD','XAUUSD','GOLD'].includes(sym);\n const price=Number(isGold?(window.RIZVI_LIVE_PRICES?.['XAU/USD']??window.RIZVI_GOLD_FEED?.price??window.RIZVI_LIVE_PRICE):window.RIZVI_LIVE_PRICES?.[sym]??window.RIZVI_LIVE_PRICE);
  if(Number.isFinite(price)&&price>0){try{candleSeries.update({time:data[data.length-1].time,open:data[data.length-1].open,high:Math.max(data[data.length-1].high,price),low:Math.min(data[data.length-1].low,price),close:price});}catch(e){}}
  window.RIZVI_DIRECT_TV={source:'TradingView Lightweight Charts + Rizvi live OHLC',symbol:activeSymbol(),timeframe:currentTF,status:'LIVE_OHLC_RENDERED',bars:data.length,lastBarTime:data[data.length-1].time,updatedAt:Date.now()};
  window.dispatchEvent(new CustomEvent('rizvi:direct-tv-status',{detail:window.RIZVI_DIRECT_TV}));resizeCanvas();drawTRB();
@@ -106,7 +106,7 @@ function drawTRB(){
  const ctx=overlayCtx;ctx.clearRect(0,0,W,H);
  const lv=window.RIZVI_TRADE_RANGE||window.RIZVI_SIGNAL_LEVELS_STATE;
  const decision=window.RIZVI_MASTER_CONFIRMATION||{};
- const direction=String(decision.direction||lv?.direction||'WAIT').toUpperCase(),score=Number(decision.confidence??lv?.score??0);
+ const direction=String(decision.direction||lv?.direction||'WAIT').toUpperCase();\n const scoreRaw=decision.confidence!==null&&decision.confidence!==undefined&&String(decision.confidence).trim()!==''?decision.confidence:lv?.score;\n const score=Number(scoreRaw);
  if(!lv||!['BUY','SELL'].includes(direction)||direction!==String(lv.direction||'').toUpperCase()||score<70)return;
  const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3].map(Number);
  if(!vals.every(Number.isFinite))return;
