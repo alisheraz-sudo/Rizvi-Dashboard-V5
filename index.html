@@ -416,14 +416,23 @@ function makeRange(price,direction,score){
  const pip=xau?0.01:Math.max(price*0.00001,0.01),risk=xau?30:Math.max(1,Math.round(price*0.0015/pip));
  const t=xau?[40,70,100]:[Math.round(risk*4/3),Math.round(risk*7/3),Math.round(risk*10/3)];
  const sign=direction==='BUY'?1:-1;
- return {symbol,direction,score,entry:price,sl:price-sign*risk*pip,tp1:price+sign*t[0]*pip,tp2:price+sign*t[1]*pip,tp3:price+sign*t[2]*pip,createdAt:Date.now()};
+ const levels={symbol,direction,score,entry:price,sl:price-sign*risk*pip,tp1:price+sign*t[0]*pip,tp2:price+sign*t[1]*pip,tp3:price+sign*t[2]*pip,createdAt:Date.now()};
+ if(new Set([levels.entry,levels.sl,levels.tp1,levels.tp2,levels.tp3]).size!==5) return null;
+ return levels;
 }
 function update(){
  const m=window.RIZVI_MASTER_CONFIRMATION||{},d=decision(m),p=currentPrice(m);
- if(d.direction==='WAIT'){if(range)range=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
+ if(d.direction==='WAIT'){range=null;blockedDirection=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
  if(!Number.isFinite(p)){draw();return;}
  if(blockedDirection===d.direction){draw();return;}
  if(blockedDirection&&blockedDirection!==d.direction)blockedDirection=null;
+ // Retire a completed/invalidated plan and suppress same-direction recreation
+ // until the master decision returns to WAIT or flips direction.
+ if(range&&range.direction===d.direction&&norm(range.symbol)===norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
+  const passedTarget=d.direction==='BUY'?p>=Number(range.tp3):p<=Number(range.tp3);
+  const hitStop=d.direction==='BUY'?p<=Number(range.sl):p>=Number(range.sl);
+  if(passedTarget||hitStop){range=null;blockedDirection=d.direction;window.RIZVI_TRADE_RANGE=null;draw();return;}
+ }
  if(!range||range.direction!==d.direction||norm(range.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
   range=makeRange(p,d.direction,d.score);
  }else{range.score=d.score;}
@@ -444,10 +453,14 @@ function draw(){
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
  const lv=range||window.RIZVI_TRADE_RANGE;if(!lv||!['BUY','SELL'].includes(lv.direction))return;
  if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD'))return;
- const raw=bars().slice(-100),vals=raw.flatMap(b=>getOHLC(b)).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
- if(!vals.length)return;
- const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,Math.abs(hi)*0.0001,0.01),min=lo-span*.10,max=hi+span*.10;
- const y=v=>Math.max(8,Math.min(H-8,H-12-(v-min)/(max-min||1)*(H-24)));
+ // Keep the trade-level scale independent of the full 100-bar history.
+ // A wide historical range was compressing Entry/SL/TP into nearly identical pixels.
+ const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3].map(Number).filter(Number.isFinite);
+ if(vals.length!==5||new Set(vals).size!==5)return;
+ const lo=Math.min(...vals),hi=Math.max(...vals);
+ const span=Math.max(hi-lo,Math.abs(Number(lv.entry)||0)*0.0001,0.01);
+ const min=lo-span*.18,max=hi+span*.18;
+ const y=v=>H-12-((Number(v)-min)/(max-min||1))*(H-24);
  const x=Math.max(12,Math.min(W-142,W*.55)),bw=Math.min(132,Math.max(108,W*.30));
  const entryY=y(lv.entry),slY=y(lv.sl),tpYs=[y(lv.tp1),y(lv.tp2),y(lv.tp3)];
  ctx.save();
