@@ -17,7 +17,7 @@ test('indicator and algorithm decision calculations are gated by master pause', 
   assert.match(html, /function tests\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)/);
   assert.match(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)/);
   assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=next/);
-  assert.match(master, /if\(window\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)return;/);
+  assert.match(master, /if\\(window\\.RIZVI_LEGACY_SYSTEM_ENABLED===false\\)return;/);
 });
 
 test('master switch can restore legacy calculations and reset qualification counters', () => {
