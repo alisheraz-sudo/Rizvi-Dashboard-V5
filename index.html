@@ -425,10 +425,14 @@
   }
   window.RIZVI_DISPLAY_DECISION=displayDecision;
 
-  let frozen=null, frozenDirection=null, frozenBand=null, frozenAt=0;
+  let frozen=null, frozenDirection=null, frozenBand=null, frozenAt=0, blockedDirection=null;
   function clearRange(){
     frozen=null;frozenDirection=null;frozenBand=null;frozenAt=0;
     window.RIZVI_TRADE_RANGE=null;
+  }
+  function closeRange(){
+    if(frozenDirection)blockedDirection=frozenDirection;
+    clearRange();
   }
   window.RIZVI_SIGNAL_LEVELS=function(price,direction,scoreOverride){
     const p=Number(price),requested=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
@@ -436,9 +440,11 @@
     const dir=requested||decision.direction;
     const score=Number.isFinite(Number(scoreOverride))?Number(scoreOverride):decision.score;
     if(!Number.isFinite(p)||!dir||decision.direction!==dir||score<70){
-      if(!dir||decision.direction==='WAIT')clearRange();
+      if(!dir||decision.direction==='WAIT'){blockedDirection=null;clearRange();}
       return null;
     }
+    if(blockedDirection===dir)return null;
+    if(blockedDirection&&blockedDirection!==dir)blockedDirection=null;
     const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
     if(frozen&&frozenDirection===dir){
       // Freeze entry/SL/TP for the life of this qualified setup. Score-band
@@ -470,7 +476,8 @@
     const reversed=direction!==lv.direction||decision.score<70;
     const stopHit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice<=Number(lv.sl):livePrice>=Number(lv.sl));
     const tp2Hit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice>=Number(lv.tp2):livePrice<=Number(lv.tp2));
-    if(expired||reversed||stopHit||tp2Hit){clearRange();ctx.clearRect(0,0,W,H);return;}
+    if(expired||stopHit||tp2Hit){closeRange();ctx.clearRect(0,0,W,H);return;}
+    if(reversed){clearRange();ctx.clearRect(0,0,W,H);return;}
     if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
     if(!lv||lv.direction!==direction)return;
     const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
