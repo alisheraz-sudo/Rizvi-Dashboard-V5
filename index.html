@@ -419,7 +419,7 @@
     const indicatorDirection=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
       (['BUY','SELL'].includes(activation.direction)?activation.direction:
       (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:'WAIT'));
-    const scoreNode=document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]');
+    const scoreNode=typeof document!=='undefined' ? document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]') : null;
     const scoreText=scoreNode?Number(String(scoreNode.textContent||'').replace(/[^0-9.]/g,'')):NaN;
     const indicatorScore=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
       (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):scoreText);
