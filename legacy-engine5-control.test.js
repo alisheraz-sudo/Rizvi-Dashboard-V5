@@ -20,7 +20,7 @@ test('indicator and algorithm decision calculations are gated by master pause', 
   assert.match(master, /if\(window\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)return;/);
 });
 
-test('master switch can restore legacy calculations and reset qualification counters', () => {
+test('master switch activates Engine 12 and resets qualification counters without unpausing legacy decisions', () => {
   assert.match(html, /RIZVI_SET_LEGACY_ENGINE5_ENABLED=function\(enabled\)/);
   assert.match(html, /W\.RIZVI_RUN_INDICATOR_TESTS\?\.\(\)/);
   assert.match(html, /W\.RIZVI_RUN_MULTI_ALGORITHM_TESTS\?\.\(\)/);
