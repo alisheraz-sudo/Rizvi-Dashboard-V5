@@ -1,9 +1,8 @@
 (function(){
  'use strict';
- // The legacy final evaluator is paused on every page load. This control only gates
- // Engine 5's final decision loop; shared OHLC, chart, indicator, and algorithm diagnostics remain available.
+ // Pause legacy decision calculations only; Master Engine 5 has its own switch.
  window.RIZVI_LEGACY_SYSTEM_ENABLED=false;
- window.RIZVI_LEGACY_ENGINE5_ENABLED=false;
+ window.RIZVI_LEGACY_ENGINE5_ENABLED=true;
  function mount(){
   if(document.getElementById('rizvi-legacy-model-control'))return;
   const button=document.createElement('button');
@@ -13,11 +12,11 @@
   button.style.cssText='position:fixed;right:12px;bottom:12px;z-index:2147483000;padding:10px 14px;border:1px solid #6b7280;border-radius:10px;background:#111827;color:#f9fafb;font:600 12px/1.3 system-ui,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25);cursor:pointer;max-width:230px;text-align:left';
   function paint(enabled){
    button.setAttribute('aria-pressed',String(enabled));
-   button.textContent=enabled?'Legacy System: ACTIVE — Pause':'Legacy System: PAUSED — Activate';
-   button.title=enabled?'Pause all legacy decision engines':'Reactivate all preserved legacy decision engines';
+   button.textContent=enabled?'Master Engine 5: ACTIVE — Pause':'Master Engine 5: PAUSED — Activate';
+   button.title=enabled?'Pause Master Engine 5 evaluation':'Activate Master Engine 5 evaluation; legacy engines remain paused';
   }
   button.addEventListener('click',function(){
-   const enabled=window.RIZVI_LEGACY_SYSTEM_ENABLED!==true;
+   const enabled=window.RIZVI_LEGACY_ENGINE5_ENABLED!==true;
    if(typeof window.RIZVI_SET_LEGACY_ENGINE5_ENABLED!=='function'){
     button.textContent='Legacy switch unavailable — reload';
     return;
@@ -28,8 +27,8 @@
   });
   paint(false);
   document.body.appendChild(button);
-  if(typeof window.RIZVI_SET_LEGACY_ENGINE5_ENABLED==='function')window.RIZVI_SET_LEGACY_ENGINE5_ENABLED(false);
-  else button.textContent='Legacy switch initializing…';
+  if(typeof window.RIZVI_SET_LEGACY_ENGINE5_ENABLED==='function')window.RIZVI_SET_LEGACY_ENGINE5_ENABLED(true);
+  else button.textContent='Master Engine 5 initializing…';
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
