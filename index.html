@@ -467,7 +467,15 @@ function draw(){
  ctx.restore();
 }
 function reset(){range=null;window.RIZVI_TRADE_RANGE=null;draw();}
-window.RIZVI_DISPLAY_DECISION=function(m){const score=Number(m?.confidence)||0,d=m?.direction;if(m?.feedStatus?.ok!==true||!['BUY','SELL'].includes(d))return {direction:'WAIT',score,band:'WAIT'};return {direction:d,score,band:score>=90?'HIGH':score>=80?'STRONG':score>=70?'WEAK':'WAIT'};};
+function displayDecision(m){
+ const score=Number(m?.confidence)||0,d=m?.direction;
+ if(m?.feedStatus?.ok!==true||!['BUY','SELL'].includes(d))return {direction:'WAIT',score,band:'WAIT'};
+ if(d==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
+ if(m.qualified===true&&score>=80)return {direction:d,score,band:score>=90?'HIGH':'STRONG'};
+ if(score>=70)return {direction:d,score,band:'WEAK'};
+ return {direction:'WAIT',score,band:'WAIT'};
+}
+window.RIZVI_DISPLAY_DECISION=displayDecision;
 window.RIZVI_SIGNAL_LEVELS=function(price,direction,score){
  const d=decision(window.RIZVI_MASTER_CONFIRMATION||{}),p=Number(price),s=Number(score??d.score);
  if(!Number.isFinite(p)||direction!==d.direction||s<MIN_SCORE)return null;
