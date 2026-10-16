@@ -532,8 +532,9 @@
   }
   window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
   window.addEventListener('rizvi:master-confirmation-update',e=>{
-    const m=e.detail||{},decision=displayDecision(m);
-    const p=Number(window.RIZVI_LIVE_PRICE||window.RIZVI_LIVE_PRICES?.[m.symbol]);
+    const m=e.detail||{},decision=tradeRangeDecision(m);
+    const p=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[m.symbol]??window.RIZVI_GOLD_FEED?.price);
+    // Manual planning overlay uses its own 70% indicator gate; never mutates Master Engine's final decision.
     if(decision.direction==='WAIT'||decision.score<70){
       clearRange();
     }else if(Number.isFinite(p)){
@@ -544,7 +545,7 @@
   window.addEventListener('rizvi:candle-update',draw);
   window.addEventListener('rizvi:timeframe-update',draw);
   window.addEventListener('rizvi:price-update',function(e){
-    const d=e&&e.detail||{},m=window.RIZVI_MASTER_CONFIRMATION||{},decision=displayDecision(m);
+    const d=e&&e.detail||{},m=window.RIZVI_MASTER_CONFIRMATION||{},decision=tradeRangeDecision(m);
     const p=Number(d.price);
     if(d.symbol&&String(d.symbol).toUpperCase().replace(/[^A-Z0-9]/g,'')!==String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase().replace(/[^A-Z0-9]/g,''))return;
     if(decision.direction!=='WAIT'&&decision.score>=70&&Number.isFinite(p))window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
