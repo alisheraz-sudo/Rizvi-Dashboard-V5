@@ -45,6 +45,7 @@ function runProduction(bars, extras = {}) {
     document: { getElementById: () => ({ value: 'XAU/USD' }) },
     dispatchEvent: () => true,
     RIZVI_RAW_BARS: bars,
+    RIZVI_LEGACY_SYSTEM_ENABLED: true,
     RIZVI_CURRENT_SYMBOL: 'XAU/USD',
     RIZVI_CANDLE_TIMEFRAME: '1M',
     ...extras
