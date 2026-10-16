@@ -267,6 +267,7 @@
     let wasQualified=false;
     window.RIZVI_STABLE_TRADE_RANGE=null;
     window.RIZVI_SIGNAL_LEVELS=function(price,direction){
+      if(window.RIZVI_LEGACY_SYSTEM_ENABLED!==true)return null;
       const dir=direction==='SELL'?'SELL':'BUY';
       if(frozen){
         window.RIZVI_TRADE_RANGE=frozen;
@@ -285,6 +286,7 @@
       return original(price,dir);
     };
     window.addEventListener('rizvi:master-confirmation-update',e=>{
+      if(window.RIZVI_LEGACY_SYSTEM_ENABLED!==true)return;
       const m=e.detail||window.RIZVI_MASTER_CONFIRMATION;
       const qualified=!!m?.qualified;
       const dir=m?.direction==='SELL'?'SELL':m?.direction==='BUY'?'BUY':null;
