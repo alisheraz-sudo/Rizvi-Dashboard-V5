@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 const server = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
+const master = fs.readFileSync(path.join(__dirname, 'rizvi-master-engine.js'), 'utf8');
 const control = fs.readFileSync(path.join(__dirname, 'legacy-engine5-control.js'), 'utf8');
 
 test('legacy decision system defaults to paused before periodic decision work', () => {
@@ -16,6 +17,7 @@ test('indicator and algorithm decision calculations are gated by master pause', 
   assert.match(html, /function tests\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)/);
   assert.match(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)/);
   assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=next/);
+  assert.match(master, /if\(window\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)return;/);
 });
 
 test('master switch can restore legacy calculations and reset qualification counters', () => {
