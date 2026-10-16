@@ -399,9 +399,9 @@
     const pip=isXAU?0.01:1;
     const riskPips=isXAU?30:Math.max(1,Math.round(p*0.0015/pip));
     const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
-    const xauTargets=band==='WEAK'?[40,55,70]:band==='STRONG'?[70,85,100]:[100,110,120];
-    const ratios=band==='WEAK'?[1.33,1.83,2.33]:band==='STRONG'?[2.33,2.83,3.33]:[3.33,3.67,4];
-    const targets=isXAU?xauTargets:ratios.map(r=>Math.max(riskPips+1,Math.round(riskPips*r)));
+    // Locked trade-range plan: 30-pip SL; TP1=40, TP2=70, TP3=100 pips.
+    // Confidence changes the setup label only; it must not move the approved price levels.
+    const targets=isXAU?[40,70,100]:[Math.round(riskPips*4/3),Math.round(riskPips*7/3),Math.round(riskPips*10/3)];
     const [tp1Pips,tp2Pips,tp3Pips]=targets;
     const risk=riskPips*pip,tp1=tp1Pips*pip,tp2=tp2Pips*pip,tp3=tp3Pips*pip;
     if(dir==='SELL') return {symbol:sym,direction:dir,entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
@@ -425,14 +425,18 @@
   }
   window.RIZVI_DISPLAY_DECISION=displayDecision;
 
-  let frozen=null, frozenDirection=null, frozenBand=null;
+  let frozen=null, frozenDirection=null, frozenBand=null, frozenAt=0;
+  function clearRange(){
+    frozen=null;frozenDirection=null;frozenBand=null;frozenAt=0;
+    window.RIZVI_TRADE_RANGE=null;
+  }
   window.RIZVI_SIGNAL_LEVELS=function(price,direction,scoreOverride){
     const p=Number(price),requested=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{});
     const dir=requested||decision.direction;
     const score=Number.isFinite(Number(scoreOverride))?Number(scoreOverride):decision.score;
     if(!Number.isFinite(p)||!dir||decision.direction!==dir||score<70){
-      if(!dir||decision.direction==='WAIT'){window.RIZVI_TRADE_RANGE=null;frozen=null;frozenDirection=null;frozenBand=null;}
+      if(!dir||decision.direction==='WAIT')clearRange();
       return null;
     }
     const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
@@ -443,7 +447,7 @@
       window.RIZVI_TRADE_RANGE=frozen;
       return frozen;
     }
-    frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;
+    frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;frozenAt=Date.now();
     window.RIZVI_TRADE_RANGE=frozen;
     return frozen;
   };
@@ -461,6 +465,12 @@
     ctx.clearRect(0,0,W,H);
     if(!lv||!raw.length)return;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
+    const livePrice=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[lv.symbol]);
+    const expired=!!frozenAt&&Date.now()-frozenAt>=10*60*1000;
+    const reversed=direction!==lv.direction||decision.score<70;
+    const stopHit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice<=Number(lv.sl):livePrice>=Number(lv.sl));
+    const tp2Hit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice>=Number(lv.tp2):livePrice<=Number(lv.tp2));
+    if(expired||reversed||stopHit||tp2Hit){clearRange();ctx.clearRect(0,0,W,H);return;}
     if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
     if(!lv||lv.direction!==direction)return;
     const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -500,7 +510,7 @@
     const m=e.detail||{},decision=displayDecision(m);
     const p=Number(window.RIZVI_LIVE_PRICE||window.RIZVI_LIVE_PRICES?.[m.symbol]);
     if(decision.direction==='WAIT'||decision.score<70){
-      frozen=null;frozenDirection=null;frozenBand=null;window.RIZVI_TRADE_RANGE=null;
+      clearRange();
     }else if(Number.isFinite(p)){
       window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
     }
