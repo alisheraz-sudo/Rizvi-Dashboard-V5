@@ -1488,7 +1488,7 @@ function align18(full){
  return full;
 }
 function tests(){
- if(W.RIZVI_LEGACY_SYSTEM_ENABLED===false){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.indicatorConfluence={status:'LEGACY_SYSTEM_PAUSED',reason:'Legacy decision system is paused'};return W.RIZVI_INDICATOR_TEST_REPORT||null;}
+ /* Engine 12 input provider: indicator diagnostics remain available while legacy final-decision logic is paused. */
  const full=align18(build()), names=Object.keys(full.components||{});
  const out={version:'v5-18-indicators-4-engines',symbol:full.symbol,timeframe:full.timeframe,timestamp:new Date().toISOString(),bars:full.bars,validationLevel:'OUTPUT_SANITY_ONLY',numericalAccuracyVerified:false,tests:{},combinations:{}};
  const validStatus=new Set(['CALCULATED','LIVE']);
@@ -1559,7 +1559,7 @@ const algos={
  F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,candle:10,liquidity:12,divergence:7,volumeProfile:7}}
 };
 function runAlgo(name,f){const w=algos[name].weights,enabled=Object.keys(w);let total=0,ws=0,agree=0,active=0;for(const k of enabled){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Math.max(enabled.length,1))*100),activeIndicators:active,weights:Object.fromEntries(enabled.map(k=>[k,w[k]]))}}
-function test(){if(W.RIZVI_LEGACY_SYSTEM_ENABLED===false){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'LEGACY_SYSTEM_PAUSED',reason:'Legacy decision system is paused'};return W.RIZVI_MULTI_ALGORITHM_REPORT||null;}const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
+function test(){/* Engine 12 input provider: algorithm evidence remains available while legacy final-decision logic is paused. */const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
  const ranked=Object.values(results).sort((a,b)=>b.confidence-a.confidence||b.agreement-a.agreement);
  const master=ranked[0]||{action:'WAIT',confidence:0};
  const report={version:'v1',symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:new Date().toISOString(),bars:bs.length,method:'independent-algorithms + weighted confluence',algorithms:results,ranking:ranked.map(x=>({name:x.name,action:x.action,confidence:x.confidence,agreement:x.agreement})),master:{action:master.action,confidence:master.confidence,algorithm:master.name},note:'Accuracy is measured only after outcome labels are collected; confidence is not claimed as historical accuracy.'};
