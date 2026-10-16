@@ -460,12 +460,18 @@ function getOHLC(b){
  return Number.isFinite(h)&&Number.isFinite(l)?[h,l]:[];
 }
 function draw(){
- const c=getCanvas(),ctx=c.getContext('2d');if(!ctx)return;
+ const c=getCanvas(),ctx=c.getContext('2d');
+ if(!ctx){logBox('BOX_RENDER_FAILED',{reason:'CANVAS_CONTEXT_UNAVAILABLE'});return;}
  const r=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),W=Math.max(1,r.width),H=Math.max(1,r.height);
+ if(W<=1||H<=1)logBox('BOX_RENDER_WARNING',{reason:'CHART_HOST_ZERO_SIZE',width:W,height:H});
  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
- const lv=range||window.RIZVI_TRADE_RANGE;if(!lv||!['BUY','SELL'].includes(lv.direction))return;
- if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD'))return;
+ const lv=range||window.RIZVI_TRADE_RANGE;
+ if(!lv||!['BUY','SELL'].includes(lv.direction)){return;}
+ if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){logBox('BOX_RENDER_SKIPPED',{reason:'SYMBOL_MISMATCH',boxSymbol:lv.symbol,currentSymbol:window.RIZVI_CURRENT_SYMBOL||'XAU/USD'});return;}
+ const levelPairs=[['entry',lv.entry],['sl',lv.sl],['tp1',lv.tp1],['tp2',lv.tp2],['tp3',lv.tp3]];
+ const bad=levelPairs.filter(([k,v])=>!Number.isFinite(Number(v)));
+ if(bad.length){logBox('BOX_RENDER_FAILED',{reason:'INVALID_LEVEL_VALUES',badLevels:bad.map(x=>x[0])});return;}
  const raw=bars().slice(-100),vals=raw.flatMap(b=>getOHLC(b)).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
  if(!vals.length)return;
  const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,Math.abs(hi)*0.0001,0.01),min=lo-span*.10,max=hi+span*.10;
@@ -487,7 +493,22 @@ function draw(){
   ctx.fillStyle='rgba(3,16,28,.95)';ctx.fillRect(lx-3,ly-11,tw+6,14);ctx.fillStyle=color;ctx.fillText(label,lx,ly);
  }
  ctx.restore();
+ logBox('BOX_RENDERED',{direction:lv.direction,score:lv.score,entry:lv.entry,sl:lv.sl,tp1:lv.tp1,tp2:lv.tp2,tp3:lv.tp3,width:W,height:H});
 }
+window.RIZVI_TRADEBOX_SELF_TEST=function(){
+ const out=[];
+ for(const direction of ['BUY','SELL']){
+  const r=makeRange(4000,direction,80),vals=[r.entry,r.sl,r.tp1,r.tp2,r.tp3];
+  out.push({case:direction,pass:vals.every(Number.isFinite)&&new Set(vals).size===5&&((direction==='BUY'&&r.sl<r.entry&&r.tp1>r.entry&&r.tp2>r.tp1&&r.tp3>r.tp2)||(direction==='SELL'&&r.sl>r.entry&&r.tp1<r.entry&&r.tp2<r.tp1&&r.tp3<r.tp2)),levels:r});
+ }
+ const buy=decision({feedStatus:{ok:true},engine5:{indicatorAction:'BUY',indicatorScore:75},direction:'WAIT'});
+ const wait=decision({feedStatus:{ok:true},direction:'WAIT',confidence:90});
+ const noFeed=decision({feedStatus:{ok:false},direction:'BUY',confidence:95});
+ out.push({case:'WAIT/no direction',pass:wait.direction==='WAIT',result:wait});
+ out.push({case:'feed unavailable',pass:noFeed.direction==='WAIT',result:noFeed});
+ out.push({case:'BUY candidate score gate',pass:buy.direction==='BUY',result:buy});
+ return {ok:out.every(x=>x.pass),tests:out,engineSettingsChanged:false};
+};
 function reset(){range=null;window.RIZVI_TRADE_RANGE=null;draw();}
 function displayDecision(m){
   const score=Number(m?.confidence)||0,d=m?.direction;
