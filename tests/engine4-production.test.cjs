@@ -247,6 +247,7 @@ test('Engine 5 RSI remains neutral in a completely flat market', () => {
     t: 1790000000 + i * 60, o: 2300, h: 2301, l: 2299, c: 2300, v: 100
   }));
   const sandbox = {
+    RIZVI_LEGACY_SYSTEM_ENABLED: true,
     Date, Math, Number, Array, Object, String, Map, JSON,
     CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
     setInterval: () => 0,
