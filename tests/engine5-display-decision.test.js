@@ -64,8 +64,8 @@ test('invalid feed always returns WAIT', () => {
 
 test('same-direction score changes preserve the existing trade-range prices', () => {
   assert.match(html, /if\(!range\|\|range\.direction!==d\.direction\|\|norm\(range\.symbol\)!==norm\(window\.RIZVI_CURRENT_SYMBOL\|\|'XAU\/USD'\)\)\s*\{\s*range=makeRange\(p,d\.direction,d\.score\);\s*\}\s*else\s*\{range\.score=d\.score;\}/);
-  assert.match(html, /window\\.RIZVI_TRADE_RANGE=range;/);
-  assert.match(html, /draw\\(\\);/);
+  assert.match(html, /window\.RIZVI_TRADE_RANGE=range;/);
+  assert.match(html, /draw\(\);/);
 });
 
 test('trade-range score parsing does not coerce missing values to zero', () => {
