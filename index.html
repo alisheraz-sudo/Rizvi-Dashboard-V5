@@ -1831,7 +1831,7 @@ sync();
   W.RIZVI_LEGACY_SYSTEM_ENABLED=next;
   W.RIZVI_LEGACY_ENGINE5_ENABLED=next;
   qualifiedCandidateKey='';qualifiedCandidateCount=0;
-  if(next){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'ACTIVE',updatedAt:Date.now()};W.RIZVI_RUN_INDICATOR_TESTS?.();W.RIZVI_RUN_MULTI_ALGORITHM_TESTS?.();tick();return {enabled:true};}
+  if(next){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'ACTIVE',updatedAt:Date.now()};W.RIZVI_RUN_INDICATOR_TESTS?.();W.RIZVI_RUN_MULTI_ALGORITHM_TESTS?.();W.RIZVI_RUN_MASTER_CONFIRMATION?.();tick();return {enabled:true};}
   const symbol=symbolNow(),updatedAt=Date.now();
   W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'PAUSED',reason:'All legacy decision engines paused',updatedAt};
   const out={symbol,updatedAt,direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'LEGACY_SYSTEM_PAUSED',reason:'All legacy decision engines paused by user',engine5:{name:'Legacy Engine 5',state:'PAUSED',reason:'User-controlled reversible pause'},alignment:{status:'WAIT',reason:'Legacy evaluator paused'}};
