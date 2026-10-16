@@ -410,27 +410,37 @@
       score,band,riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
   }
 
+  // Canonical Master Engine display decision: never override final WAIT with intermediate indicator votes.
   function displayDecision(m){
     if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
-    // Trade Range is a manual planning alert, not Engine 5 trade authorization.
-    // Use the live indicator direction/score at the user's 70% alert threshold;
-    // do not require master qualification, confidence>=80, alignment gates, or confirmation runs.
+    const score=Number(m.confidence)||0;
+    const direction=['BUY','SELL'].includes(m.direction)?m.direction:'WAIT';
+    if(direction==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
+    if(m.qualified===true&&score>=80)return {direction,score,band:score>=90?'HIGH':'STRONG'};
+    if(score>=70)return {direction,score,band:'WEAK'};
+    return {direction:'WAIT',score,band:'WAIT'};
+  }
+  window.RIZVI_DISPLAY_DECISION=displayDecision;
+
+  // Separate manual-planning decision for the Trade Range overlay only.
+  // This does not authorize trades or change Master Engine qualification.
+  function tradeRangeDecision(m){
+    if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
     const activation=window.RIZVI_INDICATOR_ACTIVATION||{};
-    const indicatorDirection=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
+    const direction=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
       (['BUY','SELL'].includes(activation.direction)?activation.direction:
       (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:
       (['BUY','SELL'].includes(m.direction)?m.direction:'WAIT')));
     const scoreNode=typeof document!=='undefined' ? document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]') : null;
     const scoreText=scoreNode?Number(String(scoreNode.textContent||'').replace(/[^0-9.]/g,'')):NaN;
-    const indicatorScore=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
+    const score=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
       (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):
       (Number.isFinite(scoreText)?scoreText:Number(m.confidence)));
-    if(['BUY','SELL'].includes(indicatorDirection)&&Number.isFinite(indicatorScore)&&indicatorScore>=70){
-      return {direction:indicatorDirection,score:indicatorScore,band:indicatorScore>=90?'HIGH':indicatorScore>=80?'STRONG':'WEAK'};
+    if(['BUY','SELL'].includes(direction)&&Number.isFinite(score)&&score>=70){
+      return {direction,score,band:score>=90?'HIGH':score>=80?'STRONG':'WEAK'};
     }
-    return {direction:'WAIT',score:Number.isFinite(indicatorScore)?indicatorScore:(Number(m.confidence)||0),band:'WAIT'};
+    return {direction:'WAIT',score:Number.isFinite(score)?score:(Number(m.confidence)||0),band:'WAIT'};
   }
-  window.RIZVI_DISPLAY_DECISION=displayDecision;
 
   let frozen=null, frozenDirection=null, frozenBand=null, frozenAt=0, blockedDirection=null;
   function clearRange(){
@@ -443,7 +453,7 @@
   }
   window.RIZVI_SIGNAL_LEVELS=function(price,direction,scoreOverride){
     const p=Number(price),requested=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
-    const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{});
+    const decision=tradeRangeDecision(window.RIZVI_MASTER_CONFIRMATION||{});
     const dir=requested||decision.direction;
     const score=Number.isFinite(Number(scoreOverride))?Number(scoreOverride):decision.score;
     if(!Number.isFinite(p)||!dir||decision.direction!==dir||score<70){
@@ -478,7 +488,7 @@
       (Array.isArray(window.RIZVI_RAW_BARS)&&window.RIZVI_RAW_BARS.length?window.RIZVI_RAW_BARS:[]));
     ctx.clearRect(0,0,W,H);
     if(!lv||!raw.length)return;
-    const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
+    const decision=tradeRangeDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
     const livePrice=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[lv.symbol]);
     const expired=!!frozenAt&&Date.now()-frozenAt>=10*60*1000;
     const reversed=direction!==lv.direction||decision.score<70;
