@@ -31,6 +31,8 @@ test('server loads the visible reversible switch without deleting the legacy cod
 });
 
 test('switch control labels both paused and active states', () => {
-  assert.match(control, /Legacy Decision Model: PAUSED/);
-  assert.match(control, /Legacy Decision Model: ACTIVE/);
+  assert.match(control, /Legacy System: PAUSED/);
+  assert.match(control, /Legacy System: ACTIVE/);
 });
+
+test('all legacy decision engine calculations are gated by the master switch', () => {\n  assert.match(html, /function tests\\(\\)\\{\\s*if\\(W\\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\\)/);\n  assert.match(html, /function test\\(\\)\\{if\\(W\\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\\)/);\n  assert.match(html, /W\\.RIZVI_LEGACY_SYSTEM_ENABLED=next/);\n  assert.match(html, /All legacy decision engines paused by user/);\n});\n
