@@ -397,8 +397,12 @@ function decision(m){
  const node=document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]');
  const shown=node?Number(String(node.textContent||'').replace(/[^0-9.]/g,'')):NaN;
  const d=[m.engine5?.indicatorAction,a.direction,window.RIZVI_SIGNAL_DIRECTION,m.direction].find(x=>x==='BUY'||x==='SELL')||'WAIT';
- const candidates=[m.engine5?.indicatorScore,a.confidence,shown,m.confidence].map(Number);
- const score=candidates.find(Number.isFinite);
+ // Ignore missing/null/blank values instead of coercing them to 0.
+ // Number(null) and Number('') both equal 0 and can incorrectly suppress a valid 70%+ setup.
+ const candidates=[m.engine5?.indicatorScore,a.confidence,shown,m.confidence]
+  .filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='')
+  .map(Number).filter(Number.isFinite);
+ const score=candidates.length?candidates[0]:NaN;
  return d!=='WAIT'&&Number.isFinite(score)&&score>=MIN_SCORE?{direction:d,score}:{direction:'WAIT',score:Number.isFinite(score)?score:0};
 }
 function currentPrice(m){
