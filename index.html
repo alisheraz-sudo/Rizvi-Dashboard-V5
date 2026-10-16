@@ -420,16 +420,16 @@ function makeRange(price,direction,score){
 }
 function update(){
  const m=window.RIZVI_MASTER_CONFIRMATION||{},d=decision(m),p=currentPrice(m);
- if(d.direction==='WAIT'){if(range)range=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
+ if(d.direction==='WAIT'){range=null;blockedDirection=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
  if(!Number.isFinite(p)){draw();return;}
  if(blockedDirection===d.direction){draw();return;}
  if(blockedDirection&&blockedDirection!==d.direction)blockedDirection=null;
- // Expire a stale plan after price has reached/passed its furthest target or invalidated its stop.
- // Keep fixed pip distances; this only prevents old levels from lingering after the setup has played out.
+ // Retire a completed/invalidated plan and suppress same-direction recreation
+ // until the master decision returns to WAIT or flips direction.
  if(range&&range.direction===d.direction&&norm(range.symbol)===norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
   const passedTarget=d.direction==='BUY'?p>=Number(range.tp3):p<=Number(range.tp3);
   const hitStop=d.direction==='BUY'?p<=Number(range.sl):p>=Number(range.sl);
-  if(passedTarget||hitStop){range=null;window.RIZVI_TRADE_RANGE=null;}
+  if(passedTarget||hitStop){range=null;blockedDirection=d.direction;window.RIZVI_TRADE_RANGE=null;draw();return;}
  }
  if(!range||range.direction!==d.direction||norm(range.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
   range=makeRange(p,d.direction,d.score);
