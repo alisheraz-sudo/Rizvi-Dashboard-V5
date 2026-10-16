@@ -418,11 +418,13 @@
     const activation=window.RIZVI_INDICATOR_ACTIVATION||{};
     const indicatorDirection=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
       (['BUY','SELL'].includes(activation.direction)?activation.direction:
-      (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:'WAIT'));
+      (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:
+      (['BUY','SELL'].includes(m.direction)?m.direction:'WAIT')));
     const scoreNode=typeof document!=='undefined' ? document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]') : null;
     const scoreText=scoreNode?Number(String(scoreNode.textContent||'').replace(/[^0-9.]/g,'')):NaN;
     const indicatorScore=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
-      (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):scoreText);
+      (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):
+      (Number.isFinite(scoreText)?scoreText:Number(m.confidence)));
     if(['BUY','SELL'].includes(indicatorDirection)&&Number.isFinite(indicatorScore)&&indicatorScore>=70){
       return {direction:indicatorDirection,score:indicatorScore,band:indicatorScore>=90?'HIGH':indicatorScore>=80?'STRONG':'WEAK'};
     }
