@@ -8,19 +8,21 @@ const server = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 const master = fs.readFileSync(path.join(__dirname, 'rizvi-master-engine.js'), 'utf8');
 const control = fs.readFileSync(path.join(__dirname, 'legacy-engine5-control.js'), 'utf8');
 
-test('legacy decision system defaults to paused before periodic decision work', () => {
-  assert.match(html, /function tick\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\|\|W\.RIZVI_LEGACY_ENGINE5_ENABLED!==true\)return;/);
+test('legacy decisions default to paused while Master Engine 12 has an independent gate', () => {
+  assert.match(html, /function tick\(\)\{\s*if\(W\.RIZVI_LEGACY_ENGINE5_ENABLED!==true\)return;/);
   assert.match(control, /window\.RIZVI_LEGACY_SYSTEM_ENABLED=false/);
+  assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=false/);
 });
 
-test('indicator and algorithm decision calculations are gated by master pause', () => {
-  assert.match(html, /function tests\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
-  assert.match(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
-  assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=next/);
-  assert.match(master, /if\(window\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)return;/);
+test('Engine 12 can use indicator and algorithm evidence while legacy final decisions stay paused', () => {
+  assert.doesNotMatch(html, /function tests\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
+  assert.doesNotMatch(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
+  assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=false/);
+  assert.match(html, /if\(W\.RIZVI_LEGACY_ENGINE5_ENABLED!==true\)return;/);
+  assert.match(master, /if\(window\.RIZVI_LEGACY_ENGINE5_ENABLED!==true\)return;/);
 });
 
-test('master switch can restore legacy calculations and reset qualification counters', () => {
+test('master switch activates Engine 12 and resets qualification counters without unpausing legacy decisions', () => {
   assert.match(html, /RIZVI_SET_LEGACY_ENGINE5_ENABLED=function\(enabled\)/);
   assert.match(html, /W\.RIZVI_RUN_INDICATOR_TESTS\?\.\(\)/);
   assert.match(html, /W\.RIZVI_RUN_MULTI_ALGORITHM_TESTS\?\.\(\)/);
@@ -41,6 +43,6 @@ test('preserved legacy code and shared feed/chart are not removed', () => {
 });
 
 test('visible switch labels both paused and active states', () => {
-  assert.match(control, /Legacy System: PAUSED/);
-  assert.match(control, /Legacy System: ACTIVE/);
+  assert.match(control, /Master Engine 12: PAUSED/);
+  assert.match(control, /Master Engine 12: ACTIVE/);
 });

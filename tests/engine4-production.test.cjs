@@ -247,7 +247,8 @@ test('Engine 5 RSI remains neutral in a completely flat market', () => {
     t: 1790000000 + i * 60, o: 2300, h: 2301, l: 2299, c: 2300, v: 100
   }));
   const sandbox = {
-    RIZVI_LEGACY_SYSTEM_ENABLED: true,
+    RIZVI_LEGACY_SYSTEM_ENABLED: false,
+    RIZVI_LEGACY_ENGINE5_ENABLED: true,
     Date, Math, Number, Array, Object, String, Map, JSON,
     CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
     setInterval: () => 0,
@@ -293,7 +294,7 @@ test('Engine 5 diagnostics use the actual available algorithm count and preserve
   const bridge = html.slice(bridgeStart, bridgeEnd);
   for (const name of expected) assert.ok(bridge.includes("'" + name + "'"), 'missing roster entry: ' + name);
   assert.doesNotMatch(bridge, /Delta Buy\/Sell|Order Flow \/ Footprint|D_ORDERFLOW/);
-  assert.match(html, /rows\.length\+' available algorithms → Engine 5'/);
+  assert.match(html, /rows\.length\+' available algorithms → Engine 12'/);
 });
 
 
