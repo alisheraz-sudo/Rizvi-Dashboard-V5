@@ -255,7 +255,7 @@
   }
   window.RIZVI_RUN_MASTER_CONFIRMATION=run;
   setInterval(run,5000);
-  if(window.RIZVI_LEGACY_SYSTEM_ENABLED===true)run();
+  if(window.RIZVI_LEGACY_ENGINE5_ENABLED===true)run();
 
   // V67: stabilize Entry/SL/TP trade range. Live price may refresh every few seconds,
   // but trade levels must stay fixed until a new qualified setup is created.
