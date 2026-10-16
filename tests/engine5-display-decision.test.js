@@ -62,8 +62,12 @@ test('invalid feed always returns WAIT', () => {
 });
 
 
-test('same-direction score-band changes keep the existing setup levels frozen', () => {
-  assert.match(html, /if\(frozen&&frozenDirection===dir\)\s*\{\s*\/\/ Freeze entry\/SL\/TP[\s\S]*?frozen\.score=score;[\s\S]*?return frozen;/);
-  assert.doesNotMatch(html, /if\(frozenBand!==band\)frozen=levels\(frozen\.entry,dir,score\)/);
-  assert.match(html, /if\(!lv\|\|lv\.direction!==direction\)return;/);
+test('same-direction score changes preserve the existing trade-range prices', () => {
+  assert.match(html, /if\(!range\|\|range\.direction!==d\.direction\|\|norm\(range\.symbol\)!==norm\(window\.RIZVI_CURRENT_SYMBOL\|\|'XAU\/USD'\)\)\s*\{\s*range=makeRange\(p,d\.direction,d\.score\);\s*\}\s*else\s*\{range\.score=d\.score;\}/);
+  assert.match(html, /window\.RIZVI_TRADE_RANGE=range;draw\(\);/);
+});
+
+test('trade-range score parsing does not coerce missing values to zero', () => {
+  assert.match(html, /\.filter\(v=>v!==null&&v!==undefined&&String\(v\)\.trim\(\)!==''\)\s*\.map\(Number\)\.filter\(Number\.isFinite\)/);
+  assert.match(html, /const score=candidates\.length\?candidates\[0\]:NaN;/);
 });
