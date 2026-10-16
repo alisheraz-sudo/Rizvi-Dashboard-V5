@@ -274,7 +274,7 @@
 <div class="legend"><div><b>↗ BUY / ↓ SELL</b>Signal Direction<br>(Market Analysis)</div><div><b>🛡 HIGH QUALITY</b>Qualified Signal<br>(80–95%)</div><div><b>⚠ UNWIND</b>Exit / Reversal Signal</div><div><b>▣ TRADE RANGE</b>Entry / SL / TP<br>(Based on actual prices)</div></div></main>
 <aside class="right" aria-label="Engine panels">
 <section class="card engine5-card" aria-live="polite">
-  <div class="title">ENGINE 5 — <b>REGIME-ADAPTIVE EVALUATOR</b></div>
+  <div class="title">ENGINE 12 — <b>REGIME-ADAPTIVE MASTER EVALUATOR</b></div>
   <div class="engine5-grid">
     <div class="engine-stat"><span>Algorithm Status</span><b id="e5State">WAITING FOR DATA</b></div>
     <div class="engine-stat"><span>Market Regime</span><b id="e5Regime">Not reported</b></div>
@@ -282,25 +282,25 @@
     <div class="engine-stat"><span>Final Decision</span><b id="e5Decision">WAIT</b></div>
   </div>
   <div class="engine5-reason" id="e5Reason">Waiting for a fresh, aligned indicator and algorithm report.</div>
-  <div class="engine5-foot" id="e5Meta">Auto Trading: OFF · Engine 5 is the sole final evaluator.</div>
+  <div class="engine5-foot" id="e5Meta">Auto Trading: OFF · Engine 12 is the sole final evaluator.</div>
 </section>
 <section class="card engine-card" data-engine="1">
-  <div class="title">ENGINE 1 — <b>TREND & DIRECTION</b></div>
+  <div class="title">ENGINE 6 — <b>TREND & DIRECTION</b></div>
   <div class="engine-status" id="engine1Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine1Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="2">
-  <div class="title">ENGINE 2 — <b>STRUCTURE & LIQUIDITY</b></div>
+  <div class="title">ENGINE 7 — <b>STRUCTURE & LIQUIDITY</b></div>
   <div class="engine-status" id="engine2Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine2Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="3">
-  <div class="title">ENGINE 3 — <b>VOLUME & LIQUIDITY</b></div>
+  <div class="title">ENGINE 8 — <b>VOLUME & LIQUIDITY</b></div>
   <div class="engine-status" id="engine3Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine3Data">No live indicator values reported yet.</div>
 </section>
 <section class="card engine-card" data-engine="4">
-  <div class="title">ENGINE 4 — <b>DIVERGENCE & MARKET CONTEXT</b></div>
+  <div class="title">ENGINE 9 — <b>DIVERGENCE & MARKET CONTEXT</b></div>
   <div class="engine-status" id="engine4Status">Waiting for indicator report</div>
   <div class="engine-data" id="engine4Data">No live indicator values reported yet.</div>
 </section>
@@ -1711,10 +1711,10 @@ sync();
  const canonicalFeedBootAt=Date.now();
  let lastBootMissingDiagnostic=0;
  function tick(){
-  if(W.RIZVI_LEGACY_SYSTEM_ENABLED!==true||W.RIZVI_LEGACY_ENGINE5_ENABLED!==true)return;
+  if(W.RIZVI_LEGACY_ENGINE5_ENABLED!==true)return;
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
-  if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
+  if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 12'});return;}
   // Compatibility note for regression contract: const snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null
   let snapshot=W.RIZVI_CANONICAL_FEED_SNAPSHOT||null;
   let feed=snapshot?.status||W.RIZVI_CANONICAL_FEED_STATUS||W.RIZVI_FEED_STATUS||{};
@@ -1814,12 +1814,12 @@ sync();
   const qualified=rawQualified&&qualifiedCandidateCount>=QUALIFIED_CONFIRM_RUNS;
   const direction=qualified?indicatorAction:'WAIT';
   const result={symbol,updatedAt:Date.now(),direction,confidence:direction==='WAIT'?Math.min(79,confidence):confidence,qualified,confirmations:alignedCount,autoTrading:false,status:qualified?'QUALIFIED':'WAIT_FOR_CONFIRMATION',reason:newsBlocked?'High-impact US news filter active':dxyConflict?'DXY inverse-correlation conflict':'',engine4Context:engine4,
-   engine5:{name:'Engine 5 — Cross-engine evaluator',state:'EVALUATED',totalIndicators:18,engineCount:4,indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
+   engine5:{name:'Engine 12 — Cross-engine evaluator',state:'EVALUATED',totalIndicators:18,engineCount:4,indicatorAction,indicatorScore:Math.round(indicatorScore),indicatorAgreement:Math.round(agreement),algorithmMajority:majority,algorithmsEvaluated:rows.length,algorithmsAligned:alignedCount,activeIndicators:active.length,requiredAlignedAlgorithms:4,requiredActiveIndicators:6,qualifiedRuns:qualifiedCandidateCount,requiredQualifiedRuns:QUALIFIED_CONFIRM_RUNS,barCount:bs.length,lastBarTime:last.t,lastPrice:last.c,barAgeMs:Math.round(age)},
    indicatorStatus:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,{status:v?.status||(Number(v?.score)>0?'CALCULATED':'WAITING_FOR_DATA'),score:Number(v?.score)||0,bias:Number(v?.bias)||0}])),
    algorithmVotes:{buy,sell,wait:algorithmWait,majority,majorityCount:alignedToMajority},
-   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsAlignedToMajority:alignedToMajority,algorithmsEvaluated:rows.length,algorithmVotes:{buy,sell,wait:algorithmWait}},source:symbol+' '+tf+' OHLC → 18-indicator confluence → '+rows.length+' available algorithms → Engine 5',feedStatus:feed};
+   alignment:{status:qualified?'ALIGNED':'WAIT_FOR_CONFIRMATION',indicatorAction,algorithmMajority:majority,algorithmsAligned:alignedCount,algorithmsAlignedToMajority:alignedToMajority,algorithmsEvaluated:rows.length,algorithmVotes:{buy,sell,wait:algorithmWait}},source:symbol+' '+tf+' OHLC → 18-indicator confluence → '+rows.length+' available algorithms → Engine 12',feedStatus:feed};
   W.RIZVI_MASTER_CONFIRMATION=result;W.RIZVI_SIGNAL_DIRECTION=direction;
-  W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,totalIndicators:18,engineCount:4,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 5'};
+  W.RIZVI_INDICATOR_ENGINE_STATUS={state:'RUNNING',symbol,timeframe:tf,bars:bs.length,activeIndicators:active.length,indicators:Object.keys(components).length,totalIndicators:18,engineCount:4,algorithms:rows.length,algorithmsAligned:alignedCount,action:direction,score:result.confidence,agreement:Math.round(agreement),qualified,updatedAt:result.updatedAt,engine:'Engine 12'};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
   const blockers=[];if(rawQualified&&!qualified)blockers.push('stability-confirmation');if(indicatorAction==='WAIT')blockers.push('indicator-WAIT');if(indicatorAction!=='WAIT'&&majority!==indicatorAction)blockers.push('majority-mismatch');if(indicatorAction!=='WAIT'&&alignedCount<4)blockers.push('aligned<4');if(rows.length<5)blockers.push('algorithms<5');if(confidence<80)blockers.push('confidence<80');if(agreement<70)blockers.push('agreement<70');if(active.length<6)blockers.push('active-indicators<6');if(newsBlocked)blockers.push('news-block');if(dxyConflict)blockers.push('DXY-block');
   const voteSummary=rows.map(x=>String(x.name||'?').replace(/[^A-Z0-9_]/gi,'').slice(0,10)+':'+(x.action||'?')+'/'+Math.round(clamp(x.confidence))).join(',');
@@ -1829,13 +1829,13 @@ sync();
  }
  W.RIZVI_SET_LEGACY_ENGINE5_ENABLED=function(enabled){
   const next=enabled===true;
-  W.RIZVI_LEGACY_SYSTEM_ENABLED=next;
+  W.RIZVI_LEGACY_SYSTEM_ENABLED=false;
   W.RIZVI_LEGACY_ENGINE5_ENABLED=next;
   qualifiedCandidateKey='';qualifiedCandidateCount=0;
-  if(next){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'ACTIVE',updatedAt:Date.now()};W.RIZVI_RUN_INDICATOR_TESTS?.();W.RIZVI_RUN_MULTI_ALGORITHM_TESTS?.();W.RIZVI_RUN_MASTER_CONFIRMATION?.();tick();return {enabled:true};}
+  if(next){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'PAUSED',reason:'Legacy engines remain paused while Engine 12 runs',updatedAt:Date.now()};W.RIZVI_OPERATIONAL_STATUS.masterEngine12={status:'ACTIVE',updatedAt:Date.now()};W.RIZVI_RUN_INDICATOR_TESTS?.();W.RIZVI_RUN_MULTI_ALGORITHM_TESTS?.();W.RIZVI_RUN_MASTER_CONFIRMATION?.();tick();return {enabled:true};}
   const symbol=symbolNow(),updatedAt=Date.now();
-  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'PAUSED',reason:'All legacy decision engines paused',updatedAt};
-  const out={symbol,updatedAt,direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'LEGACY_SYSTEM_PAUSED',reason:'All legacy decision engines paused by user',engine5:{name:'Legacy Engine 5',state:'PAUSED',reason:'User-controlled reversible pause'},alignment:{status:'WAIT',reason:'Legacy evaluator paused'}};
+  W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.legacyDecisionSystem={status:'PAUSED',reason:'Legacy decision engines remain paused',updatedAt};W.RIZVI_OPERATIONAL_STATUS.masterEngine12={status:'PAUSED',reason:'Master Engine 12 manually paused',updatedAt};
+  const out={symbol,updatedAt,direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'LEGACY_SYSTEM_PAUSED',reason:'Master Engine 12 paused by user',engine5:{name:'Engine 12',state:'PAUSED',reason:'User-controlled reversible pause'},alignment:{status:'WAIT',reason:'Legacy evaluator paused'}};
   W.RIZVI_MASTER_CONFIRMATION=out;W.RIZVI_SIGNAL_DIRECTION='WAIT';
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:'LEGACY_SYSTEM_PAUSED',symbol,reason:out.reason,updatedAt};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
