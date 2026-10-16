@@ -415,8 +415,14 @@
     // Trade Range is a manual planning alert, not Engine 5 trade authorization.
     // Use the live indicator direction/score at the user's 70% alert threshold;
     // do not require master qualification, confidence>=80, alignment gates, or confirmation runs.
-    const indicatorDirection=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:'WAIT';
-    const indicatorScore=Number(m.engine5?.indicatorScore);
+    const activation=window.RIZVI_INDICATOR_ACTIVATION||{};
+    const indicatorDirection=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
+      (['BUY','SELL'].includes(activation.direction)?activation.direction:
+      (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:'WAIT'));
+    const scoreNode=document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]');
+    const scoreText=scoreNode?Number(String(scoreNode.textContent||'').replace(/[^0-9.]/g,'')):NaN;
+    const indicatorScore=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
+      (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):scoreText);
     if(['BUY','SELL'].includes(indicatorDirection)&&Number.isFinite(indicatorScore)&&indicatorScore>=70){
       return {direction:indicatorDirection,score:indicatorScore,band:indicatorScore>=90?'HIGH':indicatorScore>=80?'STRONG':'WEAK'};
     }
@@ -466,7 +472,8 @@
     }
     ctx.setTransform(dpr,0,0,dpr,0,0);
     const lv=window.RIZVI_TRADE_RANGE;
-    const raw=window.RIZVI_AGG_BARS||window.RIZVI_RAW_BARS||[];
+    const raw=(Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_AGG_BARS.length?window.RIZVI_AGG_BARS:
+      (Array.isArray(window.RIZVI_RAW_BARS)&&window.RIZVI_RAW_BARS.length?window.RIZVI_RAW_BARS:[]));
     ctx.clearRect(0,0,W,H);
     if(!lv||!raw.length)return;
     const decision=displayDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
