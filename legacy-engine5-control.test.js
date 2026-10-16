@@ -14,7 +14,7 @@ test('legacy decision system defaults to paused before periodic decision work', 
 });
 
 test('indicator and algorithm decision calculations are gated by master pause', () => {
-  assert.match(html, /function tests\(\)\{\s*if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
+  assert.match(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)/);
   assert.match(html, /function test\(\)\{if\(W\.RIZVI_LEGACY_SYSTEM_ENABLED!==true\)/);
   assert.match(html, /W\.RIZVI_LEGACY_SYSTEM_ENABLED=next/);
   assert.match(master, /if\(window\.RIZVI_LEGACY_SYSTEM_ENABLED===false\)return;/);
