@@ -1,4 +1,4 @@
-/* Rizvi Dashboard V5 — Master Confirmation Engine
+/* Rizvi Dashboard V5 — Engine 12 — Master Confirmation Engine
    Real-data confirmation layer. No synthetic data. Auto Trading stays OFF.
    Inputs: live OHLC, market range/liquidity context.
    V53: hard stability layer for fast/sideways markets. Weights unchanged.
@@ -11,8 +11,8 @@
   function ema(a,n){if(a.length<n)return null;let e=a.slice(0,n).reduce((x,y)=>x+y,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e;}
   function rsi(a,n=14){if(a.length<n+1)return null;let u=0,d=0;for(let i=a.length-n;i<a.length;i++){const x=a[i]-a[i-1];if(x>0)u+=x;else d-=x;}if(u===0&&d===0)return 50;if(d===0)return 100;if(u===0)return 0;return 100-(100/(1+u/d));}
   function run(){
-    if(window.RIZVI_LEGACY_SYSTEM_ENABLED===false)return;
-    /* Engine 5 is the sole final signal writer once the symbol-alignment bridge is loaded. */
+    if(window.RIZVI_LEGACY_ENGINE5_ENABLED!==true)return;
+    /* Engine 12 is the sole final signal writer once the symbol-alignment bridge is loaded. */
     if(window.__RIZVI_V132_SYMBOL_BRIDGE)return;
     const symbol=window.RIZVI_CURRENT_SYMBOL||'XAU/USD';
     const feed=window.RIZVI_FEED_STATUS;
