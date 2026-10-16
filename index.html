@@ -376,185 +376,118 @@
 })();
 </script><script id="rizvi-stable-chart-levels-v67">
 (function(){
-  'use strict';
-  const host=document.querySelector('.chart');
-  if(!host)return;
-
-  function ensureCanvas(){
-    let c=document.getElementById('rizviLevelsCanvasV67');
-    if(!c){
-      c=document.createElement('canvas');
-      c.id='rizviLevelsCanvasV67';
-      c.style.cssText='position:absolute;left:0;right:0;top:47px;width:100%;height:calc(100% - 47px);display:block;z-index:20;pointer-events:none;max-width:100%';
-      host.appendChild(c);
-    }
-    if(getComputedStyle(host).position==='static')host.style.position='relative';
-    return c;
+'use strict';
+const host=document.querySelector('.chart');
+if(!host)return;
+const MIN_SCORE=70;
+let range=null, blockedDirection=null, canvas=null, observer=null;
+const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function getCanvas(){
+ if(!canvas||!canvas.isConnected){
+  canvas=document.getElementById('rizviLevelsCanvasV67');
+  if(!canvas){canvas=document.createElement('canvas');canvas.id='rizviLevelsCanvasV67';host.appendChild(canvas);}
+ }
+ if(getComputedStyle(host).position==='static')host.style.position='relative';
+ canvas.style.cssText='position:absolute;inset:47px 0 0 0;width:100%;height:calc(100% - 47px);display:block;z-index:30;pointer-events:none;max-width:100%';
+ return canvas;
+}
+function decision(m){
+ if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:0};
+ const a=window.RIZVI_INDICATOR_ACTIVATION||{};
+ const node=document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]');
+ const shown=node?Number(String(node.textContent||'').replace(/[^0-9.]/g,'')):NaN;
+ const d=[m.engine5?.indicatorAction,a.direction,window.RIZVI_SIGNAL_DIRECTION,m.direction].find(x=>x==='BUY'||x==='SELL')||'WAIT';
+ // Ignore missing/null/blank values instead of coercing them to 0.
+ // Number(null) and Number('') both equal 0 and can incorrectly suppress a valid 70%+ setup.
+ const candidates=[m.engine5?.indicatorScore,a.confidence,shown,m.confidence]
+  .filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='')
+  .map(Number).filter(Number.isFinite);
+ const score=candidates.length?candidates[0]:NaN;
+ return d!=='WAIT'&&Number.isFinite(score)&&score>=MIN_SCORE?{direction:d,score}:{direction:'WAIT',score:Number.isFinite(score)?score:0};
+}
+function currentPrice(m){
+ const values=[window.RIZVI_LIVE_PRICE,window.RIZVI_LIVE_PRICES?.[m?.symbol],window.RIZVI_GOLD_FEED?.price,window.RIZVI_LAST_PRICE];
+ for(const v of values){const n=Number(v);if(Number.isFinite(n)&&n>0)return n;}
+ return NaN;
+}
+function makeRange(price,direction,score){
+ const symbol=window.RIZVI_CURRENT_SYMBOL||'XAU/USD';
+ const xau=['XAUUSD','XAU/USD','GOLD'].includes(norm(symbol));
+ const pip=xau?0.01:Math.max(price*0.00001,0.01),risk=xau?30:Math.max(1,Math.round(price*0.0015/pip));
+ const t=xau?[40,70,100]:[Math.round(risk*4/3),Math.round(risk*7/3),Math.round(risk*10/3)];
+ const sign=direction==='BUY'?1:-1;
+ return {symbol,direction,score,entry:price,sl:price-sign*risk*pip,tp1:price+sign*t[0]*pip,tp2:price+sign*t[1]*pip,tp3:price+sign*t[2]*pip,createdAt:Date.now()};
+}
+function update(){
+ const m=window.RIZVI_MASTER_CONFIRMATION||{},d=decision(m),p=currentPrice(m);
+ if(d.direction==='WAIT'){if(range)range=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
+ if(!Number.isFinite(p)){draw();return;}
+ if(blockedDirection===d.direction){draw();return;}
+ if(blockedDirection&&blockedDirection!==d.direction)blockedDirection=null;
+ if(!range||range.direction!==d.direction||norm(range.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
+  range=makeRange(p,d.direction,d.score);
+ }else{range.score=d.score;}
+ window.RIZVI_TRADE_RANGE=range;draw();
+}
+function bars(){
+ const candidates=[window.RIZVI_AGG_BARS,window.RIZVI_RAW_BARS,window.RIZVI_CANDLES,window.RIZVI_OHLC];
+ return candidates.find(a=>Array.isArray(a)&&a.length)||[];
+}
+function getOHLC(b){
+ const h=Number(b?.h??b?.high??b?.High),l=Number(b?.l??b?.low??b?.Low);
+ return Number.isFinite(h)&&Number.isFinite(l)?[h,l]:[];
+}
+function draw(){
+ const c=getCanvas(),ctx=c.getContext('2d');if(!ctx)return;
+ const r=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),W=Math.max(1,r.width),H=Math.max(1,r.height);
+ if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+ const lv=range||window.RIZVI_TRADE_RANGE;if(!lv||!['BUY','SELL'].includes(lv.direction))return;
+ if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD'))return;
+ const raw=bars().slice(-100),vals=raw.flatMap(b=>getOHLC(b)).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
+ if(!vals.length)return;
+ const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,Math.abs(hi)*0.0001,0.01),min=lo-span*.10,max=hi+span*.10;
+ const y=v=>Math.max(8,Math.min(H-8,H-12-(v-min)/(max-min||1)*(H-24)));
+ const x=Math.max(12,Math.min(W-142,W*.55)),bw=Math.min(132,Math.max(108,W*.30));
+ const entryY=y(lv.entry),slY=y(lv.sl),tpYs=[y(lv.tp1),y(lv.tp2),y(lv.tp3)];
+ ctx.save();
+ const rewardTop=Math.min(entryY,...tpYs),rewardBottom=Math.max(entryY,...tpYs);
+ ctx.fillStyle='rgba(0,200,125,.18)';ctx.fillRect(x,rewardTop,bw,Math.max(3,rewardBottom-rewardTop));
+ ctx.strokeStyle='#20d99a';ctx.lineWidth=1.5;ctx.strokeRect(x,rewardTop,bw,Math.max(3,rewardBottom-rewardTop));
+ const riskTop=Math.min(entryY,slY),riskBottom=Math.max(entryY,slY);
+ ctx.fillStyle='rgba(151,70,190,.24)';ctx.fillRect(x,riskTop,bw,Math.max(3,riskBottom-riskTop));
+ ctx.strokeStyle='#b477df';ctx.strokeRect(x,riskTop,bw,Math.max(3,riskBottom-riskTop));
+ const items=[['ENTRY',lv.entry,entryY,'#36c7f4'],['SL',lv.sl,slY,'#c58af0'],['TP1',lv.tp1,tpYs[0],'#20d99a'],['TP2',lv.tp2,tpYs[1],'#20d99a'],['TP3',lv.tp3,tpYs[2],'#20d99a']];
+ ctx.font='bold 12px sans-serif';
+ for(const [name,value,yy,color] of items){
+  ctx.strokeStyle=color;ctx.setLineDash(name==='ENTRY'||name==='SL'?[]:[4,3]);ctx.beginPath();ctx.moveTo(x,yy);ctx.lineTo(x+bw,yy);ctx.stroke();ctx.setLineDash([]);
+  const label=name+' '+Number(value).toFixed(2),tw=ctx.measureText(label).width,lx=Math.max(4,x-tw-10),ly=Math.max(13,Math.min(H-4,yy-4));
+  ctx.fillStyle='rgba(3,16,28,.95)';ctx.fillRect(lx-3,ly-11,tw+6,14);ctx.fillStyle=color;ctx.fillText(label,lx,ly);
+ }
+ ctx.restore();
+}
+function reset(){range=null;window.RIZVI_TRADE_RANGE=null;draw();}
+function displayDecision(m){
+  const score=Number(m?.confidence)||0,d=m?.direction;
+  if(m?.feedStatus?.ok!==true||!['BUY','SELL'].includes(d))return {direction:'WAIT',score,band:'WAIT'};
+  if(d==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
+  if(m.qualified===true&&score>=80)return {direction:d,score,band:score>=90?'HIGH':'STRONG'};
+  if(score>=70)return {direction:d,score,band:'WEAK'};
+  return {direction:'WAIT',score,band:'WAIT'};
   }
-
-  function levels(p,dir,score){
-    // Display-layer TP tiers only; Engine 5 scoring/qualification remains unchanged.
-    const sym=String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase();
-    const isXAU=sym==='XAU/USD'||sym==='XAUUSD'||sym==='GOLD';
-    const pip=isXAU?0.01:1;
-    const riskPips=isXAU?30:Math.max(1,Math.round(p*0.0015/pip));
-    const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
-    // Locked trade-range plan: 30-pip SL; TP1=40, TP2=70, TP3=100 pips.
-    // Confidence changes the setup label only; it must not move the approved price levels.
-    const targets=isXAU?[40,70,100]:[Math.round(riskPips*4/3),Math.round(riskPips*7/3),Math.round(riskPips*10/3)];
-    const [tp1Pips,tp2Pips,tp3Pips]=targets;
-    const risk=riskPips*pip,tp1=tp1Pips*pip,tp2=tp2Pips*pip,tp3=tp3Pips*pip;
-    if(dir==='SELL') return {symbol:sym,direction:dir,entry:p,sl:p+risk,tp1:p-tp1,tp2:p-tp2,tp3:p-tp3,
-      score,band,riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
-    return {symbol:sym,direction:dir,entry:p,sl:p-risk,tp1:p+tp1,tp2:p+tp2,tp3:p+tp3,
-      score,band,riskPips,riskDistance:risk,tp1Pips,tp2Pips,tp3Pips,tp1RR:tp1/risk,tp2RR:tp2/risk,tp3RR:tp3/risk};
-  }
-
-  // Canonical Master Engine display decision: never override final WAIT with intermediate indicator votes.
-  function displayDecision(m){
-    if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
-    const score=Number(m.confidence)||0;
-    const direction=['BUY','SELL'].includes(m.direction)?m.direction:'WAIT';
-    if(direction==='WAIT')return {direction:'WAIT',score,band:'WAIT'};
-    if(m.qualified===true&&score>=80)return {direction,score,band:score>=90?'HIGH':'STRONG'};
-    if(score>=70)return {direction,score,band:'WEAK'};
-    return {direction:'WAIT',score,band:'WAIT'};
-  }
-  window.RIZVI_DISPLAY_DECISION=displayDecision;
-
-  // Separate manual-planning decision for the Trade Range overlay only.
-  // This does not authorize trades or change Master Engine qualification.
-  function tradeRangeDecision(m){
-    if(!m||m.feedStatus?.ok!==true)return {direction:'WAIT',score:Number(m?.confidence)||0,band:'WAIT'};
-    const activation=window.RIZVI_INDICATOR_ACTIVATION||{};
-    const direction=['BUY','SELL'].includes(m.engine5?.indicatorAction)?m.engine5.indicatorAction:
-      (['BUY','SELL'].includes(activation.direction)?activation.direction:
-      (['BUY','SELL'].includes(window.RIZVI_SIGNAL_DIRECTION)?window.RIZVI_SIGNAL_DIRECTION:
-      (['BUY','SELL'].includes(m.direction)?m.direction:'WAIT')));
-    const scoreNode=typeof document!=='undefined' ? document.querySelector('#rizviSetupQuality, #setupQuality, [data-setup-score]') : null;
-    const scoreText=scoreNode?Number(String(scoreNode.textContent||'').replace(/[^0-9.]/g,'')):NaN;
-    const score=Number.isFinite(Number(m.engine5?.indicatorScore))?Number(m.engine5.indicatorScore):
-      (Number.isFinite(Number(activation.confidence))?Number(activation.confidence):
-      (Number.isFinite(scoreText)?scoreText:Number(m.confidence)));
-    if(['BUY','SELL'].includes(direction)&&Number.isFinite(score)&&score>=70){
-      return {direction,score,band:score>=90?'HIGH':score>=80?'STRONG':'WEAK'};
-    }
-    return {direction:'WAIT',score:Number.isFinite(score)?score:(Number(m.confidence)||0),band:'WAIT'};
-  }
-
-  let frozen=null, frozenDirection=null, frozenBand=null, frozenAt=0, blockedDirection=null;
-  function clearRange(){
-    frozen=null;frozenDirection=null;frozenBand=null;frozenAt=0;
-    window.RIZVI_TRADE_RANGE=null;
-  }
-  function closeRange(){
-    if(frozenDirection)blockedDirection=frozenDirection;
-    clearRange();
-  }
-  window.RIZVI_SIGNAL_LEVELS=function(price,direction,scoreOverride){
-    const p=Number(price),requested=direction==='SELL'?'SELL':direction==='BUY'?'BUY':null;
-    const decision=tradeRangeDecision(window.RIZVI_MASTER_CONFIRMATION||{});
-    const dir=requested||decision.direction;
-    const score=Number.isFinite(Number(scoreOverride))?Number(scoreOverride):decision.score;
-    if(!Number.isFinite(p)||!dir||decision.direction!==dir||score<70){
-      if(!dir||decision.direction==='WAIT'){blockedDirection=null;clearRange();}
-      return null;
-    }
-    if(blockedDirection===dir)return null;
-    if(blockedDirection&&blockedDirection!==dir)blockedDirection=null;
-    const band=score>=90?'HIGH':score>=80?'STRONG':'WEAK';
-    if(frozen&&frozenDirection===dir){
-      // Freeze entry/SL/TP for the life of this qualified setup. Score-band
-      // changes must not silently recalculate existing levels.
-      frozen.score=score;
-      window.RIZVI_TRADE_RANGE=frozen;
-      return frozen;
-    }
-    frozen=levels(p,dir,score);frozenDirection=dir;frozenBand=band;frozenAt=Date.now();
-    window.RIZVI_TRADE_RANGE=frozen;
-    return frozen;
-  };
-
-  function draw(){
-    const c=ensureCanvas(),ctx=c.getContext('2d');
-    const rect=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
-    const W=Math.max(1,Math.round(rect.width)),H=Math.max(1,Math.round(rect.height));
-    if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){
-      c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);
-    }
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    const lv=window.RIZVI_TRADE_RANGE;
-    const raw=(Array.isArray(window.RIZVI_AGG_BARS)&&window.RIZVI_AGG_BARS.length?window.RIZVI_AGG_BARS:
-      (Array.isArray(window.RIZVI_RAW_BARS)&&window.RIZVI_RAW_BARS.length?window.RIZVI_RAW_BARS:[]));
-    ctx.clearRect(0,0,W,H);
-    if(!lv||!raw.length)return;
-    const decision=tradeRangeDecision(window.RIZVI_MASTER_CONFIRMATION||{}),direction=decision.direction;
-    const livePrice=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[lv.symbol]);
-    const expired=!!frozenAt&&Date.now()-frozenAt>=10*60*1000;
-    const reversed=direction!==lv.direction||decision.score<70;
-    const stopHit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice<=Number(lv.sl):livePrice>=Number(lv.sl));
-    const tp2Hit=Number.isFinite(livePrice)&&(lv.direction==='BUY'?livePrice>=Number(lv.tp2):livePrice<=Number(lv.tp2));
-    if(expired||stopHit||tp2Hit){closeRange();ctx.clearRect(0,0,W,H);return;}
-    if(reversed){clearRange();ctx.clearRect(0,0,W,H);return;}
-    if(direction==='WAIT'||decision.score<70||!['BUY','SELL'].includes(direction))return;
-    if(!lv||lv.direction!==direction)return;
-    const active=String(window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    const rangeSymbol=String(lv.symbol||window.RIZVI_CURRENT_SYMBOL||'XAU/USD').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    if(active!==rangeSymbol||lv.direction!==direction)return;
-    const vals=raw.slice(-70).flatMap(b=>[Number(b.h),Number(b.l)]).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
-    if(!vals.length)return;
-    const rawMax=Math.max(...vals),rawMin=Math.min(...vals),rawSpan=Math.max(rawMax-rawMin,Math.abs(rawMax)*0.0001,0.01);
-    /* Keep level labels away from the top/bottom canvas edges; this is an overlay-safe padded scale, not the TradingView price scale. */
-    const max=rawMax+rawSpan*0.12,min=rawMin-rawSpan*0.12;
-    const sy=v=>H-24-(v-min)/(max-min||1)*(H-48);
-    /* Put the readable box inside the plot area rather than against the right price-scale edge. */
-    const boxW=Math.min(120,Math.max(96,W*0.27)),x=Math.max(10,Math.min(W-boxW-10,W*0.58)),right=x+boxW;
-    const entryY=sy(Number(lv.entry)),slY=sy(Number(lv.sl)),tp1Y=sy(Number(lv.tp1)),tp2Y=sy(Number(lv.tp2)),tp3Y=sy(Number(lv.tp3));
-    const top=Math.max(4,Math.min(entryY,tp3Y)),tpH=Math.max(2,Math.abs(entryY-tp3Y));
-    const slTop=Math.min(entryY,slY),slH=Math.max(2,Math.abs(entryY-slY));
-    ctx.save();
-    ctx.fillStyle='rgba(0,190,115,.14)';ctx.fillRect(x,top,boxW,tpH);
-    ctx.strokeStyle='rgba(0,217,145,.85)';ctx.lineWidth=1;ctx.strokeRect(x,top,boxW,tpH);
-    ctx.fillStyle='rgba(142,52,176,.20)';ctx.fillRect(x,slTop,boxW,slH);
-    ctx.strokeStyle='rgba(142,52,176,.98)';ctx.lineWidth=1;ctx.strokeRect(x,slTop,boxW,slH);
-    const items=[['ENTRY',lv.entry,entryY,'#35bde9'],['SL',lv.sl,slY,'#c58af0'],['TP1',lv.tp1,tp1Y,'#25d99a'],['TP2',lv.tp2,tp2Y,'#25d99a'],['TP3',lv.tp3,tp3Y,'#25d99a']];
-    ctx.font='bold 12px sans-serif';ctx.lineWidth=1;
-    items.forEach(([name,value,y,color])=>{
-      if(!Number.isFinite(Number(value)))return;
-      ctx.strokeStyle=color;ctx.setLineDash(name==='ENTRY'||name==='SL'?[]:[4,3]);
-      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
-      const label=name+' '+Number(value).toFixed(2),tw=ctx.measureText(label).width;
-      const ly=Math.max(13,Math.min(H-6,y-4)),lx=Math.max(5,x-tw-8);
-      ctx.fillStyle='rgba(3,16,28,.92)';ctx.fillRect(lx-4,ly-10,tw+7,13);
-      ctx.fillStyle=color;ctx.fillText(label,lx,ly);
-    });
-    ctx.restore();
-  }
-  window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
-  window.addEventListener('rizvi:master-confirmation-update',e=>{
-    const m=e.detail||{},decision=tradeRangeDecision(m);
-    const p=Number(window.RIZVI_LIVE_PRICE??window.RIZVI_LIVE_PRICES?.[m.symbol]??window.RIZVI_GOLD_FEED?.price);
-    // Manual planning overlay uses its own 70% indicator gate; never mutates Master Engine's final decision.
-    if(decision.direction==='WAIT'||decision.score<70){
-      clearRange();
-    }else if(Number.isFinite(p)){
-      window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
-    }
-    draw();
-  });
-  window.addEventListener('rizvi:candle-update',draw);
-  window.addEventListener('rizvi:timeframe-update',draw);
-  window.addEventListener('rizvi:price-update',function(e){
-    const d=e&&e.detail||{},m=window.RIZVI_MASTER_CONFIRMATION||{},decision=tradeRangeDecision(m);
-    const p=Number(d.price);
-    if(d.symbol&&String(d.symbol).toUpperCase().replace(/[^A-Z0-9]/g,'')!==String(window.RIZVI_CURRENT_SYMBOL||'').toUpperCase().replace(/[^A-Z0-9]/g,''))return;
-    if(decision.direction!=='WAIT'&&decision.score>=70&&Number.isFinite(p))window.RIZVI_SIGNAL_LEVELS(p,decision.direction,decision.score);
-    draw();
-  });
-  window.addEventListener('rizvi:signal-levels-update',draw);
-  window.addEventListener('resize',draw);
-  if(window.ResizeObserver)new ResizeObserver(draw).observe(host);
-  ensureCanvas();draw();
+window.RIZVI_DISPLAY_DECISION=displayDecision;
+window.RIZVI_SIGNAL_LEVELS=function(price,direction,score){
+ const d=decision(window.RIZVI_MASTER_CONFIRMATION||{}),p=Number(price),s=Number(score??d.score);
+ if(!Number.isFinite(p)||direction!==d.direction||s<MIN_SCORE)return null;
+ if(blockedDirection===direction)return null;
+ range=makeRange(p,direction,s);window.RIZVI_TRADE_RANGE=range;draw();return range;
+};
+window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
+window.addEventListener('rizvi:master-confirmation-update',e=>{if(e.detail)window.RIZVI_MASTER_CONFIRMATION=e.detail;update();});
+window.addEventListener('rizvi:price-update',e=>{const d=e?.detail||{};if(d.symbol&&norm(d.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD'))return;update();});
+['rizvi:candle-update','rizvi:timeframe-update','rizvi:signal-levels-update','rizvi:symbol-change','resize'].forEach(n=>window.addEventListener(n,draw));
+if(window.ResizeObserver){observer=new ResizeObserver(draw);observer.observe(host);}
+getCanvas();update();
 })();
 </script></script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>/* V111 DISABLED ANONYMOUS VISIBLE WRITER */</script><script>
 (function(){
