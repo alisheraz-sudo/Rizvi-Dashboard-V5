@@ -1558,7 +1558,7 @@ const algos={
  F_FULL:{weights:{trend:12,momentum:10,rsi:10,vwap:10,candle:10,liquidity:12,divergence:7,volumeProfile:7}}
 };
 function runAlgo(name,f){const w=algos[name].weights,enabled=Object.keys(w);let total=0,ws=0,agree=0,active=0;for(const k of enabled){const b=f[k]||0,totalW=w[k];if(b){agree+=b*totalW;active++;}ws+=totalW;total+=b*totalW}const direction=agree>0?'BUY':agree<0?'SELL':'WAIT';const confidence=clamp(Math.round(50+Math.abs(agree)/Math.max(ws,1)*50));return{name,action:confidence>=70?direction:'WAIT',confidence,agreement:Math.round((active/Math.max(enabled.length,1))*100),activeIndicators:active,weights:Object.fromEntries(enabled.map(k=>[k,w[k]]))}}
-function test(){const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
+function test(){if(W.RIZVI_LEGACY_SYSTEM_ENABLED!==true){W.RIZVI_OPERATIONAL_STATUS=W.RIZVI_OPERATIONAL_STATUS||{};W.RIZVI_OPERATIONAL_STATUS.multiAlgorithm={status:'LEGACY_SYSTEM_PAUSED',reason:'Legacy decision system is paused'};return W.RIZVI_MULTI_ALGORITHM_REPORT||null;}const bs=bars(),f=features(bs),results={};Object.keys(algos).forEach(k=>results[k]=runAlgo(k,f));
  const ranked=Object.values(results).sort((a,b)=>b.confidence-a.confidence||b.agreement-a.agreement);
  const master=ranked[0]||{action:'WAIT',confidence:0};
  const report={version:'v1',symbol:String(W.RIZVI_CURRENT_SYMBOL||W.RIZVI_DIRECT_SYMBOL||document.getElementById('symbolSelect')?.value||'XAU/USD'),timeframe:String(W.RIZVI_CANDLE_TIMEFRAME||'1M').toUpperCase(),timestamp:new Date().toISOString(),bars:bs.length,method:'independent-algorithms + weighted confluence',algorithms:results,ranking:ranked.map(x=>({name:x.name,action:x.action,confidence:x.confidence,agreement:x.agreement})),master:{action:master.action,confidence:master.confidence,algorithm:master.name},note:'Accuracy is measured only after outcome labels are collected; confidence is not claimed as historical accuracy.'};
@@ -1710,7 +1710,7 @@ sync();
  const canonicalFeedBootAt=Date.now();
  let lastBootMissingDiagnostic=0;
  function tick(){
-  if(W.RIZVI_LEGACY_ENGINE5_ENABLED!==true)return;
+  if(W.RIZVI_LEGACY_SYSTEM_ENABLED!==true||W.RIZVI_LEGACY_ENGINE5_ENABLED!==true)return;
   const symbol=symbolNow(),tf=tfNow();
   if(symbol==='UNSUPPORTED'){wait(symbol,'Unsupported symbol; no matching OHLC feed');return;}
   if(symbol==='XAU/USD'&&W.RIZVI_GOLD_MARKET_LOCKED===true){wait(symbol,'Gold market closed — feed polling paused',{engine:'Engine 5'});return;}
@@ -1828,11 +1828,12 @@ sync();
  }
  W.RIZVI_SET_LEGACY_ENGINE5_ENABLED=function(enabled){
   const next=enabled===true;
+  W.RIZVI_LEGACY_SYSTEM_ENABLED=next;
   W.RIZVI_LEGACY_ENGINE5_ENABLED=next;
   qualifiedCandidateKey='';qualifiedCandidateCount=0;
   if(next){tick();return {enabled:true};}
   const symbol=symbolNow(),updatedAt=Date.now();
-  const out={symbol,updatedAt,direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'LEGACY_ENGINE_PAUSED',reason:'Legacy Engine 5 evaluator paused by user',engine5:{name:'Legacy Engine 5',state:'PAUSED',reason:'User-controlled reversible pause'},alignment:{status:'WAIT',reason:'Legacy evaluator paused'}};
+  const out={symbol,updatedAt,direction:'WAIT',confidence:50,qualified:false,confirmations:0,autoTrading:false,status:'LEGACY_ENGINE_PAUSED',reason:'All legacy decision engines paused by user',engine5:{name:'Legacy Engine 5',state:'PAUSED',reason:'User-controlled reversible pause'},alignment:{status:'WAIT',reason:'Legacy evaluator paused'}};
   W.RIZVI_MASTER_CONFIRMATION=out;W.RIZVI_SIGNAL_DIRECTION='WAIT';
   W.RIZVI_INDICATOR_ENGINE_STATUS={state:'LEGACY_ENGINE_PAUSED',symbol,reason:out.reason,updatedAt};
   W.RIZVI_GOLD_ENGINE_STATUS=W.RIZVI_INDICATOR_ENGINE_STATUS;
