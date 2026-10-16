@@ -424,6 +424,13 @@ function update(){
  if(!Number.isFinite(p)){draw();return;}
  if(blockedDirection===d.direction){draw();return;}
  if(blockedDirection&&blockedDirection!==d.direction)blockedDirection=null;
+ // Expire a stale plan after price has reached/passed its furthest target or invalidated its stop.
+ // Keep fixed pip distances; this only prevents old levels from lingering after the setup has played out.
+ if(range&&range.direction===d.direction&&norm(range.symbol)===norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
+  const passedTarget=d.direction==='BUY'?p>=Number(range.tp3):p<=Number(range.tp3);
+  const hitStop=d.direction==='BUY'?p<=Number(range.sl):p>=Number(range.sl);
+  if(passedTarget||hitStop){range=null;window.RIZVI_TRADE_RANGE=null;}
+ }
  if(!range||range.direction!==d.direction||norm(range.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
   range=makeRange(p,d.direction,d.score);
  }else{range.score=d.score;}
