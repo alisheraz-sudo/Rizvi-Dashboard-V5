@@ -112,7 +112,7 @@ function drawTRB(){
  const direction=String(decision.direction||lv?.direction||'WAIT').toUpperCase();
  const scoreRaw=decision.confidence!==null&&decision.confidence!==undefined&&String(decision.confidence).trim()!==''?decision.confidence:lv?.score;
  const score=Number(scoreRaw);
- if(!lv||!['BUY','SELL'].includes(direction)||direction!==String(lv.direction||'').toUpperCase()||score<70)return;
+ if(!lv||!['BUY','SELL'].includes(direction)||direction!==String(lv.direction||'').toUpperCase()||!Number.isFinite(score)||score<70)return;
  const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3].map(Number);
  if(!vals.every(Number.isFinite))return;
  const ys=vals.map(v=>candleSeries.priceToCoordinate(v));if(!ys.every(Number.isFinite))return;
