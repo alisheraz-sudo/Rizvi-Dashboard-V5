@@ -31,3 +31,9 @@ test('Entry, stop loss and all three targets retain their separate labels and co
   assert.match(renderer, /direction==='BUY'\?'rgba\(0,217,145/); // BUY green
   assert.match(renderer, /rgba\(255,76,96/); // SELL red
 });
+
+test('manual Trade Range overlay uses indicator action even when Engine 5 final action is WAIT', () => {
+  assert.match(renderer, /decision\.engine5\?\.indicatorAction,activation\.direction,window\.RIZVI_SIGNAL_DIRECTION,lv\?\.direction,decision\.direction/);
+  assert.match(renderer, /decision\.engine5\?\.indicatorScore,activation\.confidence,lv\?\.score,decision\.confidence/);
+  assert.doesNotMatch(renderer, /const direction=String\(decision\.direction\|\|lv\?\.direction\|\|'WAIT'\)/);
+});
