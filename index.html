@@ -380,8 +380,19 @@
 const host=document.querySelector('.chart');
 if(!host)return;
 const MIN_SCORE=70;
-let range=null, blockedDirection=null, canvas=null, observer=null;
+let range=null, blockedDirection=null, canvas=null, observer=null, lastRenderKey='';
 const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+// Trade Box diagnostics: bounded browser-side journal; never changes Engine 5 decisions.
+const LOG_KEY='rizvi.tradebox.logs.v1', LOG_LIMIT=500;
+function logBox(event,detail={}){
+ const row={id:(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)),ts:new Date().toISOString(),event,symbol:window.RIZVI_CURRENT_SYMBOL||'XAU/USD',detail};
+ try{const prior=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');const logs=Array.isArray(prior)?prior:[];logs.push(row);localStorage.setItem(LOG_KEY,JSON.stringify(logs.slice(-LOG_LIMIT)));}catch(e){/* storage may be unavailable */}
+ try{window.dispatchEvent(new CustomEvent('rizvi:tradebox-log',{detail:row}));}catch(e){}
+ if(window.console&&console.debug)console.debug('[RIZVI_TRADEBOX]',row);
+}
+window.RIZVI_TRADEBOX_LOGS=function(){try{return JSON.parse(localStorage.getItem(LOG_KEY)||'[]')}catch(e){return []}};
+window.RIZVI_EXPORT_TRADEBOX_LOGS=function(){return JSON.stringify(window.RIZVI_TRADEBOX_LOGS(),null,2)};
+
 function getCanvas(){
  if(!canvas||!canvas.isConnected){
   canvas=document.getElementById('rizviLevelsCanvasV67');
@@ -416,17 +427,28 @@ function makeRange(price,direction,score){
  const pip=xau?0.01:Math.max(price*0.00001,0.01),risk=xau?30:Math.max(1,Math.round(price*0.0015/pip));
  const t=xau?[40,70,100]:[Math.round(risk*4/3),Math.round(risk*7/3),Math.round(risk*10/3)];
  const sign=direction==='BUY'?1:-1;
- return {symbol,direction,score,entry:price,sl:price-sign*risk*pip,tp1:price+sign*t[0]*pip,tp2:price+sign*t[1]*pip,tp3:price+sign*t[2]*pip,createdAt:Date.now()};
+ const result={symbol,direction,score,entry:price,sl:price-sign*risk*pip,tp1:price+sign*t[0]*pip,tp2:price+sign*t[1]*pip,tp3:price+sign*t[2]*pip,createdAt:Date.now()};
+ const levels=[result.entry,result.sl,result.tp1,result.tp2,result.tp3];
+ if(levels.some(v=>!Number.isFinite(v))||new Set(levels).size!==levels.length){logBox('BOX_LEVELS_INVALID',{direction,symbol,score,levels});}
+ return result;
 }
 function update(){
  const m=window.RIZVI_MASTER_CONFIRMATION||{},d=decision(m),p=currentPrice(m);
- if(d.direction==='WAIT'){if(range)range=null;window.RIZVI_TRADE_RANGE=null;draw();return;}
- if(!Number.isFinite(p)){draw();return;}
- if(blockedDirection===d.direction){draw();return;}
+ if(d.direction==='WAIT'){
+  logBox('BOX_GATE_BLOCKED',{reason:'DECISION_WAIT',score:d.score,feedOk:m.feedStatus?.ok===true,masterDirection:m.direction,engine5Direction:m.engine5?.indicatorAction,qualified:m.qualified===true});
+  if(range)logBox('BOX_CLEARED',{reason:'DECISION_WAIT',previousDirection:range.direction});
+  if(range)range=null;window.RIZVI_TRADE_RANGE=null;draw();return;
+ }
+ if(!Number.isFinite(p)||p<=0){logBox('BOX_GATE_BLOCKED',{reason:'INVALID_PRICE',direction:d.direction,score:d.score,price:p});draw();return;}
+ if(blockedDirection===d.direction){logBox('BOX_GATE_BLOCKED',{reason:'DIRECTION_BLOCKED',direction:d.direction,score:d.score,price:p});draw();return;}
  if(blockedDirection&&blockedDirection!==d.direction)blockedDirection=null;
  if(!range||range.direction!==d.direction||norm(range.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){
   range=makeRange(p,d.direction,d.score);
- }else{range.score=d.score;}
+  logBox('BOX_CREATED',{...range,source:'master-confirmation-update'});
+ }else{
+  const previousScore=range.score;range.score=d.score;
+  if(previousScore!==d.score)logBox('BOX_UPDATED',{direction:range.direction,entry:range.entry,score:d.score,previousScore});
+ }
  window.RIZVI_TRADE_RANGE=range;draw();
 }
 function bars(){
@@ -438,12 +460,18 @@ function getOHLC(b){
  return Number.isFinite(h)&&Number.isFinite(l)?[h,l]:[];
 }
 function draw(){
- const c=getCanvas(),ctx=c.getContext('2d');if(!ctx)return;
+ const c=getCanvas(),ctx=c.getContext('2d');
+ if(!ctx){logBox('BOX_RENDER_FAILED',{reason:'CANVAS_CONTEXT_UNAVAILABLE'});return;}
  const r=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),W=Math.max(1,r.width),H=Math.max(1,r.height);
+ if(W<=1||H<=1)logBox('BOX_RENDER_WARNING',{reason:'CHART_HOST_ZERO_SIZE',width:W,height:H});
  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
- const lv=range||window.RIZVI_TRADE_RANGE;if(!lv||!['BUY','SELL'].includes(lv.direction))return;
- if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD'))return;
+ const lv=range||window.RIZVI_TRADE_RANGE;
+ if(!lv||!['BUY','SELL'].includes(lv.direction)){return;}
+ if(norm(lv.symbol)!==norm(window.RIZVI_CURRENT_SYMBOL||'XAU/USD')){logBox('BOX_RENDER_SKIPPED',{reason:'SYMBOL_MISMATCH',boxSymbol:lv.symbol,currentSymbol:window.RIZVI_CURRENT_SYMBOL||'XAU/USD'});return;}
+ const levelPairs=[['entry',lv.entry],['sl',lv.sl],['tp1',lv.tp1],['tp2',lv.tp2],['tp3',lv.tp3]];
+ const bad=levelPairs.filter(([k,v])=>!Number.isFinite(Number(v)));
+ if(bad.length){logBox('BOX_RENDER_FAILED',{reason:'INVALID_LEVEL_VALUES',badLevels:bad.map(x=>x[0])});return;}
  const raw=bars().slice(-100),vals=raw.flatMap(b=>getOHLC(b)).concat([lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3]).filter(Number.isFinite);
  if(!vals.length)return;
  const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,Math.abs(hi)*0.0001,0.01),min=lo-span*.10,max=hi+span*.10;
@@ -465,8 +493,24 @@ function draw(){
   ctx.fillStyle='rgba(3,16,28,.95)';ctx.fillRect(lx-3,ly-11,tw+6,14);ctx.fillStyle=color;ctx.fillText(label,lx,ly);
  }
  ctx.restore();
+ const renderKey=[lv.symbol,lv.direction,lv.score,lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3,Math.round(W),Math.round(H)].join('|');
+ if(renderKey!==lastRenderKey){lastRenderKey=renderKey;logBox('BOX_RENDERED',{direction:lv.direction,score:lv.score,entry:lv.entry,sl:lv.sl,tp1:lv.tp1,tp2:lv.tp2,tp3:lv.tp3,width:W,height:H});}
 }
-function reset(){range=null;window.RIZVI_TRADE_RANGE=null;draw();}
+window.RIZVI_TRADEBOX_SELF_TEST=function(){
+ const out=[];
+ for(const direction of ['BUY','SELL']){
+  const r=makeRange(4000,direction,80),vals=[r.entry,r.sl,r.tp1,r.tp2,r.tp3];
+  out.push({case:direction,pass:vals.every(Number.isFinite)&&new Set(vals).size===5&&((direction==='BUY'&&r.sl<r.entry&&r.tp1>r.entry&&r.tp2>r.tp1&&r.tp3>r.tp2)||(direction==='SELL'&&r.sl>r.entry&&r.tp1<r.entry&&r.tp2<r.tp1&&r.tp3<r.tp2)),levels:r});
+ }
+ const buy=decision({feedStatus:{ok:true},engine5:{indicatorAction:'BUY',indicatorScore:75},direction:'WAIT'});
+ const wait=decision({feedStatus:{ok:true},direction:'WAIT',confidence:90});
+ const noFeed=decision({feedStatus:{ok:false},direction:'BUY',confidence:95});
+ out.push({case:'WAIT/no direction',pass:wait.direction==='WAIT',result:wait});
+ out.push({case:'feed unavailable',pass:noFeed.direction==='WAIT',result:noFeed});
+ out.push({case:'BUY candidate score gate',pass:buy.direction==='BUY',result:buy});
+ return {ok:out.every(x=>x.pass),tests:out,engineSettingsChanged:false};
+};
+function reset(){range=null;lastRenderKey='';window.RIZVI_TRADE_RANGE=null;logBox('BOX_RESET',{});draw();}
 function displayDecision(m){
   const score=Number(m?.confidence)||0,d=m?.direction;
   if(m?.feedStatus?.ok!==true||!['BUY','SELL'].includes(d))return {direction:'WAIT',score,band:'WAIT'};
@@ -480,7 +524,7 @@ window.RIZVI_SIGNAL_LEVELS=function(price,direction,score){
  const d=decision(window.RIZVI_MASTER_CONFIRMATION||{}),p=Number(price),s=Number(score??d.score);
  if(!Number.isFinite(p)||direction!==d.direction||s<MIN_SCORE)return null;
  if(blockedDirection===direction)return null;
- range=makeRange(p,direction,s);window.RIZVI_TRADE_RANGE=range;draw();return range;
+ range=makeRange(p,direction,s);window.RIZVI_TRADE_RANGE=range;logBox('BOX_CREATED',{...range,source:'manual-signal-levels'});draw();return range;
 };
 window.RIZVI_DRAW_SIGNAL_LEVELS=draw;
 window.addEventListener('rizvi:master-confirmation-update',e=>{if(e.detail)window.RIZVI_MASTER_CONFIRMATION=e.detail;update();});
