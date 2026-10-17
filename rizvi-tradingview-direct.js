@@ -109,9 +109,15 @@ function drawTRB(){
  const ctx=overlayCtx;ctx.clearRect(0,0,W,H);
  const lv=window.RIZVI_TRADE_RANGE||window.RIZVI_SIGNAL_LEVELS_STATE;
  const decision=window.RIZVI_MASTER_CONFIRMATION||{};
- const direction=String(decision.direction||lv?.direction||'WAIT').toUpperCase();
- const scoreRaw=decision.confidence!==null&&decision.confidence!==undefined&&String(decision.confidence).trim()!==''?decision.confidence:lv?.score;
- const score=Number(scoreRaw);
+ const activation=window.RIZVI_INDICATOR_ACTIVATION||{};
+ // The box is a manual planning overlay: use the directional indicator signal,
+ // not Engine 5's final BUY/SELL authorization (which may correctly remain WAIT).
+ const direction=[decision.engine5?.indicatorAction,activation.direction,window.RIZVI_SIGNAL_DIRECTION,lv?.direction,decision.direction]
+  .map(v=>String(v||'').toUpperCase()).find(v=>v==='BUY'||v==='SELL')||'WAIT';
+ const scoreCandidates=[decision.engine5?.indicatorScore,activation.confidence,lv?.score,decision.confidence]
+  .filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='')
+  .map(Number).filter(Number.isFinite);
+ const score=scoreCandidates.length?scoreCandidates[0]:NaN;
  if(!lv||!['BUY','SELL'].includes(direction)||direction!==String(lv.direction||'').toUpperCase()||!Number.isFinite(score)||score<70)return;
  const vals=[lv.entry,lv.sl,lv.tp1,lv.tp2,lv.tp3].map(Number);
  if(!vals.every(Number.isFinite))return;
