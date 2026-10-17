@@ -33,7 +33,8 @@ test('Entry, stop loss and all three targets retain their separate labels and co
 });
 
 test('manual Trade Range overlay uses indicator action even when Engine 5 final action is WAIT', () => {
-  assert.match(renderer, /decision\.engine5\?\.indicatorAction,activation\.direction,window\.RIZVI_SIGNAL_DIRECTION,lv\?\.direction,decision\.direction/);
-  assert.match(renderer, /decision\.engine5\?\.indicatorScore,activation\.confidence,lv\?\.score,decision\.confidence/);
+  assert.match(renderer, /lv\?\.direction,decision\.engine5\?\.indicatorAction,activation\.direction,window\.RIZVI_SIGNAL_DIRECTION,decision\.direction/);
+  assert.match(renderer, /lv\?\.score,activation\.confidence,decision\.engine5\?\.indicatorScore,decision\.confidence/);
+  assert.match(renderer, /direction!==String\(lv\.direction\|\|''\)\.toUpperCase\(\)/);
   assert.doesNotMatch(renderer, /const direction=String\(decision\.direction\|\|lv\?\.direction\|\|'WAIT'\)/);
 });
