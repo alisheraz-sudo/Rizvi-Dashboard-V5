@@ -388,7 +388,7 @@ function getCanvas(){
   if(!canvas){canvas=document.createElement('canvas');canvas.id='rizviLevelsCanvasV67';host.appendChild(canvas);}
  }
  if(getComputedStyle(host).position==='static')host.style.position='relative';
- canvas.style.cssText='position:absolute;inset:47px 0 0 0;width:100%;height:calc(100% - 47px);display:block;z-index:30;pointer-events:none;max-width:100%';
+ canvas.style.cssText='position:absolute;inset:47px 0 0 0;width:100%;height:calc(100% - 47px);display:none!important;z-index:30;pointer-events:none;max-width:100%';
  return canvas;
 }
 function decision(m){
